@@ -28,6 +28,7 @@ import { FaHandshake } from "react-icons/fa6";
 import AccountSettings from "../../components/dashboard/AccountSettings";
 import { getListings, addListing } from "../../data/listingsStore";
 import api from "../../services/api";
+import ImageUploader from "../Donate/components/ImageUploader";
 
 /* ==========================================================================
    STYLED COMPONENTS: MODERN SIDEBAR + CONTENT LAYOUT
@@ -669,6 +670,7 @@ export const DonorDashboard = () => {
     unit: "portions",
     pickupTime: "Today, 5:00 PM - 7:00 PM",
     instructions: "",
+    images: [],
   });
 
   const [isSuccessMessage, setIsSuccessMessage] = useState(false);
@@ -676,6 +678,10 @@ export const DonorDashboard = () => {
   const handleCreateDonation = (e) => {
     e.preventDefault();
     if (!newFood.title.trim()) return;
+
+    const fallbackImg = `/food/food${Math.floor(Math.random() * 8) + 1}.jpg`;
+    const chosenImage = newFood.images && newFood.images.length > 0 ? newFood.images[0] : fallbackImg;
+    const chosenImages = newFood.images && newFood.images.length > 0 ? newFood.images : [fallbackImg];
 
     const newListing = {
       title: newFood.title,
@@ -687,7 +693,8 @@ export const DonorDashboard = () => {
       status: "available",
       pickupDate: "Today",
       pickupTime: newFood.pickupTime || "5:00 PM - 7:00 PM",
-      image: `/food/food${Math.floor(Math.random() * 8) + 1}.jpg`,
+      image: chosenImage,
+      images: chosenImages,
       description: newFood.instructions || "Fresh surplus food ready for pickup.",
       contactName: user?.name || "Donor",
       contactPhone: "+977 980-1234567",
@@ -704,6 +711,7 @@ export const DonorDashboard = () => {
       unit: "portions",
       pickupTime: "Today, 5:00 PM - 7:00 PM",
       instructions: "",
+      images: [],
     });
 
     setIsSuccessMessage(true);
@@ -1056,6 +1064,14 @@ export const DonorDashboard = () => {
                         </select>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="field-group">
+                    <label>Food Photos / Upload Images</label>
+                    <ImageUploader
+                      images={newFood.images || []}
+                      onImagesChange={(imgs) => setNewFood({ ...newFood, images: imgs })}
+                    />
                   </div>
 
                   <div className="field-group">
