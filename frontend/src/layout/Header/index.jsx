@@ -116,29 +116,38 @@ const Header = () => {
       });
 
       if (Array.isArray(data) && data.length > 0) {
-        setNotifications(
-          data.map((n) => ({
-            id: n.id || n._id,
-            _id: n._id,
-            title: n.title,
-            desc: n.desc || n.message,
-            time: n.time || "Just now",
-            unread: !n.read,
-            linkTab: n.linkTab,
-            category: n.category,
-            icon:
-              n.category === "match" ? (
-                <IoCheckmarkCircle style={{ color: "#2E7D5B" }} />
-              ) : n.category === "request" ? (
-                <IoAlertCircleOutline style={{ color: "#D97706" }} />
-              ) : n.category === "listing" ? (
-                <IoRestaurantOutline style={{ color: "#1565C0" }} />
-              ) : (
-                <IoNotificationsOutline style={{ color: "#174A3A" }} />
-              ),
-          }))
-        );
-        return;
+        const filteredData = data.filter((n) => {
+          if (n.role === "admin") return false;
+          if (n.title && n.title.includes("Review required")) return false;
+          if (n.desc && n.desc.includes("Review required")) return false;
+          return true;
+        });
+
+        if (filteredData.length > 0) {
+          setNotifications(
+            filteredData.map((n) => ({
+              id: n.id || n._id,
+              _id: n._id,
+              title: n.title,
+              desc: n.desc || n.message,
+              time: n.time || "Just now",
+              unread: !n.read,
+              linkTab: n.linkTab,
+              category: n.category,
+              icon:
+                n.category === "match" ? (
+                  <IoCheckmarkCircle style={{ color: "#2E7D5B" }} />
+                ) : n.category === "request" ? (
+                  <IoAlertCircleOutline style={{ color: "#D97706" }} />
+                ) : n.category === "listing" ? (
+                  <IoRestaurantOutline style={{ color: "#1565C0" }} />
+                ) : (
+                  <IoNotificationsOutline style={{ color: "#174A3A" }} />
+                ),
+            }))
+          );
+          return;
+        }
       }
     } catch {
       // Fall through to local contextual notifications

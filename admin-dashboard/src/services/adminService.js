@@ -256,7 +256,7 @@ export const syncAllFromBackend = async () => {
     }
 
     // 8. Fetch Notifications
-    const notifRes = await fetch(`${API_BASE}/notifications`, { headers: getAuthHeaders() }).catch(() => null);
+    const notifRes = await fetch(`${API_BASE}/notifications?role=admin`, { headers: getAuthHeaders() }).catch(() => null);
     if (notifRes && notifRes.ok) {
       const notifData = await notifRes.json();
       if (Array.isArray(notifData) && notifData.length > 0) {

@@ -697,7 +697,14 @@ export const NGODashboard = () => {
       setNotificationsLoading(true);
       const data = await api.notifications.getAll({ role: "ngo", userId: user?.id || "" });
       if (Array.isArray(data) && data.length > 0) {
-        setNotificationsList(data);
+        // Defensive filter: Only show notifications relevant to NGO (not admin moderation tasks)
+        const relevant = data.filter((n) => {
+          if (n.role === "admin" || n.role === "donor") return false;
+          if (n.title && n.title.includes("Review required")) return false;
+          if (n.desc && n.desc.includes("Review required")) return false;
+          return true;
+        });
+        setNotificationsList(relevant);
       } else {
         // Build contextual notifications from NGO requests & available surplus
         const list = [];

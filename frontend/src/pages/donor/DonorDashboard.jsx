@@ -1126,7 +1126,14 @@ export const DonorDashboard = () => {
       setNotificationsLoading(true);
       const data = await api.notifications.getAll({ role: "donor", userId: user?.id || "" });
       if (Array.isArray(data) && data.length > 0) {
-        setNotificationsList(data);
+        // Defensive filter: Only show notifications relevant to donor (not admin moderation or other roles)
+        const relevant = data.filter((n) => {
+          if (n.role === "admin" || n.role === "ngo") return false;
+          if (n.title && n.title.includes("Review required")) return false;
+          if (n.desc && n.desc.includes("Review required")) return false;
+          return true;
+        });
+        setNotificationsList(relevant);
       } else {
         // Build dynamic contextual fallback notifications
         const list = [];

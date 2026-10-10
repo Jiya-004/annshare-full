@@ -26,10 +26,22 @@ const getNotifications = async (req, res) => {
     const { role, userId } = req.query;
     let filter = {};
 
-    if (userId) {
-      filter.$or = [{ userId }, { userId: '' }, { role: 'all' }];
+    if (userId && role && role !== 'all') {
+      filter.$or = [
+        { userId: userId },
+        { role: role, $or: [{ userId: '' }, { userId: { $exists: false } }, { userId: null }] },
+        { role: 'all', $or: [{ userId: '' }, { userId: { $exists: false } }, { userId: null }] },
+      ];
+    } else if (userId) {
+      filter.$or = [
+        { userId: userId },
+        { role: 'all', $or: [{ userId: '' }, { userId: { $exists: false } }, { userId: null }] },
+      ];
     } else if (role && role !== 'all') {
-      filter.$or = [{ role }, { role: 'all' }];
+      filter.$or = [
+        { role: role },
+        { role: 'all' },
+      ];
     }
 
     const notifs = await Notification.find(filter).sort({ createdAt: -1 }).limit(50);
