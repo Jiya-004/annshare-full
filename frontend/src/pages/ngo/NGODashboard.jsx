@@ -774,6 +774,10 @@ export const NGODashboard = () => {
     if (!reqItem) return;
     const targetId = reqItem.id || reqItem._id;
     updateRequestStatus(targetId, "Completed");
+    const listingId = reqItem.listingId || reqItem.donationId;
+    if (listingId) {
+      updateListingStatus(listingId, "Completed");
+    }
     setRequests(loadNgoRequests());
     alert("Food item marked as Received & Safe! The status has been updated to Completed.");
   };

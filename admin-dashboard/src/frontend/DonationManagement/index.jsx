@@ -25,9 +25,12 @@ import ConfirmModal from '../../components/modals/ConfirmModal';
 import {
   getDonations,
   getCategories,
+  getRequests,
   deleteDonation,
   updateDonationStatus,
-  subscribeToAdminService
+  updateRequestStatus,
+  subscribeToAdminService,
+  formatToNepaliTime
 } from '../../services/adminService';
 
 // Styled Components for Dropdown and Page Layout
@@ -195,6 +198,7 @@ const getTempStorageSpec = (category) => {
 const DonationManagement = () => {
   const [donations, setDonations] = useState(getDonations());
   const [categories, setCategories] = useState(getCategories());
+  const [requests, setRequests] = useState(getRequests());
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -208,6 +212,7 @@ const DonationManagement = () => {
       const updated = getDonations();
       setDonations(updated);
       setCategories(getCategories());
+      setRequests(getRequests());
       // Sync active viewing object if modified
       if (viewingDonation) {
         const current = updated.find(d => d.id === viewingDonation.id);
@@ -255,6 +260,20 @@ const DonationManagement = () => {
   const handleStatusChange = (newStatus) => {
     if (viewingDonation) {
       updateDonationStatus(viewingDonation.id, newStatus);
+      const targetReq = requests.find(r => 
+        (r.donationId && String(r.donationId) === String(viewingDonation.id || viewingDonation._id)) ||
+        (r.listingId && String(r.listingId) === String(viewingDonation.id || viewingDonation._id)) ||
+        (r.foodTitle && viewingDonation.title && r.foodTitle.toLowerCase() === viewingDonation.title.toLowerCase())
+      );
+      if (targetReq) {
+        if (newStatus === 'Completed') {
+          updateRequestStatus(targetReq.id, 'Completed');
+        } else if (newStatus === 'Picked Up') {
+          updateRequestStatus(targetReq.id, 'confirmed');
+        } else if (newStatus === 'Available') {
+          updateRequestStatus(targetReq.id, 'Cancelled');
+        }
+      }
     }
   };
 
@@ -266,17 +285,46 @@ const DonationManagement = () => {
     const tempSpec = getTempStorageSpec(don.category);
     const cleanQty = don.quantity ? don.quantity.replace(/\s*\([^)]*\)/g, '') : 'N/A';
 
-    const getTimelineStep = (status) => {
-      switch (status) {
-        case 'Available': return 1;
-        case 'Requested': return 2;
-        case 'Picked Up': return 3;
-        case 'Completed': return 4;
-        default: return 1;
-      }
-    };
+    // Find linked food request by donation ID / listing ID or title
+    const relatedRequest = requests.find(r => 
+      (r.donationId && String(r.donationId) === String(don.id || don._id)) ||
+      (r.listingId && String(r.listingId) === String(don.id || don._id)) ||
+      (r.foodTitle && don.title && r.foodTitle.toLowerCase() === don.title.toLowerCase())
+    );
 
-    const currentStep = getTimelineStep(don.status);
+    const donStatusLower = (don.status || '').toLowerCase();
+    const reqStatusLower = (relatedRequest?.status || '').toLowerCase();
+    const assignedNgoName = don.claimedBy || relatedRequest?.receiverName || relatedRequest?.ngoName || null;
+
+    // Dynamically calculate accurate 4-step logistics lifecycle
+    let currentStep = 1;
+    if (
+      donStatusLower.includes('completed') || 
+      donStatusLower.includes('distributed') || 
+      reqStatusLower.includes('completed') ||
+      reqStatusLower.includes('received')
+    ) {
+      currentStep = 4;
+    } else if (
+      donStatusLower.includes('picked') || 
+      donStatusLower.includes('transit') || 
+      reqStatusLower.includes('confirmed') || 
+      reqStatusLower.includes('matched') ||
+      reqStatusLower.includes('pickup') ||
+      reqStatusLower.includes('in transit')
+    ) {
+      currentStep = 3;
+    } else if (
+      donStatusLower.includes('requested') || 
+      donStatusLower.includes('claimed') || 
+      reqStatusLower.includes('pending') || 
+      reqStatusLower.includes('approved') || 
+      assignedNgoName
+    ) {
+      currentStep = 2;
+    } else {
+      currentStep = 1;
+    }
 
     return (
       <Container fluid className="p-0">
@@ -433,7 +481,7 @@ const DonationManagement = () => {
                       <FiClock style={{ color: '#C2410C' }} /> {don.expiryTime || don.expiresIn || 'Not specified'}
                     </div>
                     <div style={{ fontSize: '0.78rem', color: '#66736D', marginTop: '2px' }}>
-                      Posted: <strong>{don.postedDate}</strong>
+                      Posted: <strong>{formatToNepaliTime(don.postedDate || don.createdAt)}</strong>
                     </div>
                   </div>
                 </Col>
@@ -485,16 +533,40 @@ const DonationManagement = () => {
                 Receiver & Distribution Assignment
               </h5>
 
-              {don.claimedBy ? (
+              {currentStep === 4 ? (
+                <div className="p-3 rounded mb-3" style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}>
+                  <div style={{ color: '#065F46', fontWeight: 700, fontSize: '0.92rem' }} className="d-flex align-items-center gap-2 mb-1">
+                    <FiCheckCircle size={18} /> Redistribution Completed & Verified
+                  </div>
+                  <div style={{ fontWeight: 700, color: '#12201B', fontSize: '1.05rem', margin: '4px 0' }}>
+                    {assignedNgoName || 'Verified Community Shelter'}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#047857' }}>
+                    Food safely received and distributed to recipients.
+                  </div>
+                </div>
+              ) : currentStep === 3 ? (
+                <div className="p-3 rounded mb-3" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
+                  <div style={{ color: '#1D4ED8', fontWeight: 700, fontSize: '0.92rem' }} className="d-flex align-items-center gap-2 mb-1">
+                    <FiTruck size={18} /> Pickup Active / In Transit
+                  </div>
+                  <div style={{ fontWeight: 700, color: '#12201B', fontSize: '1.05rem', margin: '4px 0' }}>
+                    {assignedNgoName || 'Verified NGO Shelter'}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#1E40AF' }}>
+                    Donor contact unlocked & verified. Pickup transfer in progress.
+                  </div>
+                </div>
+              ) : currentStep === 2 ? (
                 <div className="p-3 rounded mb-3" style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}>
                   <div style={{ color: '#065F46', fontWeight: 700, fontSize: '0.92rem' }} className="d-flex align-items-center gap-2 mb-1">
                     <FiCheckCircle size={18} /> Assigned to Receiver NGO
                   </div>
                   <div style={{ fontWeight: 700, color: '#12201B', fontSize: '1.05rem', margin: '4px 0' }}>
-                    {don.claimedBy}
+                    {assignedNgoName || 'Verified NGO Shelter'}
                   </div>
                   <div style={{ fontSize: '0.78rem', color: '#047857' }}>
-                    Verified NGO Shelter / Distribution Partner
+                    Surplus claimed. Awaiting pickup coordination.
                   </div>
                 </div>
               ) : (
@@ -540,7 +612,7 @@ const DonationManagement = () => {
                       Listed & Inspected
                     </div>
                     <div style={{ fontSize: '0.76rem', color: '#66736D' }}>
-                      Posted by donor on {don.postedDate}
+                      Posted by donor on {formatToNepaliTime(don.postedDate || don.createdAt)}
                     </div>
                   </div>
                 </div>
@@ -569,7 +641,7 @@ const DonationManagement = () => {
                       Matched / Claimed
                     </div>
                     <div style={{ fontSize: '0.76rem', color: '#66736D' }}>
-                      {don.claimedBy ? `Reserved by ${don.claimedBy}` : 'Awaiting NGO request match'}
+                      {assignedNgoName ? `Claimed & reserved by ${assignedNgoName}` : 'Awaiting NGO request match'}
                     </div>
                   </div>
                 </div>
@@ -598,7 +670,7 @@ const DonationManagement = () => {
                       In Transit / Pickup Active
                     </div>
                     <div style={{ fontSize: '0.76rem', color: '#66736D' }}>
-                      Transport & cold-chain transfer scheduled
+                      {currentStep >= 3 ? `Donor accepted. Pickup transfer in progress with ${assignedNgoName || 'receiver'}` : 'Transport & cold-chain transfer scheduled'}
                     </div>
                   </div>
                 </div>
@@ -627,7 +699,7 @@ const DonationManagement = () => {
                       Completed & Distributed
                     </div>
                     <div style={{ fontSize: '0.76rem', color: '#66736D' }}>
-                      Food delivered to community shelter recipients
+                      {currentStep >= 4 ? `Completed: Food delivered to community recipients by ${assignedNgoName || 'receiver'}` : 'Food delivered to community shelter recipients'}
                     </div>
                   </div>
                 </div>

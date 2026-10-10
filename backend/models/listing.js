@@ -1,5 +1,17 @@
 const mongoose = require('mongoose');
 
+const formatNepaliDate = (date = new Date()) => {
+  return new Date(date).toLocaleString('en-US', {
+    timeZone: 'Asia/Kathmandu',
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
 const listingSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
@@ -17,14 +29,7 @@ const listingSchema = new mongoose.Schema(
     contactPhone: { type: String, default: '+977 9841234567' },
     postedDate: {
       type: String,
-      default: () =>
-        new Date().toLocaleDateString('en-US', {
-          month: 'short',
-          day: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+      default: () => formatNepaliDate(),
     },
     expiryTime: { type: String, default: 'Today at 8:00 PM' },
     expires_at: { type: String },

@@ -289,7 +289,7 @@ const updateRequestStatus = async (req, res) => {
           claimedById: request.ngoId || request.receiverId,
         });
       } else if (normalizedStatus === 'completed') {
-        await Listing.findByIdAndUpdate(request.listingId, { status: 'Picked Up' });
+        await Listing.findByIdAndUpdate(request.listingId, { status: 'Completed' });
       } else if (normalizedStatus === 'rejected' || normalizedStatus === 'declined' || normalizedStatus === 'cancelled') {
         await Listing.findByIdAndUpdate(request.listingId, {
           status: 'Available',

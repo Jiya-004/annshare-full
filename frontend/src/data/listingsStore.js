@@ -29,12 +29,29 @@ export function matchCategory(itemCat = "", filterCat = "") {
 }
 
 /**
- * Format timestamp into readable current time (e.g. 4:15 PM)
+ * Format timestamp into readable current time (e.g. 4:15 PM) in Nepal Time
  */
 export function formatCurrentTime(d = new Date()) {
   const dateObj = typeof d === "string" || typeof d === "number" ? new Date(d) : d;
   return dateObj.toLocaleTimeString([], {
+    timeZone: "Asia/Kathmandu",
     hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+/**
+ * Format timestamp into readable date and time in Nepal Time (e.g. Oct 10, 2026, 08:15 PM)
+ */
+export function formatToNepaliDate(d = new Date()) {
+  const dateObj = typeof d === "string" || typeof d === "number" ? new Date(d) : d;
+  return dateObj.toLocaleString("en-US", {
+    timeZone: "Asia/Kathmandu",
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
     minute: "2-digit",
     hour12: true,
   });
@@ -224,6 +241,7 @@ export function addListing(listing) {
     pickupDate: listing.pickupDate || "Today",
     pickupTime: pickupWindow,
     postedTime: listing.postedTime || currentTimeStr,
+    postedDate: listing.postedDate || formatToNepaliDate(now),
     createdAt: listing.createdAt || now.toISOString(),
     image: listing.image || `/food/food${(current.length % 8) + 1}.jpg`,
     images: listing.images && listing.images.length > 0 ? listing.images : [listing.image || `/food/food${(current.length % 8) + 1}.jpg`],
@@ -260,6 +278,7 @@ export function addListing(listing) {
       location: formattedListing.location,
       address: formattedListing.location,
       contactPhone: formattedListing.contactPhone,
+      postedDate: formattedListing.postedDate,
       pickupWindow: formattedListing.pickupTime,
       expiryTime: formattedListing.expiresIn,
       status: "Pending Approval",

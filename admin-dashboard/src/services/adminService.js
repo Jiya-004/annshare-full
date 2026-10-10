@@ -173,7 +173,7 @@ export const syncAllFromBackend = async () => {
           quantity: d.quantity || '1 batch',
           weight_kg: Number(d.weight_kg) || 5,
           location: d.location || 'Kathmandu',
-          postedDate: d.postedDate || 'Today',
+          postedDate: d.createdAt ? formatToNepaliTime(d.createdAt) : formatToNepaliTime(d.postedDate || 'Today'),
           expiryTime: d.expiryTime || 'Today at 8:00 PM',
           expires_at: d.expires_at || '',
           status: d.status || 'Available',

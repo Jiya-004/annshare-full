@@ -1,6 +1,24 @@
 const Listing = require('../models/listing');
 const { sendNotification } = require('./notificationController');
 
+const formatNepaliDate = (date = new Date()) => {
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return date;
+    return d.toLocaleString('en-US', {
+      timeZone: 'Asia/Kathmandu',
+      month: 'short',
+      day: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  } catch (e) {
+    return date;
+  }
+};
+
 // GET all listings (with search, category, status, and donor filtering)
 const getListings = async (req, res) => {
   try {
@@ -51,7 +69,7 @@ const getListings = async (req, res) => {
       location: l.location || 'Kathmandu, Nepal',
       address: l.address || l.location,
       contactPhone: l.contactPhone,
-      postedDate: l.postedDate,
+      postedDate: l.createdAt ? formatNepaliDate(l.createdAt) : (l.postedDate ? formatNepaliDate(l.postedDate) : formatNepaliDate()),
       expiryTime: l.expiryTime,
       expires_at: l.expires_at,
       pickupWindow: l.pickupWindow,
@@ -95,7 +113,7 @@ const getListingById = async (req, res) => {
       location: listing.location,
       address: listing.address,
       contactPhone: listing.contactPhone,
-      postedDate: listing.postedDate,
+      postedDate: listing.createdAt ? formatNepaliDate(listing.createdAt) : (listing.postedDate ? formatNepaliDate(listing.postedDate) : formatNepaliDate()),
       expiryTime: listing.expiryTime,
       expires_at: listing.expires_at,
       pickupWindow: listing.pickupWindow,
@@ -126,6 +144,9 @@ const createListing = async (req, res) => {
     if (!data.restaurantName && data.donor) data.restaurantName = data.donor;
     if (!data.status || data.status.toLowerCase() === 'available') {
       data.status = 'Pending Approval';
+    }
+    if (!data.postedDate) {
+      data.postedDate = formatNepaliDate();
     }
 
     const listing = await Listing.create(data);
