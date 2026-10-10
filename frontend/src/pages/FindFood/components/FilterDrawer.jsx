@@ -214,6 +214,18 @@ const DrawerFooter = styled.div`
   }
 `;
 
+import api from "../../../services/api";
+
+const DEFAULT_DRAWER_CATEGORIES = [
+  "Prepared Meals",
+  "Bakery & Bread",
+  "Fruits & Veggies",
+  "Packaged Food",
+  "Rice & Grains",
+  "Dairy & Pantry",
+  "Other Items",
+];
+
 export default function FilterDrawer({
   isOpen,
   onClose,
@@ -222,6 +234,27 @@ export default function FilterDrawer({
   onClearFilters,
   resultCount,
 }) {
+  const [categories, setCategories] = React.useState(DEFAULT_DRAWER_CATEGORIES);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    api.categories
+      .getAll()
+      .then((data) => {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          const names = data.filter((c) => c.status !== "Inactive").map((c) => c.name);
+          if (names.length > 0) {
+            setCategories(names);
+          }
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   if (!isOpen) return null;
 
   const handleCategoryToggle = (cat) => {
@@ -273,13 +306,7 @@ export default function FilterDrawer({
           <FilterSection>
             <h4>Food Category</h4>
             <CheckboxList>
-              {[
-                "Prepared Meals",
-                "Bakery",
-                "Fruits & Vegetables",
-                "Groceries",
-                "Packaged Food",
-              ].map((cat) => (
+              {categories.map((cat) => (
                 <label key={cat}>
                   <input
                     type="checkbox"

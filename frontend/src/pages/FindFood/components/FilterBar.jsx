@@ -174,15 +174,26 @@ const FilterDrawerBtn = styled.button`
   }
 `;
 
-const PILLS = [
+import api from "../../../services/api";
+import { getCategoryIcon } from "../../Donate/components/FoodCategorySelector";
+
+const BASE_PILLS = [
   { id: "all", label: "All", icon: <IoGridOutline /> },
-  { id: "Prepared Meals", label: "Prepared Meals", icon: <IoRestaurantOutline /> },
-  { id: "Bakery", label: "Bakery", icon: <IoCafeOutline /> },
-  { id: "Fruits & Vegetables", label: "Fruits & Vegetables", icon: <IoLeafOutline /> },
-  { id: "Groceries", label: "Groceries", icon: <IoNutritionOutline /> },
-  { id: "Packaged Food", label: "Packaged Food", icon: <IoArchiveOutline /> },
+];
+
+const EXTRA_PILLS = [
   { id: "today", label: "Available Today", icon: <IoTimeOutline /> },
   { id: "near", label: "Within 5 km", icon: <IoLocationOutline /> },
+];
+
+const DEFAULT_CATEGORY_NAMES = [
+  "Prepared Meals",
+  "Bakery & Bread",
+  "Fruits & Veggies",
+  "Packaged Food",
+  "Rice & Grains",
+  "Dairy & Pantry",
+  "Other Items",
 ];
 
 export default function FilterBar({
@@ -192,6 +203,26 @@ export default function FilterBar({
   activeFilterCount = 0,
 }) {
   const scrollRef = React.useRef(null);
+  const [categories, setCategories] = React.useState(DEFAULT_CATEGORY_NAMES);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    api.categories
+      .getAll()
+      .then((data) => {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          const names = data.filter((c) => c.status !== "Inactive").map((c) => c.name);
+          if (names.length > 0) {
+            setCategories(names);
+          }
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleScroll = (direction) => {
     if (scrollRef.current) {
@@ -199,6 +230,14 @@ export default function FilterBar({
       scrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
     }
   };
+
+  const dynamicCategoryPills = categories.map((catName) => ({
+    id: catName,
+    label: catName,
+    icon: getCategoryIcon(catName),
+  }));
+
+  const allPills = [...BASE_PILLS, ...dynamicCategoryPills, ...EXTRA_PILLS];
 
   return (
     <FilterBarWrapper>
@@ -213,7 +252,7 @@ export default function FilterBar({
         </ScrollNavBtn>
 
         <ScrollablePillsContainer ref={scrollRef}>
-          {PILLS.map((pill) => {
+          {allPills.map((pill) => {
             const isActive = activeFilter === pill.id;
             return (
               <FilterPill

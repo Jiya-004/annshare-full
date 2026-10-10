@@ -27,6 +27,7 @@ import {
 import { FaHandshake } from "react-icons/fa6";
 import AccountSettings from "../../components/dashboard/AccountSettings";
 import { getListings, addListing } from "../../data/listingsStore";
+import api from "../../services/api";
 
 /* ==========================================================================
    STYLED COMPONENTS: MODERN SIDEBAR + CONTENT LAYOUT
@@ -632,6 +633,35 @@ export const DonorDashboard = () => {
     };
   }, [loadDonorDonations]);
 
+  const [categoriesList, setCategoriesList] = useState([
+    "Prepared Meals",
+    "Bakery & Bread",
+    "Fruits & Veggies",
+    "Packaged Food",
+    "Rice & Grains",
+    "Dairy & Pantry",
+    "Other Items",
+  ]);
+
+  useEffect(() => {
+    let isMounted = true;
+    api.categories
+      .getAll()
+      .then((data) => {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          const names = data.filter((c) => c.status !== "Inactive").map((c) => c.name);
+          if (names.length > 0) {
+            setCategoriesList(names);
+          }
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const [newFood, setNewFood] = useState({
     title: "",
     category: "Prepared Meals",
@@ -997,11 +1027,11 @@ export const DonorDashboard = () => {
                         value={newFood.category}
                         onChange={(e) => setNewFood({ ...newFood, category: e.target.value })}
                       >
-                        <option value="Prepared Meals">Prepared Meals</option>
-                        <option value="Bakery">Bakery & Pastries</option>
-                        <option value="Produce">Fresh Fruits & Vegetables</option>
-                        <option value="Groceries">Pantry & Groceries</option>
-                        <option value="Dairy">Dairy & Beverages</option>
+                        {categoriesList.map((catName) => (
+                          <option key={catName} value={catName}>
+                            {catName}
+                          </option>
+                        ))}
                       </select>
                     </div>
 

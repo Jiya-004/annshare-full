@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import {
   IoRestaurantOutline,
@@ -9,6 +9,7 @@ import {
   IoWaterOutline,
   IoGridOutline,
 } from "react-icons/io5";
+import api from "../../../services/api";
 
 const CategoriesGrid = styled.div`
   display: grid;
@@ -73,36 +74,87 @@ const CategoryCard = styled.button`
   }
 `;
 
-const CATEGORIES = [
-  { id: "prepared", icon: <IoRestaurantOutline />, label: "Prepared Meals" },
-  { id: "bakery", icon: <IoCafeOutline />, label: "Bakery & Bread" },
-  { id: "produce", icon: <IoLeafOutline />, label: "Fruits & Veggies" },
-  { id: "packaged", icon: <IoArchiveOutline />, label: "Packaged Food" },
-  { id: "grains", icon: <IoNutritionOutline />, label: "Rice & Grains" },
-  { id: "dairy", icon: <IoWaterOutline />, label: "Dairy & Pantry" },
-  { id: "other", icon: <IoGridOutline />, label: "Other Items" },
+const DEFAULT_CATEGORIES = [
+  { id: "cat-1", name: "Prepared Meals", icon: "cooked", status: "Active" },
+  { id: "cat-2", name: "Bakery & Bread", icon: "bakery", status: "Active" },
+  { id: "cat-3", name: "Fruits & Veggies", icon: "vegetables", status: "Active" },
+  { id: "cat-4", name: "Packaged Food", icon: "packaged", status: "Active" },
+  { id: "cat-5", name: "Rice & Grains", icon: "grains", status: "Active" },
+  { id: "cat-6", name: "Dairy & Pantry", icon: "dairy", status: "Active" },
+  { id: "cat-7", name: "Other Items", icon: "other", status: "Active" },
 ];
 
+export const getCategoryIcon = (nameOrSlug = "", iconType = "") => {
+  const key = `${nameOrSlug} ${iconType}`.toLowerCase();
+  if (key.includes("bakery") || key.includes("bread") || key.includes("pastr") || key.includes("cake") || key.includes("croissant")) {
+    return <IoCafeOutline />;
+  }
+  if (key.includes("tea") || key.includes("coffee") || key.includes("cafe")) {
+    return <IoCafeOutline />;
+  }
+  if (key.includes("fruit") || key.includes("veg") || key.includes("produce") || key.includes("salad") || key.includes("leaf") || key.includes("greens")) {
+    return <IoLeafOutline />;
+  }
+  if (key.includes("pack") || key.includes("can") || key.includes("box") || key.includes("sealed") || key.includes("archive")) {
+    return <IoArchiveOutline />;
+  }
+  if (key.includes("rice") || key.includes("grain") || key.includes("cereal") || key.includes("flour") || key.includes("pulse") || key.includes("lentil") || key.includes("nutrition")) {
+    return <IoNutritionOutline />;
+  }
+  if (key.includes("dairy") || key.includes("milk") || key.includes("water") || key.includes("beverag") || key.includes("juice") || key.includes("drink") || key.includes("pantry")) {
+    return <IoWaterOutline />;
+  }
+  if (key.includes("meal") || key.includes("cook") || key.includes("dish") || key.includes("prepared") || key.includes("kitchen") || key.includes("curry") || key.includes("food") || key.includes("utensils")) {
+    return <IoRestaurantOutline />;
+  }
+  return <IoGridOutline />;
+};
+
 export default function FoodCategorySelector({ selectedCategory, onSelect }) {
+  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+
+  useEffect(() => {
+    let isMounted = true;
+    api.categories
+      .getAll()
+      .then((data) => {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          const active = data.filter((c) => c.status !== "Inactive");
+          if (active.length > 0) {
+            setCategories(active);
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn("Failed to load categories from API, using defaults:", err.message);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <CategoriesGrid>
-      {CATEGORIES.map((cat) => {
+      {categories.map((cat) => {
+        const catName = cat.name || cat.label;
         const isSelected =
-          selectedCategory === cat.label ||
-          (cat.id === "prepared" && selectedCategory === "Prepared Meals");
+          selectedCategory === catName ||
+          (selectedCategory === "Prepared Meals" && (catName === "Prepared Meals" || cat.slug === "prepared-meals"));
 
         return (
           <CategoryCard
-            key={cat.id}
+            key={cat._id || cat.id || catName}
             type="button"
             $selected={isSelected}
-            onClick={() => onSelect(cat.label)}
+            onClick={() => onSelect(catName)}
           >
-            <div className="cat-icon-wrap">{cat.icon}</div>
-            <span className="cat-name">{cat.label}</span>
+            <div className="cat-icon-wrap">{getCategoryIcon(catName, cat.icon)}</div>
+            <span className="cat-name">{catName}</span>
           </CategoryCard>
         );
       })}
     </CategoriesGrid>
   );
 }
+
