@@ -46,8 +46,12 @@ const DashboardWrapper = styled.div`
   min-height: calc(100vh - 80px);
   padding: 120px 24px 80px;
 
-  @media (max-width: 768px) {
-    padding: 16px 14px 60px;
+  @media (max-width: 960px) {
+    padding: 95px 14px 90px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 85px 10px 85px;
   }
 `;
 
@@ -346,7 +350,9 @@ const SidebarCard = styled.aside`
 
   @media (max-width: 960px) {
     position: static;
-    padding: 18px 16px;
+    padding: 14px 14px;
+    gap: 10px;
+    border-radius: 16px;
   }
 `;
 
@@ -356,6 +362,11 @@ const UserProfileCard = styled.div`
   gap: 12px;
   padding-bottom: 18px;
   border-bottom: 1px solid #ECEEEA;
+
+  @media (max-width: 960px) {
+    padding-bottom: 10px;
+    gap: 10px;
+  }
 
   .avatar {
     width: 46px;
@@ -369,6 +380,13 @@ const UserProfileCard = styled.div`
     font-size: 1.25rem;
     font-weight: 700;
     flex-shrink: 0;
+
+    @media (max-width: 960px) {
+      width: 38px;
+      height: 38px;
+      font-size: 1.05rem;
+      border-radius: 10px;
+    }
   }
 
   .meta {
@@ -382,6 +400,10 @@ const UserProfileCard = styled.div`
       white-space: nowrap;
       text-overflow: ellipsis;
       overflow: hidden;
+
+      @media (max-width: 960px) {
+        font-size: 0.92rem;
+      }
     }
 
     .role-badge {
@@ -391,6 +413,10 @@ const UserProfileCard = styled.div`
       display: inline-flex;
       align-items: center;
       gap: 4px;
+
+      @media (max-width: 960px) {
+        font-size: 0.7rem;
+      }
     }
   }
 `;
@@ -412,6 +438,12 @@ const QuickDonateBtn = styled.button`
   transition: all 0.2s ease;
   width: 100%;
 
+  @media (max-width: 960px) {
+    padding: 10px 14px;
+    font-size: 0.86rem;
+    border-radius: 10px;
+  }
+
   &:hover {
     background: #0F3327;
     transform: translateY(-2px);
@@ -426,6 +458,7 @@ const SidebarNavList = styled.nav`
 
   @media (max-width: 960px) {
     display: ${(props) => (props.$mobileOpen ? "flex" : "none")};
+    padding-top: 6px;
   }
 `;
 
@@ -444,6 +477,8 @@ const MobileToggleBtn = styled.button`
 
   @media (max-width: 960px) {
     display: flex;
+    font-size: 0.86rem;
+    padding: 8px 12px;
   }
 `;
 
@@ -502,6 +537,11 @@ const SidebarFooter = styled.div`
   flex-direction: column;
   gap: 8px;
 
+  @media (max-width: 960px) {
+    display: ${(props) => (props.$mobileOpen ? "flex" : "none")};
+    padding-top: 10px;
+  }
+
   .btn-switch {
     display: flex;
     align-items: center;
@@ -556,6 +596,10 @@ const SectionTitle = styled.h3`
   color: #174A3A;
   margin: ${(props) => props.$margin || "0 0 14px"};
   letter-spacing: -0.2px;
+
+  @media (max-width: 768px) {
+    font-size: 1.05rem;
+  }
 `;
 
 const HeaderBanner = styled.div`
@@ -597,6 +641,11 @@ const HeaderBanner = styled.div`
       margin-bottom: 8px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+
+      @media (max-width: 768px) {
+        font-size: 0.7rem;
+        padding: 3px 10px;
+      }
     }
 
     h1 {
@@ -605,17 +654,28 @@ const HeaderBanner = styled.div`
       font-weight: 600;
       color: #174A3A;
       margin: 0 0 4px;
+
+      @media (max-width: 768px) {
+        font-size: 1.25rem;
+      }
     }
 
     p {
       font-size: 0.94rem;
       color: #556B64;
       margin: 0;
+
+      @media (max-width: 768px) {
+        font-size: 0.82rem;
+      }
     }
   }
 
   @media (max-width: 768px) {
-    padding: 22px 20px;
+    padding: 16px 14px;
+    border-radius: 16px;
+    flex-direction: column;
+    align-items: flex-start;
   }
 `;
 
@@ -627,10 +687,12 @@ const StatsGrid = styled.div`
 
   @media (max-width: 900px) {
     grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
 
   @media (max-width: 480px) {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
   }
 `;
 
@@ -640,11 +702,20 @@ const StatCard = styled.div`
   padding: 20px;
   border: 1px solid rgba(23, 74, 58, 0.08);
 
+  @media (max-width: 768px) {
+    padding: 12px 10px;
+    border-radius: 14px;
+  }
+
   .icon-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 12px;
+
+    @media (max-width: 768px) {
+      margin-bottom: 8px;
+    }
 
     .icon-box {
       width: 40px;
@@ -656,12 +727,23 @@ const StatCard = styled.div`
       align-items: center;
       justify-content: center;
       font-size: 1.25rem;
+
+      @media (max-width: 768px) {
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
+        border-radius: 8px;
+      }
     }
 
     .stat-change {
       font-size: 0.74rem;
       font-weight: 700;
       color: #2E7D5B;
+
+      @media (max-width: 768px) {
+        font-size: 0.68rem;
+      }
     }
   }
 
@@ -670,12 +752,20 @@ const StatCard = styled.div`
     font-weight: 800;
     color: #174A3A;
     margin-bottom: 3px;
+
+    @media (max-width: 768px) {
+      font-size: 1.25rem;
+    }
   }
 
   .stat-label {
     font-size: 0.82rem;
     color: #71827B;
     font-weight: 500;
+
+    @media (max-width: 768px) {
+      font-size: 0.72rem;
+    }
   }
 `;
 
@@ -1399,7 +1489,7 @@ export const DonorDashboard = () => {
               </NavItem>
             </SidebarNavList>
 
-            <SidebarFooter>
+            <SidebarFooter $mobileOpen={mobileMenuOpen}>
               <button
                 type="button"
                 className="btn-switch"
