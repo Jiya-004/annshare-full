@@ -8,37 +8,40 @@ import {
   IoStar,
   IoChevronBack,
   IoChevronForward,
+  IoLocationOutline,
+  IoRestaurantOutline,
+  IoFlameOutline,
+  IoStorefrontOutline,
 } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import { useWishlist } from "../../../context/WishlistContext";
 
-const AirbnbCardWrapper = styled.div`
+const CardWrapper = styled.div`
   width: 100%;
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
   background: #FFFFFF;
-  border-radius: 18px;
-  padding: 10px;
-  border: 1px solid rgba(23, 74, 58, 0.08);
-  box-shadow: 0 2px 8px rgba(23, 74, 58, 0.04);
+  border-radius: 20px;
+  padding: 12px;
+  border: 1px solid rgba(23, 74, 58, 0.09);
+  box-shadow: 0 4px 16px rgba(23, 74, 58, 0.04);
   display: flex;
   flex-direction: column;
   cursor: pointer;
   overflow: hidden;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 
   @media (max-width: 480px) {
-    padding: 8px;
+    padding: 10px;
     border-radius: 16px;
   }
 
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 28px rgba(23, 74, 58, 0.1);
-    border-color: rgba(46, 125, 91, 0.28);
+    box-shadow: 0 16px 36px rgba(23, 74, 58, 0.12);
+    border-color: rgba(46, 125, 91, 0.35);
 
     .carousel-nav-btn {
       opacity: 1;
@@ -46,45 +49,46 @@ const AirbnbCardWrapper = styled.div`
     }
   }
 
-  /* AIRBNB MEDIA CAROUSEL */
+  /* MEDIA CAROUSEL BOX */
   .media-box {
     position: relative;
     width: 100%;
     aspect-ratio: 16 / 10;
-    max-height: 220px;
+    max-height: 210px;
     border-radius: 14px;
     overflow: hidden;
-    background: #EFECE5;
+    background: #F4F1EA;
 
     img {
       width: 100%;
       height: 100%;
       object-fit: cover;
       display: block;
-      transition: transform 0.4s ease;
+      transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     &:hover img {
-      transform: scale(1.04);
+      transform: scale(1.05);
     }
 
     /* PREV / NEXT ARROWS */
     .carousel-nav-btn {
       position: absolute;
       top: 50%;
-      transform: translateY(-50%) scale(0.9);
-      width: 32px;
-      height: 32px;
+      transform: translateY(-50%) scale(0.88);
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(6px);
-      border: 1px solid rgba(0, 0, 0, 0.06);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
       display: flex;
       align-items: center;
       justify-content: center;
       color: #174A3A;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       cursor: pointer;
       opacity: 0;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -100,22 +104,21 @@ const AirbnbCardWrapper = styled.div`
 
       &:hover {
         background: #FFFFFF;
-        transform: translateY(-50%) scale(1.1);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.24);
+        transform: translateY(-50%) scale(1.08);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
       }
     }
 
     /* PAGINATION DOTS */
     .dots-strip {
       position: absolute;
-      bottom: 10px;
+      bottom: 8px;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
       align-items: center;
       gap: 5px;
       z-index: 6;
-      pointer-events: auto;
 
       .dot {
         width: 6px;
@@ -127,26 +130,28 @@ const AirbnbCardWrapper = styled.div`
 
         &.active {
           background: #FFFFFF;
-          width: 7px;
-          height: 7px;
+          width: 8px;
+          height: 8px;
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
         }
       }
     }
 
-    /* AIRBNB GUEST FAVORITE STYLE BADGE */
+    /* TOP BADGE (Frosted Pill Overlay) */
     .badge-top-left {
       position: absolute;
       top: 10px;
       left: 10px;
-      background: rgba(255, 255, 255, 0.94);
-      backdrop-filter: blur(8px);
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       padding: 4px 10px;
       border-radius: 999px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.6);
       font-family: var(--font-sans, 'Inter', sans-serif);
-      font-size: 0.72rem;
-      font-weight: 700;
+      font-size: 0.73rem;
+      font-weight: 600;
       color: #174A3A;
       display: flex;
       align-items: center;
@@ -154,8 +159,9 @@ const AirbnbCardWrapper = styled.div`
       z-index: 6;
 
       &.urgent {
-        color: #B45309;
-        background: rgba(254, 243, 199, 0.96);
+        color: #92400E;
+        background: rgba(254, 243, 199, 0.94);
+        border-color: rgba(251, 191, 36, 0.5);
       }
 
       svg {
@@ -163,41 +169,46 @@ const AirbnbCardWrapper = styled.div`
       }
     }
 
-    /* WISHLIST HEART */
+    /* WISHLIST HEART BUTTON (Frosted Glass Circle) */
     .btn-wishlist {
       position: absolute;
       top: 10px;
       right: 10px;
-      width: 34px;
-      height: 34px;
-      border: none;
-      background: transparent;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.35rem;
-      color: ${({ $isSaved }) => ($isSaved ? "#FF385C" : "#FFFFFF")};
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      font-size: 1.05rem;
+      color: ${({ $isSaved }) => ($isSaved ? "#E11D48" : "#374151")};
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       z-index: 6;
 
       &:hover {
-        transform: scale(1.15);
+        transform: scale(1.12);
+        background: #FFFFFF;
+        color: ${({ $isSaved }) => ($isSaved ? "#E11D48" : "#174A3A")};
       }
 
       &:active {
-        transform: scale(0.88);
+        transform: scale(0.9);
       }
     }
   }
 
-  /* AIRBNB CONTENT TYPOGRAPHY */
+  /* DETAILS CONTENT CONTAINER */
   .details-box {
-    padding: 8px 4px 2px;
+    padding: 10px 4px 2px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 5px;
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
@@ -205,7 +216,7 @@ const AirbnbCardWrapper = styled.div`
     /* ROW 1: TITLE & RATING */
     .row-title-rating {
       display: flex;
-      align-items: baseline;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 8px;
       width: 100%;
@@ -213,8 +224,8 @@ const AirbnbCardWrapper = styled.div`
 
       .title {
         font-family: var(--font-display, 'Poppins', sans-serif);
-        font-size: 0.96rem;
-        font-weight: 600;
+        font-size: 0.98rem;
+        font-weight: 700;
         color: #174A3A;
         line-height: 1.3;
         overflow: hidden;
@@ -224,149 +235,204 @@ const AirbnbCardWrapper = styled.div`
         min-width: 0;
 
         @media (max-width: 768px) {
-          font-size: 0.9rem;
+          font-size: 0.92rem;
         }
       }
 
-      .rating {
-        display: flex;
+      .rating-chip {
+        display: inline-flex;
         align-items: center;
         gap: 3px;
+        background: #FFFBEB;
+        border: 1px solid #FDE68A;
+        padding: 2px 7px;
+        border-radius: 999px;
         font-family: var(--font-sans, 'Inter', sans-serif);
-        font-size: 0.86rem;
-        font-weight: 600;
-        color: #174A3A;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #92400E;
         flex-shrink: 0;
 
-        @media (max-width: 768px) {
-          font-size: 0.8rem;
-        }
-
         .star-icon {
-          color: #174A3A;
-          font-size: 0.8rem;
+          color: #F59E0B;
+          font-size: 0.82rem;
         }
       }
     }
 
-    /* ROW 2: DONOR & CATEGORY */
-    .row-donor {
-      font-size: 0.84rem;
-      color: #556B64;
-      font-weight: 500;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      width: 100%;
-      min-width: 0;
+    /* ROW 2: DONOR & CATEGORY BADGE */
+    .row-donor-cat {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
+      width: 100%;
+      min-width: 0;
+      flex-wrap: nowrap;
+      overflow: hidden;
 
       .partner-name {
+        font-size: 0.83rem;
         font-weight: 600;
-        color: #174A3A;
+        color: #374151;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex-shrink: 1;
+        min-width: 0;
+
+        svg {
+          color: #2E7D5B;
+          font-size: 0.88rem;
+          flex-shrink: 0;
+        }
+      }
+
+      .dot-sep {
+        color: #CBD5E1;
+        font-size: 0.7rem;
+        flex-shrink: 0;
+      }
+
+      .category-pill {
+        font-size: 0.74rem;
+        font-weight: 600;
+        color: #2E7D5B;
+        background: rgba(46, 125, 91, 0.08);
+        padding: 2px 8px;
+        border-radius: 6px;
+        white-space: nowrap;
+        flex-shrink: 0;
       }
 
       .condition-tag {
-        color: #2E7D5B;
+        font-size: 0.72rem;
         font-weight: 600;
-        font-size: 0.76rem;
-      }
-
-      @media (max-width: 768px) {
-        font-size: 0.78rem;
+        color: #047857;
+        background: #ECFDF5;
+        padding: 2px 6px;
+        border-radius: 4px;
+        white-space: nowrap;
+        flex-shrink: 0;
       }
     }
 
-    /* ROW 3: DISTANCE & PICKUP WINDOW */
-    .row-distance-time {
-      font-size: 0.82rem;
-      color: #71827B;
-      font-weight: 400;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      width: 100%;
-      min-width: 0;
+    /* ROW 3: LOCATION & DISTANCE & TIME */
+    .row-meta-info {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: #64748B;
+      font-weight: 400;
+      width: 100%;
+      min-width: 0;
 
-      .area-text {
-        font-weight: 600;
-        color: #384E46;
+      .meta-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+
+        svg {
+          font-size: 0.85rem;
+          color: #2E7D5B;
+          flex-shrink: 0;
+        }
+
+        &.location {
+          font-weight: 500;
+          color: #475569;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        &.time {
+          color: #475569;
+          font-weight: 500;
+        }
       }
 
-      .time-badge {
-        color: #174A3A;
-        font-weight: 600;
-      }
-
-      @media (max-width: 768px) {
-        font-size: 0.75rem;
+      .dot-sep {
+        color: #CBD5E1;
+        font-size: 0.7rem;
+        flex-shrink: 0;
       }
     }
 
-    .dot-sep {
-      color: #B0BEB8;
-      font-size: 0.75rem;
-    }
-
-    /* ROW 4: AIRBNB PRICE LINE (PORTIONS & FREE BADGE) */
-    .row-price-portions {
+    /* ROW 4: PORTION QUANTITY & FREE BADGE */
+    .row-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-top: 5px;
-      padding-top: 5px;
-      border-top: 1px dashed rgba(23, 74, 58, 0.08);
+      gap: 8px;
+      margin-top: 4px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(23, 74, 58, 0.1);
       width: 100%;
       min-width: 0;
 
-      .portion-amount {
-        font-size: 0.9rem;
-        color: #174A3A;
+      .portion-wrap {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.84rem;
+        color: #475569;
         min-width: 0;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
 
-        @media (max-width: 768px) {
-          font-size: 0.82rem;
+        .portion-icon {
+          color: #2E7D5B;
+          font-size: 0.95rem;
+          flex-shrink: 0;
         }
 
-        strong {
+        .portion-amount {
           font-weight: 700;
           color: #174A3A;
           font-size: 0.94rem;
+        }
 
-          @media (max-width: 768px) {
-            font-size: 0.86rem;
-          }
+        .portion-label {
+          color: #64748B;
+          font-size: 0.8rem;
         }
       }
 
       .free-badge {
-        font-size: 0.7rem;
+        font-size: 0.71rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #2E7D5B;
-        background: rgba(46, 125, 91, 0.08);
-        padding: 2px 7px;
-        border-radius: 4px;
+        letter-spacing: 0.04em;
+        color: #15803D;
+        background: #DCFCE7;
+        border: 1px solid #A7F3D0;
+        padding: 3px 8px;
+        border-radius: 6px;
         flex-shrink: 0;
         white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
 
-        @media (max-width: 768px) {
-          font-size: 0.65rem;
-          padding: 2px 5px;
+        svg {
+          font-size: 0.82rem;
         }
       }
     }
   }
 `;
+
+function formatTimeLabel(postedTime) {
+  if (!postedTime) return null;
+  if (postedTime.includes(",")) {
+    const parts = postedTime.split(",");
+    const timeOnly = parts[parts.length - 1].trim();
+    if (timeOnly) return timeOnly;
+  }
+  return postedTime;
+}
 
 export default function FoodCard({
   item,
@@ -386,7 +452,7 @@ export default function FoodCard({
       ? item.images
       : [item.image, "/serve.jpg", "/foodeating.png"];
 
-  const rating = item.rating ? item.rating.toFixed(2) : "4.95";
+  const rating = item.rating ? item.rating.toFixed(2) : "5.00";
 
   const handleCardClick = () => {
     onSelect?.(item);
@@ -414,9 +480,10 @@ export default function FoodCard({
   };
 
   const isUrgent = item.status === "pickup_soon";
+  const displayTime = formatTimeLabel(item.postedTime);
 
   return (
-    <AirbnbCardWrapper
+    <CardWrapper
       $isSelected={isSelected}
       $isSaved={isSaved}
       onClick={handleCardClick}
@@ -431,7 +498,7 @@ export default function FoodCard({
           loading="lazy"
         />
 
-        {/* PREV & NEXT ARROWS (Visible on hover) */}
+        {/* PREV & NEXT ARROWS */}
         {images.length > 1 && (
           <>
             <button
@@ -466,17 +533,17 @@ export default function FoodCard({
           </div>
         )}
 
-        {/* AIRBNB GUEST FAVORITE STYLE BADGE */}
+        {/* FROSTED TOP BADGE */}
         <div className={`badge-top-left ${isUrgent ? "urgent" : ""}`}>
           {isUrgent ? (
             <>
-              <IoTimeOutline />
+              <IoFlameOutline style={{ color: "#D97706" }} />
               <span>Urgent Pickup</span>
             </>
-          ) : item.postedTime ? (
+          ) : displayTime ? (
             <>
               <IoTimeOutline style={{ color: "#2E7D5B" }} />
-              <span>Listed {item.postedTime}</span>
+              <span>Listed {displayTime}</span>
             </>
           ) : (
             <>
@@ -486,7 +553,7 @@ export default function FoodCard({
           )}
         </div>
 
-        {/* WISHLIST HEART BUTTON */}
+        {/* FROSTED WISHLIST HEART BUTTON */}
         <button
           type="button"
           className="btn-wishlist"
@@ -497,22 +564,27 @@ export default function FoodCard({
         </button>
       </div>
 
-      {/* AIRBNB METADATA DETAILS */}
+      {/* CARD METADATA DETAILS */}
       <div className="details-box">
+        {/* ROW 1: TITLE & RATING CHIP */}
         <div className="row-title-rating">
           <span className="title" title={item.title}>
             {item.title}
           </span>
-          <span className="rating">
+          <span className="rating-chip">
             <IoStar className="star-icon" />
             <span>{rating}</span>
           </span>
         </div>
 
-        <div className="row-donor">
-          <span className="partner-name">{item.partner}</span>
+        {/* ROW 2: DONOR & CATEGORY */}
+        <div className="row-donor-cat">
+          <span className="partner-name">
+            <IoStorefrontOutline />
+            {item.partner}
+          </span>
           <span className="dot-sep">·</span>
-          <span className="cat-name">{item.category}</span>
+          <span className="category-pill">{item.category}</span>
           {item.condition && (
             <>
               <span className="dot-sep">·</span>
@@ -521,25 +593,36 @@ export default function FoodCard({
           )}
         </div>
 
-        <div className="row-distance-time">
-          <span className="area-text">
-            {item.area || (item.location ? item.location.split(",")[0].trim() : "Kathmandu")}
+        {/* ROW 3: LOCATION & TIME */}
+        <div className="row-meta-info">
+          <span className="meta-item location">
+            <IoLocationOutline />
+            {item.area || (item.location ? item.location.split(",")[0].trim() : "Kathmandu")} ({item.distance || "1.5 km"} away)
           </span>
-          <span className="dot-sep">·</span>
-          <span>{item.distance} away</span>
-          <span className="dot-sep">·</span>
-          <span className="time-badge">
-            {item.postedTime ? `Made at ${item.postedTime}` : item.pickupTime}
-          </span>
+          {item.pickupTime && (
+            <>
+              <span className="dot-sep">·</span>
+              <span className="meta-item time">
+                <IoTimeOutline />
+                {item.pickupTime}
+              </span>
+            </>
+          )}
         </div>
 
-        <div className="row-price-portions">
-          <span className="portion-amount">
-            <strong>{item.quantity} {item.unit}</strong> surplus
+        {/* ROW 4: PORTIONS & FREE BADGE */}
+        <div className="row-footer">
+          <div className="portion-wrap">
+            <IoRestaurantOutline className="portion-icon" />
+            <span className="portion-amount">{item.quantity} {item.unit || "portions"}</span>
+            <span className="portion-label">surplus</span>
+          </div>
+          <span className="free-badge">
+            <IoShieldCheckmark />
+            Free for NGOs
           </span>
-          <span className="free-badge">Free for NGOs</span>
         </div>
       </div>
-    </AirbnbCardWrapper>
+    </CardWrapper>
   );
 }

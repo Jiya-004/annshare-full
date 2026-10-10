@@ -13,7 +13,7 @@ import {
   MobileMapToggleBtn,
 } from "./style";
 
-import { getListings, matchCategory } from "../../data/listingsStore";
+import { getListings, matchCategory, syncListingsFromBackend } from "../../data/listingsStore";
 import SearchBar from "./components/SearchBar";
 import FilterBar from "./components/FilterBar";
 import FilterDrawer from "./components/FilterDrawer";
@@ -46,9 +46,9 @@ export default function FindFoodPage() {
   // Filter Drawer
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerFilters, setDrawerFilters] = useState({
-    maxDistance: 15,
+    maxDistance: 25,
     categories: [],
-    minQuantity: 5,
+    minQuantity: 1,
     pickupTime: "all",
   });
 
@@ -61,6 +61,7 @@ export default function FindFoodPage() {
   const [allListings, setAllListings] = useState(getListings);
 
   useEffect(() => {
+    syncListingsFromBackend();
     const handleUpdate = () => {
       setAllListings(getListings());
     };
@@ -98,9 +99,9 @@ export default function FindFoodPage() {
     setLocationQuery("Kathmandu, Nepal");
     setTimeQuery("all");
     setDrawerFilters({
-      maxDistance: 20,
+      maxDistance: 25,
       categories: [],
-      minQuantity: 5,
+      minQuantity: 1,
       pickupTime: "all",
     });
     triggerSearch();
@@ -144,11 +145,15 @@ export default function FindFoodPage() {
         }
 
         // 4. Drawer distance filter
-        const itemDist = parseFloat(item.distance) || 2.5;
-        if (itemDist > drawerFilters.maxDistance) return false;
+        if (drawerFilters.maxDistance < 25) {
+          const itemDist = parseFloat(item.distance) || 2.5;
+          if (itemDist > drawerFilters.maxDistance) return false;
+        }
 
         // 5. Drawer min quantity filter
-        if (Number(item.quantity) < drawerFilters.minQuantity) return false;
+        if (drawerFilters.minQuantity > 1) {
+          if (Number(item.quantity) < drawerFilters.minQuantity) return false;
+        }
 
         // 6. Time query
         if (timeQuery === "today" && item.pickupDate !== "Today") return false;
@@ -175,8 +180,8 @@ export default function FindFoodPage() {
   // Count active drawer filters
   const activeDrawerCount =
     (drawerFilters.categories.length > 0 ? 1 : 0) +
-    (drawerFilters.maxDistance < 20 ? 1 : 0) +
-    (drawerFilters.minQuantity > 5 ? 1 : 0) +
+    (drawerFilters.maxDistance < 25 ? 1 : 0) +
+    (drawerFilters.minQuantity > 1 ? 1 : 0) +
     (drawerFilters.pickupTime !== "all" ? 1 : 0);
 
   return (

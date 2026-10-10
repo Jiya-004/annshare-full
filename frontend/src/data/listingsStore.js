@@ -122,8 +122,12 @@ export async function syncListingsFromBackend() {
           _id: b._id,
           title: b.title || b.foodName,
           category: cat,
-          quantity: b.quantity ? (typeof b.quantity === "number" ? b.quantity : parseInt(b.quantity, 10) || 10) : 10,
-          unit: b.portions ? b.portions.replace(/[0-9]/g, "").trim() || "portions" : "portions",
+          quantity: b.quantity ? (typeof b.quantity === "number" ? b.quantity : parseInt(b.quantity, 10) || 1) : 1,
+          unit: b.portions
+            ? b.portions.replace(/[0-9]/g, "").trim() || "portions"
+            : typeof b.quantity === "string"
+            ? b.quantity.replace(/[0-9]/g, "").trim() || "portions"
+            : "portions",
           partner: b.donor || b.restaurantName || "Community Food Donor",
           partnerType: "Verified Food Donor",
           verified: true,

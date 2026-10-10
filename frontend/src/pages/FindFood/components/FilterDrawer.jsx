@@ -323,21 +323,21 @@ export default function FilterDrawer({
           <FilterSection>
             <h4>
               Minimum Portion Count
-              <span>{filters.minQuantity || 10}+ portions</span>
+              <span>{filters.minQuantity || 1}+ portions</span>
             </h4>
             <input
               type="range"
-              min="5"
+              min="1"
               max="100"
-              step="5"
-              value={filters.minQuantity || 10}
+              step="1"
+              value={filters.minQuantity || 1}
               className="range-slider"
               onChange={(e) =>
                 onFilterChange("minQuantity", Number(e.target.value))
               }
             />
             <div className="slider-labels">
-              <span>5 portions</span>
+              <span>1 portion</span>
               <span>50 portions</span>
               <span>100 portions</span>
             </div>
