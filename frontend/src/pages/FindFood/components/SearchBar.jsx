@@ -8,31 +8,33 @@ import {
 } from "react-icons/io5";
 
 const SearchBarCard = styled.div`
-  background: #F8F5ED;
+  background: #FFFFFF;
   border-radius: 999px;
-  box-shadow: 0 4px 16px rgba(23, 74, 58, 0.05);
-  border: 1.5px solid rgba(23, 74, 58, 0.12);
+  box-shadow: 0 4px 20px rgba(23, 74, 58, 0.06);
+  border: 1.5px solid #DCE4E0;
   display: flex;
   align-items: center;
-  padding: 7px 8px 7px 22px;
-  max-width: 900px;
+  padding: 6px 8px 6px 20px;
+  max-width: 860px;
   margin: 0 auto;
   position: relative;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 
-  &:hover,
-  &:focus-within {
-    background: #FFFFFF;
+  &:hover {
     border-color: #2E7D5B;
-    box-shadow: 0 10px 30px rgba(23, 74, 58, 0.1);
+    box-shadow: 0 8px 24px rgba(23, 74, 58, 0.08);
+  }
+
+  &:focus-within {
+    border-color: #174A3A;
+    box-shadow: 0 8px 28px rgba(23, 74, 58, 0.1), 0 0 0 3px rgba(46, 125, 91, 0.12);
   }
 
   @media (max-width: 768px) {
-    border-radius: 18px;
+    border-radius: 16px;
     flex-direction: column;
-    padding: 10px;
+    padding: 12px;
     gap: 8px;
-    background: #FFFFFF;
     width: 100%;
     box-sizing: border-box;
   }
@@ -42,24 +44,25 @@ const SearchSegment = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 4px 16px;
+  padding: 4px 14px;
   cursor: pointer;
   position: relative;
   box-sizing: border-box;
+  text-align: left;
 
   @media (max-width: 768px) {
     width: 100%;
-    padding: 7px 10px;
+    padding: 8px 12px;
     border-radius: 10px;
     background: #F8F5ED;
   }
 
   .segment-label {
-    font-size: 0.74rem;
+    font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #174A3A;
+    letter-spacing: 0.06em;
+    color: #2E7D5B;
     display: flex;
     align-items: center;
     gap: 5px;
@@ -92,22 +95,31 @@ const SearchSegment = styled.div`
     outline: none;
     padding: 0;
     width: 100%;
+    cursor: pointer;
 
     @media (max-width: 768px) {
-      font-size: 0.82rem;
+      font-size: 0.84rem;
     }
 
     &::placeholder {
       color: #8C9E98;
-      font-weight: 500;
+      font-weight: 400;
     }
+
+    &:focus {
+      cursor: text;
+    }
+  }
+
+  select {
+    cursor: pointer;
   }
 `;
 
 const SegmentDivider = styled.div`
   width: 1px;
-  height: 36px;
-  background: rgba(23, 74, 58, 0.12);
+  height: 32px;
+  background: #E5EBE7;
 
   @media (max-width: 768px) {
     display: none;
@@ -119,7 +131,7 @@ const SearchButton = styled.button`
   color: #FFFFFF;
   border: none;
   border-radius: 999px;
-  padding: 14px 28px;
+  padding: 13px 26px;
   font-family: var(--font-sans, 'Inter', sans-serif);
   font-size: 0.92rem;
   font-weight: 600;
@@ -127,23 +139,28 @@ const SearchButton = styled.button`
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(23, 74, 58, 0.25);
+  box-shadow: 0 4px 14px rgba(23, 74, 58, 0.2);
   transition: all 0.2s ease;
   white-space: nowrap;
 
   &:hover {
-    background: #2E7D5B;
+    background: #235E4B;
     transform: translateY(-1px);
-    box-shadow: 0 8px 22px rgba(46, 125, 91, 0.32);
+    box-shadow: 0 6px 18px rgba(23, 74, 58, 0.28);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 
   @media (max-width: 768px) {
     width: 100%;
     justify-content: center;
-    padding: 10px 16px;
-    font-size: 0.84rem;
-    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 0.88rem;
+    border-radius: 10px;
     gap: 6px;
+    margin-top: 4px;
   }
 `;
 
