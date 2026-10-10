@@ -1,0 +1,134 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap');
+
+:root {
+  /* AnnShare Design System Tokens */
+  --evergreen: #173F35;
+  --evergreen-dark: #0f2b24;
+  --forest: #28624D;
+  --forest-light: #347a61;
+  --sage: #789B82;
+  --sage-light: #9bbca4;
+  --olive: #A5AD72;
+  --olive-light: #c2c992;
+  --cream: #F7F4EC;
+  --sand: #E7DDC9;
+  --sand-light: #f2ebd9;
+  --charcoal: #202824;
+  --muted: #68736D;
+  --terracotta: #B9684D;
+  --border: rgba(23, 63, 53, 0.14);
+
+  /* Mapped Tokens for Legacy Compatibility */
+  --primary-dark: var(--evergreen);
+  --primary-deep: var(--evergreen-dark);
+  --primary-darkest: #0B251C;
+  --accent-mint: var(--forest);
+  --accent-mint-hover: var(--forest-light);
+  --accent-light-bg: #EEF5F2;
+  --accent-amber: #F39C12;
+  --accent-amber-bg: #FEF9E7;
+  --accent-blue: #3498DB;
+  --accent-blue-bg: #EBF5FB;
+  --bg-cream: var(--cream);
+  --card-bg: #FFFFFF;
+  --text-dark: var(--charcoal);
+  --text-muted: var(--muted);
+  --border-light: var(--border);
+
+  --font-heading: 'Poppins', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-main: var(--font-body);
+
+  --shadow-soft: 0 10px 30px rgba(23, 63, 53, 0.05);
+  --shadow-hover: 0 15px 35px rgba(23, 63, 53, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-cream);
+  color: var(--text-dark);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+button {
+  font-family: var(--font-body);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--cream);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--sage);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--forest);
+}
+
+/* Responsive Utilities & Touch Improvements */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 0;
+}
+
+.table-responsive::-webkit-scrollbar {
+  height: 6px;
+}
+
+.nav-pills, .nav-tabs {
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding-bottom: 4px;
+}
+
+.nav-pills::-webkit-scrollbar, .nav-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+@media (max-width: 768px) {
+  .modal-dialog {
+    margin: 10px;
+    max-width: calc(100% - 20px) !important;
+  }
+
+  .card {
+    padding: 16px !important;
+  }
+
+  th, td {
+    padding: 10px 12px !important;
+  }
+}
+
+@media (max-width: 576px) {
+  h2 {
+    font-size: 1.25rem !important;
+  }
+
+  .btn-sm {
+    font-size: 0.78rem !important;
+    padding: 6px 12px !important;
+  }
+}
