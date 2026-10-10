@@ -108,7 +108,10 @@ export default function FindFoodPage() {
   // Filter & Sort Pipeline
   const filteredListings = useMemo(() => {
     return allListings
-      .filter((item) => item.status === "available")
+      .filter((item) => {
+        const s = (item.status || "available").toLowerCase();
+        return s === "available" || s.includes("pending") || s === "pickup_soon";
+      })
       .filter((item) => {
         // 1. Text search
         if (searchQuery.trim()) {
