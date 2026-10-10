@@ -16,7 +16,8 @@ import {
   mockSummaryReport,
 } from '../data/adminStore';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const API_BASE = import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:8000/api' : 'https://annshare-backend.onrender.com/api');
 const BACKEND_HOST = API_BASE.replace(/\/api\/?$/, '');
 
 export const formatImageUrl = (url) => {
