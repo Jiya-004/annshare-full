@@ -120,6 +120,7 @@ const Header = () => {
           if (n.role === "admin") return false;
           if (n.title && n.title.includes("Review required")) return false;
           if (n.desc && n.desc.includes("Review required")) return false;
+          if (n.userId && user?.id && n.userId !== user.id) return false;
           return true;
         });
 

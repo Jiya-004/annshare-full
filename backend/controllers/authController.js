@@ -115,13 +115,13 @@ const updateProfile = async (req, res) => {
 
     const { name, organization, orgName, phone, location, avatar } = req.body;
     if (name) user.name = name;
-    if (organization || orgName) {
-      user.organization = organization || orgName;
-      user.orgName = organization || orgName;
+    if (organization !== undefined || orgName !== undefined) {
+      user.organization = organization || orgName || '';
+      user.orgName = organization || orgName || '';
     }
-    if (phone) user.phone = phone;
-    if (location) user.location = location;
-    if (avatar) user.avatar = avatar;
+    if (phone !== undefined) user.phone = phone;
+    if (location !== undefined) user.location = location;
+    if (avatar !== undefined) user.avatar = avatar;
 
     if (req.body.password) {
       user.password = req.body.password;

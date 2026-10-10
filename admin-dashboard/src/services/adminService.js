@@ -72,6 +72,12 @@ let notificationsState = [
 
 let dashboardStatsState = { ...mockSummaryReport };
 let currentAdminSession = JSON.parse(localStorage.getItem('annshare_admin_session') || 'null');
+if (currentAdminSession?.user && (currentAdminSession.user.phone === '+977 9841234567' || currentAdminSession.user.phone === '+977 9841000001')) {
+  currentAdminSession.user.phone = '';
+  try {
+    localStorage.setItem('annshare_admin_session', JSON.stringify(currentAdminSession));
+  } catch (e) {}
+}
 
 const getAuthHeaders = () => {
   const token = currentAdminSession?.token || localStorage.getItem('annshare_admin_token');
@@ -103,6 +109,26 @@ export const subscribeToAdminService = (listener) => {
 // ==========================================
 export const syncAllFromBackend = async () => {
   try {
+    // 0. Fetch logged-in Admin Profile from DB
+    const token = currentAdminSession?.token || localStorage.getItem('annshare_admin_token');
+    if (token) {
+      const meRes = await fetch(`${API_BASE}/auth/me`, { headers: getAuthHeaders() }).catch(() => null);
+      if (meRes && meRes.ok) {
+        const meData = await meRes.json();
+        if (currentAdminSession) {
+          currentAdminSession.user = {
+            ...currentAdminSession.user,
+            id: meData.id || meData._id || currentAdminSession.user.id,
+            name: meData.name || currentAdminSession.user.name,
+            email: meData.email || currentAdminSession.user.email,
+            phone: meData.phone !== undefined ? meData.phone : (currentAdminSession.user.phone || ''),
+            organization: meData.organization || meData.orgName || currentAdminSession.user.organization,
+          };
+          localStorage.setItem('annshare_admin_session', JSON.stringify(currentAdminSession));
+        }
+      }
+    }
+
     // 1. Fetch Users
     const usersRes = await fetch(`${API_BASE}/auth/users`, { headers: getAuthHeaders() }).catch(() => null);
     if (usersRes && usersRes.ok) {
@@ -335,6 +361,7 @@ export const loginAdmin = async (email, password) => {
           id: data.id || data._id,
           name: data.name || 'Admin User',
           email: data.email || cleanEmail,
+          phone: data.phone || '',
           role: data.role || 'admin',
           organization: data.organization || data.orgName || 'ANNShare Operations',
           badge: data.badge || 'System Admin',
@@ -626,12 +653,42 @@ export const deleteFeedback = (feedbackId) => {
 
 export const deleteComplaint = deleteFeedback;
 
-export const updateAdminProfile = (data) => {
+export const updateAdminProfile = async (data) => {
   if (currentAdminSession) {
     currentAdminSession.user = { ...currentAdminSession.user, ...data };
     localStorage.setItem('annshare_admin_session', JSON.stringify(currentAdminSession));
   }
+
+  const token = currentAdminSession?.token || localStorage.getItem('annshare_admin_token');
+  if (token) {
+    try {
+      const res = await fetch(`${API_BASE}/auth/profile`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+      });
+
+      const resData = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(resData.message || 'Failed to update profile in database.');
+      }
+
+      if (currentAdminSession && resData) {
+        currentAdminSession.user = {
+          ...currentAdminSession.user,
+          ...resData,
+          id: resData.id || resData._id || currentAdminSession.user.id,
+        };
+        localStorage.setItem('annshare_admin_session', JSON.stringify(currentAdminSession));
+      }
+    } catch (err) {
+      console.warn('Backend profile update failed:', err);
+      throw err;
+    }
+  }
+
   notifyListeners();
+  return currentAdminSession?.user;
 };
 
 export const changeAdminPassword = async (currentPassword, newPassword) => {

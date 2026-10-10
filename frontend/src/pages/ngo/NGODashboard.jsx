@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { useAuth } from "../../context/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getRequests, addRequest } from "../../data/requestsStore";
+import { getRequests, addRequest, updateRequestStatus } from "../../data/requestsStore";
 import { getListings, updateListingStatus } from "../../data/listingsStore";
 import {
   IoPeopleOutline,
@@ -770,6 +770,14 @@ export const NGODashboard = () => {
     handleTabChange("requests");
   };
 
+  const handleMarkReceivedAndSafe = (reqItem) => {
+    if (!reqItem) return;
+    const targetId = reqItem.id || reqItem._id;
+    updateRequestStatus(targetId, "Completed");
+    setRequests(loadNgoRequests());
+    alert("Food item marked as Received & Safe! The status has been updated to Completed.");
+  };
+
   const ngoName = user?.name || "NGO Partner";
 
   // Dynamic real stats computed from NGO requests
@@ -793,6 +801,7 @@ export const NGODashboard = () => {
           if (n.role === "admin" || n.role === "donor") return false;
           if (n.title && n.title.includes("Review required")) return false;
           if (n.desc && n.desc.includes("Review required")) return false;
+          if (n.userId && user?.id && n.userId !== user.id) return false;
           return true;
         });
         setNotificationsList(relevant);
@@ -1265,7 +1274,8 @@ export const NGODashboard = () => {
                 <ItemsList>
                   {requests.map((req) => {
                     const s = (req.status || "").toLowerCase();
-                    const isConfirmed = s.includes("confirmed") || s.includes("matched");
+                    const isCompleted = s.includes("completed") || s.includes("received") || s.includes("safe") || s.includes("transferred");
+                    const isConfirmed = isCompleted || s.includes("confirmed") || s.includes("matched");
                     const isAdminApproved = s.includes("approved") && !s.includes("declined") && !s.includes("rejected");
                     const isPendingAdmin = s.includes("pending");
 
@@ -1276,7 +1286,7 @@ export const NGODashboard = () => {
                           background: "#FFFFFF",
                           borderRadius: "18px",
                           padding: "20px",
-                          border: isConfirmed ? "1.5px solid #A7F3D0" : "1px solid rgba(23, 74, 58, 0.08)",
+                          border: isCompleted || isConfirmed ? "1.5px solid #A7F3D0" : "1px solid rgba(23, 74, 58, 0.08)",
                           display: "flex",
                           flexDirection: "column",
                           gap: "14px",
@@ -1303,15 +1313,17 @@ export const NGODashboard = () => {
                           <span
                             className="status-pill"
                             style={{
-                              background: isConfirmed ? "#E8F5E9" : isAdminApproved ? "#E3F2FD" : isPendingAdmin ? "#FFF8E1" : "#FEE2E2",
-                              color: isConfirmed ? "#2E7D5B" : isAdminApproved ? "#1565C0" : isPendingAdmin ? "#F57F17" : "#991B1B",
+                              background: isCompleted ? "#E8F5E9" : isConfirmed ? "#E8F5E9" : isAdminApproved ? "#E3F2FD" : isPendingAdmin ? "#FFF8E1" : "#FEE2E2",
+                              color: isCompleted ? "#2E7D5B" : isConfirmed ? "#2E7D5B" : isAdminApproved ? "#1565C0" : isPendingAdmin ? "#F57F17" : "#991B1B",
                               padding: "6px 14px",
                               borderRadius: "20px",
                               fontWeight: 700,
                               fontSize: "0.8rem",
                             }}
                           >
-                            {isConfirmed
+                            {isCompleted
+                              ? "✓ Completed & Food Transferred"
+                              : isConfirmed
                               ? "✓ Matched · Contact Unlocked"
                               : isAdminApproved
                               ? "🔔 Admin Verified · Awaiting Donor"
@@ -1321,8 +1333,47 @@ export const NGODashboard = () => {
                           </span>
                         </div>
 
-                        {/* UNLOCKED DIRECT DONOR CONTACT ON CONFIRMED */}
-                        {isConfirmed ? (
+                        {/* UNLOCKED DIRECT DONOR CONTACT ON CONFIRMED / COMPLETED BANNER */}
+                        {isCompleted ? (
+                          <div
+                            style={{
+                              background: "#F0FDF4",
+                              padding: "14px 16px",
+                              borderRadius: "12px",
+                              border: "1px solid #BBF7D0",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              flexWrap: "wrap",
+                              gap: "12px",
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontWeight: 700, color: "#166534", fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "6px" }}>
+                                <IoCheckmarkCircle size={18} /> Pickup Completed & Food Received Safely
+                              </div>
+                              <div style={{ fontSize: "0.82rem", color: "#4B5563", marginTop: "2px" }}>
+                                Donor: {req.donorName} · Location: {req.donorLocation || req.location}
+                              </div>
+                            </div>
+                            <span
+                              style={{
+                                background: "#E8F5E9",
+                                color: "#2E7D5B",
+                                fontWeight: 700,
+                                fontSize: "0.85rem",
+                                padding: "8px 14px",
+                                borderRadius: "10px",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                border: "1px solid #A7F3D0",
+                              }}
+                            >
+                              <IoCheckmarkCircle size={18} /> Completed
+                            </span>
+                          </div>
+                        ) : isConfirmed ? (
                           <div
                             style={{
                               background: "#F0FDF4",
@@ -1344,12 +1395,15 @@ export const NGODashboard = () => {
                                 Pickup Location: {req.donorLocation || req.location} · Window: {req.pickupWindow}
                               </div>
                             </div>
-                            <div style={{ display: "flex", gap: "8px" }}>
+                            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                               <ContactButton onClick={() => alert(`Calling Donor at: ${req.donorPhone || req.contact || "+977 980-1234567"}`)}>
                                 <IoCallOutline /> Call Donor
                               </ContactButton>
-                              <ClaimButton onClick={() => handleTabChange("pickups")}>
-                                View Logistics →
+                              <ClaimButton
+                                style={{ background: "#2E7D5B" }}
+                                onClick={() => handleMarkReceivedAndSafe(req)}
+                              >
+                                <IoShieldCheckmark style={{ marginRight: "4px" }} /> Mark Received & Safe
                               </ClaimButton>
                             </div>
                           </div>
@@ -1405,12 +1459,34 @@ export const NGODashboard = () => {
                         </div>
 
                         <div className="actions-cluster">
-                          <span className={`status-pill ${claim.status === "confirmed" ? "active" : "pending"}`}>
-                            {claim.status === "confirmed" ? "Ready for Pickup" : "Awaiting Donor"}
+                          <span className={`status-pill ${(claim.status || "").toLowerCase().includes("completed") ? "confirmed" : claim.status === "confirmed" ? "active" : "pending"}`}>
+                            {(claim.status || "").toLowerCase().includes("completed")
+                              ? "✓ Completed & Safe"
+                              : claim.status === "confirmed"
+                              ? "Ready for Pickup"
+                              : "Awaiting Donor"}
                           </span>
-                          <ClaimButton onClick={() => handleTabChange("pickups")}>
-                            View Logistics →
-                          </ClaimButton>
+                          {(claim.status || "").toLowerCase().includes("completed") ? (
+                            <span
+                              style={{
+                                background: "#E8F5E9",
+                                color: "#2E7D5B",
+                                fontWeight: 700,
+                                fontSize: "0.82rem",
+                                padding: "6px 12px",
+                                borderRadius: "8px",
+                              }}
+                            >
+                              ✓ Completed
+                            </span>
+                          ) : (
+                            <ClaimButton
+                              style={{ background: "#2E7D5B" }}
+                              onClick={() => handleMarkReceivedAndSafe(claim)}
+                            >
+                              <IoShieldCheckmark style={{ marginRight: "4px" }} /> Mark Received & Safe
+                            </ClaimButton>
+                          )}
                         </div>
                       </ItemCard>
                     ))
@@ -1473,8 +1549,18 @@ export const NGODashboard = () => {
                     <ContactButton onClick={() => alert("Calling driver Bikash...")}>
                       <IoCallOutline /> Call Driver
                     </ContactButton>
-                    <ClaimButton onClick={() => alert("Pickup marked as completed!")}>
-                      Mark Received & Safe
+                    <ClaimButton
+                      style={{ background: "#2E7D5B" }}
+                      onClick={() => {
+                        const target = requests.find((r) => !(r.status || "").toLowerCase().includes("completed")) || requests[0];
+                        if (target) {
+                          handleMarkReceivedAndSafe(target);
+                        } else {
+                          alert("Food marked as Received & Safe!");
+                        }
+                      }}
+                    >
+                      <IoShieldCheckmark style={{ marginRight: "4px" }} /> Mark Received & Safe
                     </ClaimButton>
                   </div>
                 </ItemCard>
@@ -1645,9 +1731,11 @@ export const NGODashboard = () => {
                             onClick={(e) => {
                               e.stopPropagation();
                               handleMarkNotificationRead(item);
+                              if (isMatch) handleTabChange("requests");
+                              else if (isListing) handleTabChange("find-food");
                             }}
                           >
-                            {isMatch ? "View Logistics →" : isListing ? "Find Food →" : "View Details →"}
+                            {isMatch ? "View Request →" : isListing ? "Find Food →" : "View Details →"}
                           </ClaimButton>
                         </ItemCard>
                       );

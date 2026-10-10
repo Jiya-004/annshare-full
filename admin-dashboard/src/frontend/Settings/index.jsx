@@ -162,14 +162,20 @@ const SaveButton = styled(Button)`
   }
 `;
 
+const cleanInitialPhone = (rawPhone) => {
+  if (!rawPhone || rawPhone === '+977 9841234567' || rawPhone === '+977 9841000001') return '';
+  return rawPhone;
+};
+
 const Settings = () => {
   const [profile, setProfile] = useState(getAdminProfile());
   const [activeTab, setActiveTab] = useState('Profile');
 
   // Form states
-  const [name, setName] = useState(profile.name);
-  const [email, setEmail] = useState(profile.email);
-  const [phone, setPhone] = useState(profile.phone || '+977 9841234567');
+  const [name, setName] = useState(profile.name || 'Admin');
+  const [email, setEmail] = useState(profile.email || 'admin@annshare.org');
+  const [phone, setPhone] = useState(cleanInitialPhone(profile.phone));
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // Security states & Eye Toggles
   const [currentPassword, setCurrentPassword] = useState('');
@@ -193,6 +199,9 @@ const Settings = () => {
     const unsub = subscribeToAdminService(() => {
       const p = getAdminProfile();
       setProfile(p);
+      if (p.name) setName(p.name);
+      if (p.email) setEmail(p.email);
+      if (p.phone !== undefined) setPhone(cleanInitialPhone(p.phone));
     });
     return unsub;
   }, []);
@@ -202,15 +211,22 @@ const Settings = () => {
     setShowToast(true);
   };
 
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
-    updateAdminProfile({
-      name,
-      email,
-      phone,
-      avatarText: name.split(' ').map(n => n[0]).join('').toUpperCase()
-    });
-    triggerToast('Admin profile details saved successfully!');
+    setIsSavingProfile(true);
+    try {
+      await updateAdminProfile({
+        name,
+        email,
+        phone: phone.trim(),
+        avatarText: name ? name.split(' ').map(n => n[0]).join('').toUpperCase() : 'A'
+      });
+      triggerToast('Admin profile details saved to database successfully!');
+    } catch (err) {
+      triggerToast(err.message || 'Failed to save profile changes to database.');
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const handleChangePassword = async (e) => {
@@ -376,7 +392,12 @@ const Settings = () => {
                   </Form.Group>
 
                   <Form.Group className="mb-3">
-                    <Form.Label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#12201B' }}>Phone Contact</Form.Label>
+                    <div className="d-flex justify-content-between align-items-center mb-1">
+                      <Form.Label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#12201B', margin: 0 }}>
+                        Phone Contact
+                      </Form.Label>
+                      <span style={{ fontSize: '0.74rem', color: '#66736D' }}>(Optional)</span>
+                    </div>
                     <InputGroup>
                       <StyledInputGroupText><FiPhone size={16} /></StyledInputGroupText>
                       <StyledFormInput
@@ -386,6 +407,9 @@ const Settings = () => {
                         placeholder="+977 98XXXXXXXX"
                       />
                     </InputGroup>
+                    <Form.Text style={{ fontSize: '0.74rem', color: '#66736D' }}>
+                      Admins do not need to share personal numbers with donors or NGOs. You may leave this blank or provide an official hotline.
+                    </Form.Text>
                   </Form.Group>
 
                   <Form.Group className="mb-4">
@@ -402,8 +426,8 @@ const Settings = () => {
                   </Form.Group>
 
                   <div className="pt-2">
-                    <SaveButton type="submit">
-                      <FiSave size={16} /> Save Profile Changes
+                    <SaveButton type="submit" disabled={isSavingProfile}>
+                      <FiSave size={16} /> {isSavingProfile ? 'Saving Changes...' : 'Save Profile Changes'}
                     </SaveButton>
                   </div>
                 </Form>
