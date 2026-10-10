@@ -20,8 +20,12 @@ import {
   IoPersonAddOutline,
   IoLogInOutline,
   IoMenuOutline,
+  IoAlertCircleOutline,
 } from "react-icons/io5";
 import { FaHandshake } from "react-icons/fa6";
+import { getRequests } from "../../data/requestsStore";
+import { getListings } from "../../data/listingsStore";
+import api from "../../services/api";
 
 import {
   HeaderWrapper,
@@ -97,38 +101,183 @@ const Header = () => {
   const [isDonateModalOpen, setIsDonateModalOpen] = useState(false);
   const [isNeedFoodModalOpen, setIsNeedFoodModalOpen] = useState(false);
 
-  // Initial notifications required by prompt
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "New food donation nearby",
-      desc: "30 meal portions available · Himalayan Kitchen (Thamel).",
-      time: "10m ago",
-      unread: true,
-      icon: <IoRestaurantOutline />,
-    },
-    {
-      id: 2,
-      title: "Pickup confirmed",
-      desc: "Your donation has been accepted by Hope Foundation.",
-      time: "25m ago",
-      unread: true,
-      icon: <IoCheckmarkCircle style={{ color: "#2E7D5B" }} />,
-    },
-    {
-      id: 3,
-      title: "New request",
-      desc: "A verified organization requested your bakery surplus.",
-      time: "1h ago",
-      unread: true,
-      icon: <IoPeopleOutline />,
-    },
-  ]);
+  const [notifications, setNotifications] = useState([]);
 
   const notifRef = useRef(null);
   const savedRef = useRef(null);
   const profileRef = useRef(null);
   const visitorRef = useRef(null);
+
+  const loadRealNotifications = React.useCallback(async () => {
+    try {
+      const data = await api.notifications.getAll({
+        role: role || (isAuthenticated ? "donor" : "all"),
+        userId: user?.id || "",
+      });
+
+      if (Array.isArray(data) && data.length > 0) {
+        setNotifications(
+          data.map((n) => ({
+            id: n.id || n._id,
+            _id: n._id,
+            title: n.title,
+            desc: n.desc || n.message,
+            time: n.time || "Just now",
+            unread: !n.read,
+            linkTab: n.linkTab,
+            category: n.category,
+            icon:
+              n.category === "match" ? (
+                <IoCheckmarkCircle style={{ color: "#2E7D5B" }} />
+              ) : n.category === "request" ? (
+                <IoAlertCircleOutline style={{ color: "#D97706" }} />
+              ) : n.category === "listing" ? (
+                <IoRestaurantOutline style={{ color: "#1565C0" }} />
+              ) : (
+                <IoNotificationsOutline style={{ color: "#174A3A" }} />
+              ),
+          }))
+        );
+        return;
+      }
+    } catch {
+      // Fall through to local contextual notifications
+    }
+
+    // Dynamic contextual notifications based on local requests & listings
+    const allRequests = getRequests();
+    const allListings = getListings();
+    const currentName = user?.name;
+    const currentOrg = user?.organization;
+    const currentId = user?.id;
+
+    const notifs = [];
+
+    if (role === "donor" || (!role && isAuthenticated)) {
+      const donorListings = allListings.filter((l) => {
+        if (currentId && l.donorId === currentId) return true;
+        if (currentOrg && l.partner && l.partner.toLowerCase() === currentOrg.toLowerCase()) return true;
+        if (currentName && l.contactName && l.contactName.toLowerCase() === currentName.toLowerCase()) return true;
+        return false;
+      });
+      const donorListingIds = new Set(donorListings.map((l) => String(l.id)));
+
+      const donorRequests = allRequests.filter((r) => {
+        if (currentId && r.donorId === currentId) return true;
+        if (currentOrg && r.donorName && r.donorName.toLowerCase() === currentOrg.toLowerCase()) return true;
+        if (currentName && r.donorName && r.donorName.toLowerCase() === currentName.toLowerCase()) return true;
+        if (r.listingId && donorListingIds.has(String(r.listingId))) return true;
+        return false;
+      });
+
+      donorRequests.forEach((req) => {
+        const s = (req.status || "").toLowerCase();
+        if (s.includes("approved") && !s.includes("confirmed") && !s.includes("declined")) {
+          notifs.push({
+            id: `req-${req.id}`,
+            title: "Action Required: NGO Request Verified",
+            desc: `${req.ngoOrg || req.ngoName || "Verified NGO"} requested "${req.foodName || req.foodTitle || "your food"}". Accept to share contacts.`,
+            time: req.requestedAt || "Recently",
+            unread: true,
+            linkTab: "requests",
+            category: "request",
+            icon: <IoAlertCircleOutline style={{ color: "#D97706" }} />,
+          });
+        } else if (s.includes("confirmed") || s.includes("matched")) {
+          notifs.push({
+            id: `req-${req.id}`,
+            title: "Pickup Confirmed & Contact Shared",
+            desc: `Matched with ${req.ngoOrg || req.ngoName || "NGO"}. Window: ${req.pickupWindow || "Flexible"}.`,
+            time: "Recent",
+            unread: false,
+            linkTab: "requests",
+            category: "match",
+            icon: <IoCheckmarkCircle style={{ color: "#2E7D5B" }} />,
+          });
+        } else if (s.includes("pending")) {
+          notifs.push({
+            id: `req-${req.id}`,
+            title: "New Request Submitted",
+            desc: `${req.ngoOrg || req.ngoName || "NGO"} requested "${req.foodName || req.foodTitle || "listing"}". Awaiting admin check.`,
+            time: req.requestedAt || "Recently",
+            unread: true,
+            linkTab: "requests",
+            category: "request",
+            icon: <IoPeopleOutline style={{ color: "#2E7D5B" }} />,
+          });
+        }
+      });
+
+      donorListings.slice(0, 2).forEach((l) => {
+        if (l.status === "available") {
+          notifs.push({
+            id: `list-${l.id}`,
+            title: "Donation Live in Marketplace",
+            desc: `"${l.title}" (${l.quantity}) is visible to verified community shelters.`,
+            time: l.postedTime || "Today",
+            unread: false,
+            linkTab: "my-donations",
+            category: "listing",
+            icon: <IoRestaurantOutline style={{ color: "#1565C0" }} />,
+          });
+        }
+      });
+    } else if (role === "ngo") {
+      const ngoRequests = allRequests.filter((r) => {
+        if (currentId && r.ngoId === currentId) return true;
+        if (currentName && r.ngoName && r.ngoName.toLowerCase() === currentName.toLowerCase()) return true;
+        if (currentOrg && r.ngoOrg && r.ngoOrg.toLowerCase() === currentOrg.toLowerCase()) return true;
+        return false;
+      });
+
+      ngoRequests.forEach((req) => {
+        const s = (req.status || "").toLowerCase();
+        if (s.includes("confirmed") || s.includes("matched")) {
+          notifs.push({
+            id: `req-${req.id}`,
+            title: "Match Confirmed! Contact Unlocked",
+            desc: `${req.donorName || "Donor"} approved pickup. Direct phone numbers unlocked.`,
+            time: "Just now",
+            unread: true,
+            linkTab: "pickups",
+            category: "match",
+            icon: <IoCheckmarkCircle style={{ color: "#2E7D5B" }} />,
+          });
+        } else if (s.includes("approved")) {
+          notifs.push({
+            id: `req-${req.id}`,
+            title: "Admin Verified Your Request",
+            desc: `Your claim for "${req.foodTitle || "Food"}" is awaiting donor confirmation.`,
+            time: req.requestedAt || "Recently",
+            unread: true,
+            linkTab: "requests",
+            category: "request",
+            icon: <IoAlertCircleOutline style={{ color: "#D97706" }} />,
+          });
+        }
+      });
+    }
+
+    setNotifications(notifs);
+  }, [role, isAuthenticated, user]);
+
+  useEffect(() => {
+    loadRealNotifications();
+
+    const handleUpdate = () => {
+      loadRealNotifications();
+    };
+
+    window.addEventListener("annshare_requests_updated", handleUpdate);
+    window.addEventListener("annshare_listings_updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+
+    return () => {
+      window.removeEventListener("annshare_requests_updated", handleUpdate);
+      window.removeEventListener("annshare_listings_updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+    };
+  }, [loadRealNotifications]);
 
   // Track window scroll
   useEffect(() => {
@@ -162,14 +311,40 @@ const Header = () => {
 
   const unreadCount = notifications.filter((n) => n.unread).length;
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+    try {
+      await api.notifications.markAllRead({
+        role: role || (isAuthenticated ? "donor" : "all"),
+        userId: user?.id || "",
+      });
+    } catch {}
   };
 
-  const handleNotificationClick = (id) => {
+  const handleNotificationClick = async (notif) => {
+    setIsNotifOpen(false);
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, unread: false } : n))
+      prev.map((n) => (n.id === notif.id || (n._id && n._id === notif._id) ? { ...n, unread: false } : n))
     );
+    try {
+      if (notif._id) {
+        await api.notifications.markRead(notif._id);
+      }
+    } catch {}
+
+    if (notif.linkTab) {
+      const tab = notif.linkTab.toLowerCase();
+      if (role === "ngo") {
+        if (tab.includes("pickup")) navigate("/ngo/dashboard?tab=pickups");
+        else if (tab.includes("find")) navigate("/find-food");
+        else navigate("/ngo/dashboard?tab=requests");
+      } else {
+        if (tab.includes("donation") || tab.includes("listing")) navigate("/donor/dashboard?tab=my-donations");
+        else navigate("/donor/dashboard?tab=requests");
+      }
+    } else {
+      navigate(role === "ngo" ? "/ngo/dashboard" : "/donor/dashboard");
+    }
   };
 
   // Nav Handlers
@@ -311,21 +486,33 @@ const Header = () => {
                 </div>
 
                 <div className="notif-list">
-                  {notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      className={`notif-item ${n.unread ? "unread" : ""}`}
-                      onClick={() => handleNotificationClick(n.id)}
-                    >
-                      <div className="notif-icon">{n.icon}</div>
-                      <div className="notif-content">
-                        <span className="title">{n.title}</span>
-                        <span className="desc">{n.desc}</span>
-                        <span className="time">{n.time}</span>
+                  {notifications.length === 0 ? (
+                    <div style={{ padding: "32px 20px", textAlign: "center", color: "#71827B" }}>
+                      <IoNotificationsOutline size={30} style={{ color: "#9CA3AF", marginBottom: "8px" }} />
+                      <div style={{ fontWeight: 700, color: "#174A3A", fontSize: "0.9rem", marginBottom: "4px" }}>
+                        No new notifications
                       </div>
-                      {n.unread && <span className="unread-indicator" />}
+                      <div style={{ fontSize: "0.78rem", lineHeight: "1.4" }}>
+                        New food requests, listing approvals, and pickup updates will appear here in real-time.
+                      </div>
                     </div>
-                  ))}
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        className={`notif-item ${n.unread ? "unread" : ""}`}
+                        onClick={() => handleNotificationClick(n)}
+                      >
+                        <div className="notif-icon">{n.icon}</div>
+                        <div className="notif-content">
+                          <span className="title">{n.title}</span>
+                          <span className="desc">{n.desc}</span>
+                          <span className="time">{n.time}</span>
+                        </div>
+                        {n.unread && <span className="unread-indicator" />}
+                      </div>
+                    ))
+                  )}
                 </div>
               </NotificationDropdownCard>
             </ActionButtonWrapper>
