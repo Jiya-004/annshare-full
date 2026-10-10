@@ -331,6 +331,7 @@ const DashboardGrid = styled.div`
   @media (max-width: 960px) {
     grid-template-columns: 1fr;
     gap: 20px;
+    margin-top: 117px;
   }
 `;
 
