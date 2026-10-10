@@ -35,6 +35,7 @@ import { getListings, addListing, updateListingStatus, formatCurrentTime, normal
 import { getRequests, updateRequestStatus } from "../../data/requestsStore";
 import api from "../../services/api";
 import ImageUploader from "../Donate/components/ImageUploader";
+import { isValidPhone, formatPhoneNumber } from "../../utils/validation";
 
 /* ==========================================================================
    STYLED COMPONENTS: MODERN SIDEBAR + CONTENT LAYOUT
@@ -1010,10 +1011,21 @@ export const DonorDashboard = () => {
   const [isSuccessMessage, setIsSuccessMessage] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [lastCreatedListing, setLastCreatedListing] = useState(null);
+  const [createDonationError, setCreateDonationError] = useState("");
 
   const handleCreateDonation = (e) => {
     e.preventDefault();
-    if (!newFood.title.trim()) return;
+    setCreateDonationError("");
+
+    if (!newFood.title.trim()) {
+      setCreateDonationError("Food title or dish name is required.");
+      return;
+    }
+
+    if (!newFood.quantity || Number(newFood.quantity) <= 0) {
+      setCreateDonationError("Please enter a valid quantity greater than 0.");
+      return;
+    }
 
     const now = new Date();
     const currentFormattedTime = formatCurrentTime(now);
@@ -1021,9 +1033,10 @@ export const DonorDashboard = () => {
     const chosenImage = newFood.images && newFood.images.length > 0 ? newFood.images[0] : fallbackImg;
     const chosenImages = newFood.images && newFood.images.length > 0 ? newFood.images : [fallbackImg];
     const pickupWindow = newFood.pickupTime || `Today, ${currentFormattedTime} – ${formatCurrentTime(new Date(now.getTime() + 2.5 * 60 * 60 * 1000))}`;
+    const donorPhone = user?.phone ? formatPhoneNumber(user.phone) : "+977 980-1234567";
 
     const newListing = {
-      title: newFood.title,
+      title: newFood.title.trim(),
       category: normalizeCategory(newFood.category),
       quantity: Number(newFood.quantity) || 20,
       unit: newFood.unit || "portions",
@@ -1042,7 +1055,7 @@ export const DonorDashboard = () => {
       description: newFood.instructions || "Fresh surplus food ready for pickup.",
       safetyInfo: `Prepared at ${currentFormattedTime} today under food hygiene safety standards.`,
       contactName: user?.name || "Donor",
-      contactPhone: user?.phone || "+977 980-1234567",
+      contactPhone: donorPhone,
       donorId: user?.id || `donor-${Date.now()}`,
       matchedWith: null,
     };
@@ -1083,18 +1096,101 @@ export const DonorDashboard = () => {
     return s.includes("confirmed") || s.includes("matched");
   });
 
+  // Dynamic Notifications Management
+  const [notificationsList, setNotificationsList] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+
+  const fetchDonorNotifications = React.useCallback(async () => {
+    try {
+      setNotificationsLoading(true);
+      const data = await api.notifications.getAll({ role: "donor", userId: user?.id || "" });
+      if (Array.isArray(data) && data.length > 0) {
+        setNotificationsList(data);
+      } else {
+        // Build dynamic contextual fallback notifications
+        const list = [];
+        if (adminApprovedRequests.length > 0) {
+          adminApprovedRequests.forEach((req, idx) => {
+            list.push({
+              id: `req-app-${req.id || idx}`,
+              title: "Action Required: NGO Request Verified by Admin",
+              desc: `${req.ngoOrg || req.ngoName || "Verified NGO"} requested "${req.foodName || "your listing"}". Accept to exchange contacts for pickup!`,
+              time: req.requestTime || req.createdAt || "Just now",
+              read: false,
+              linkTab: "requests",
+              category: "match",
+            });
+          });
+        }
+        if (confirmedRequests.length > 0) {
+          confirmedRequests.forEach((req, idx) => {
+            list.push({
+              id: `req-conf-${req.id || idx}`,
+              title: "Match Confirmed & Contact Shared",
+              desc: `Direct contact shared with ${req.ngoOrg || req.ngoName || "NGO"}. Pickup scheduled for ${req.pickupWindow || "today"}.`,
+              time: "Recent",
+              read: true,
+              linkTab: "requests",
+              category: "match",
+            });
+          });
+        }
+        if (donations.length > 0) {
+          donations.slice(0, 4).forEach((don, idx) => {
+            list.push({
+              id: `don-${don.id || idx}`,
+              title: don.status === "available" ? "Donation Approved & Live" : "Donation Listed",
+              desc: `"${don.title}" (${don.quantity}) is ${don.status === "available" ? "active and visible to verified community shelters." : "currently under admin review."}`,
+              time: don.postedTime || "Today",
+              read: true,
+              linkTab: "my-donations",
+              category: "listing",
+            });
+          });
+        }
+        setNotificationsList(list);
+      }
+    } catch (err) {
+      console.warn("Using contextual local notifications:", err);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [user, adminApprovedRequests, confirmedRequests, donations]);
+
+  useEffect(() => {
+    fetchDonorNotifications();
+  }, [fetchDonorNotifications]);
+
+  const handleMarkNotificationRead = async (notif) => {
+    setNotificationsList((prev) =>
+      prev.map((n) => ((n.id && n.id === notif.id) || (n._id && n._id === notif.id) ? { ...n, read: true } : n))
+    );
+    try {
+      if (notif._id) {
+        await api.notifications.markRead(notif._id);
+      }
+    } catch {}
+    if (notif.linkTab) {
+      const target = notif.linkTab.toLowerCase();
+      if (target.includes("request")) handleTabChange("requests");
+      else if (target.includes("donation") || target.includes("listing")) handleTabChange("my-donations");
+      else handleTabChange(target);
+    }
+  };
+
+  const handleMarkAllNotificationsRead = async () => {
+    setNotificationsList((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await api.notifications.markAllRead({ role: "donor", userId: user?.id || "" });
+    } catch {}
+  };
+
+  const unreadNotificationsCount = notificationsList.filter((n) => !n.read).length;
+
   // Sidebar dynamic badge computations
   const opportunitiesCount = getListings().filter(
     (l) => l.status === "available" && l.partner !== (user?.organization || donorName)
   ).length;
-
-  const [notificationsCount, setNotificationsCount] = useState(
-    adminApprovedRequests.length > 0 ? adminApprovedRequests.length : donations.length > 0 ? 1 : 0
-  );
-
-  useEffect(() => {
-    setNotificationsCount(adminApprovedRequests.length > 0 ? adminApprovedRequests.length : donations.length > 0 ? 1 : 0);
-  }, [adminApprovedRequests.length, donations.length]);
 
   // Real data stats computed from user's donations
   const completedListings = donations.filter((d) => d.status === "completed");
@@ -1234,7 +1330,15 @@ export const DonorDashboard = () => {
                   <span className="icon"><IoNotificationsOutline /></span>
                   <span>Notifications</span>
                 </div>
-                <span className="badge-count">{notificationsCount}</span>
+                <span
+                  className="badge-count"
+                  style={{
+                    background: unreadNotificationsCount > 0 ? "#E11D48" : undefined,
+                    color: unreadNotificationsCount > 0 ? "#FFFFFF" : undefined,
+                  }}
+                >
+                  {unreadNotificationsCount}
+                </span>
               </NavItem>
 
               <NavItem
@@ -1668,6 +1772,26 @@ export const DonorDashboard = () => {
                   </div>
                 )}
 
+                {createDonationError && (
+                  <div
+                    style={{
+                      background: "#FEF2F2",
+                      color: "#B91C1C",
+                      border: "1px solid #FCA5A5",
+                      padding: "12px 16px",
+                      borderRadius: "12px",
+                      marginBottom: "16px",
+                      fontWeight: 600,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <IoAlertCircleOutline size={20} />
+                    <span>{createDonationError}</span>
+                  </div>
+                )}
+
                 <form onSubmit={handleCreateDonation}>
                   <div className="field-group">
                     <label>Food Item Title / Description</label>
@@ -1951,39 +2075,121 @@ export const DonorDashboard = () => {
             {/* TAB 7: NOTIFICATIONS */}
             {activeTab === "notifications" && (
               <div>
-                <SectionTitle>Recent Activity & Pickup Alerts</SectionTitle>
-                <ItemsList>
-                  <DonationCard>
-                    <div className="item-main">
-                      <div style={{ fontSize: "1.4rem", color: "#2E7D5B" }}>
-                        <IoCheckmarkCircle />
-                      </div>
-                      <div className="item-info">
-                        <h4>Pickup Confirmed by Hope Foundation</h4>
-                        <div className="meta">
-                          <span>48 Meal portions scheduled for 6:15 PM pickup</span>
-                          <span>•</span>
-                          <span>15 minutes ago</span>
-                        </div>
-                      </div>
-                    </div>
-                  </DonationCard>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
+                  <SectionTitle $margin="0">Activity, Requests & Pickup Alerts</SectionTitle>
+                  {unreadNotificationsCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleMarkAllNotificationsRead}
+                      style={{
+                        background: "#E8F5E9",
+                        color: "#2E7D5B",
+                        border: "1px solid #A7F3D0",
+                        padding: "8px 14px",
+                        borderRadius: "10px",
+                        fontSize: "0.82rem",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <IoCheckmarkDoneCircleOutline size={16} /> Mark All as Read
+                    </button>
+                  )}
+                </div>
 
-                  <DonationCard>
-                    <div className="item-main">
-                      <div style={{ fontSize: "1.4rem", color: "#1565C0" }}>
-                        <IoRestaurantOutline />
-                      </div>
-                      <div className="item-info">
-                        <h4>Donation Published Successfully</h4>
-                        <div className="meta">
-                          <span>Your bakery items are now available to verified organizations</span>
-                          <span>•</span>
-                          <span>1 hour ago</span>
-                        </div>
-                      </div>
+                <ItemsList>
+                  {notificationsList.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "48px 20px", color: "#71827B", background: "#FFFFFF", borderRadius: "18px", border: "1px solid rgba(23,74,58,0.08)" }}>
+                      <IoNotificationsOutline size={40} style={{ color: "#9CA3AF", marginBottom: "8px" }} />
+                      <h4 style={{ margin: "0 0 4px", color: "#174A3A" }}>No notifications yet</h4>
+                      <p style={{ margin: 0, fontSize: "0.88rem" }}>You'll be notified immediately when an NGO requests your food or an admin approves your listing.</p>
                     </div>
-                  </DonationCard>
+                  ) : (
+                    notificationsList.map((item) => {
+                      const isUnread = !item.read;
+                      const isMatch = item.category === "match" || (item.title && item.title.includes("Request"));
+                      const isListing = item.category === "listing" || (item.title && item.title.includes("Donation"));
+
+                      return (
+                        <DonationCard
+                          key={item.id || item._id}
+                          style={{
+                            background: isUnread ? "#FAFDFB" : "#FFFFFF",
+                            borderColor: isUnread ? "#86EFAC" : "rgba(23, 74, 58, 0.08)",
+                            boxShadow: isUnread ? "0 4px 14px rgba(46, 125, 91, 0.08)" : undefined,
+                            cursor: "pointer",
+                          }}
+                          onClick={() => handleMarkNotificationRead(item)}
+                        >
+                          <div className="item-main">
+                            <div
+                              style={{
+                                fontSize: "1.4rem",
+                                color: isMatch ? "#D97706" : isListing ? "#2E7D5B" : "#1565C0",
+                                background: isMatch ? "#FEF3C7" : isListing ? "#E8F5E9" : "#E3F2FD",
+                                width: "44px",
+                                height: "44px",
+                                borderRadius: "12px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {isMatch ? <IoAlertCircleOutline /> : isListing ? <IoRestaurantOutline /> : <IoCheckmarkCircle />}
+                            </div>
+                            <div className="item-info">
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <h4 style={{ margin: 0, color: "#174A3A" }}>{item.title}</h4>
+                                {isUnread && (
+                                  <span
+                                    style={{
+                                      background: "#E11D48",
+                                      color: "#FFFFFF",
+                                      fontSize: "0.68rem",
+                                      fontWeight: 800,
+                                      padding: "2px 6px",
+                                      borderRadius: "6px",
+                                      textTransform: "uppercase",
+                                    }}
+                                  >
+                                    New
+                                  </span>
+                                )}
+                              </div>
+                              <p style={{ margin: "4px 0 6px", fontSize: "0.88rem", color: "#4A5D54", lineHeight: "1.4" }}>
+                                {item.desc || item.message}
+                              </p>
+                              <div className="meta">
+                                <span>{item.time || "Recent"}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <QuickDonateBtn
+                              type="button"
+                              style={{
+                                width: "auto",
+                                padding: "8px 14px",
+                                fontSize: "0.82rem",
+                                background: isMatch ? "#D97706" : "#174A3A",
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMarkNotificationRead(item);
+                              }}
+                            >
+                              <span>{isMatch ? "Review Request →" : "View Details →"}</span>
+                            </QuickDonateBtn>
+                          </div>
+                        </DonationCard>
+                      );
+                    })
+                  )}
                 </ItemsList>
               </div>
             )}

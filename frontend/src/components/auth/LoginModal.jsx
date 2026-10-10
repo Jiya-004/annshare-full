@@ -13,6 +13,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { registerAccount, findAccount } from "../../data/accountsStore";
 import RoleSelector from "./RoleSelector";
+import { isValidEmail } from "../../utils/validation";
 
 /* Animations */
 const fadeIn = keyframes`
@@ -548,8 +549,21 @@ export const LoginModal = () => {
       setIsLoading(false);
       return;
     }
+
+    if (isSignUp && !isValidEmail(email.trim())) {
+      setErrorMessage("Please enter a valid email address (e.g. name@gmail.com).");
+      setIsLoading(false);
+      return;
+    }
+
     if (!password.trim()) {
       setErrorMessage("Please enter your password.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (isSignUp && password.length < 6) {
+      setErrorMessage("Password must be at least 6 characters.");
       setIsLoading(false);
       return;
     }

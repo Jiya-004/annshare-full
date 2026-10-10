@@ -7,10 +7,13 @@ const notificationSchema = new mongoose.Schema(
     time: { type: String, default: 'Just now' },
     read: { type: Boolean, default: false },
     linkTab: { type: String, default: 'Dashboard' },
-    userId: { type: String },
-    role: { type: String },
+    userId: { type: String, default: '' },
+    role: { type: String, default: 'all' }, // 'admin', 'donor', 'ngo', 'all'
+    category: { type: String, default: 'general' }, // 'listing', 'request', 'match', 'system'
+    relatedId: { type: String, default: '' },
   },
   { timestamps: true }
 );
 
 module.exports = mongoose.model('Notification', notificationSchema);
+

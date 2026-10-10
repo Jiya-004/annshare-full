@@ -1,4 +1,5 @@
 const Listing = require('../models/listing');
+const { sendNotification } = require('./notificationController');
 
 // GET all listings (with search, category, status, and donor filtering)
 const getListings = async (req, res) => {
@@ -128,6 +129,17 @@ const createListing = async (req, res) => {
     }
 
     const listing = await Listing.create(data);
+
+    // Notify Admin about new pending donation
+    await sendNotification({
+      title: 'New Donation Listed',
+      desc: `${data.donor || 'Food Partner'} listed "${data.title}" (${data.quantity || 'surplus'}). Review required.`,
+      linkTab: 'Donations',
+      role: 'admin',
+      category: 'listing',
+      relatedId: listing._id.toString(),
+    });
+
     res.status(201).json({
       _id: listing._id,
       id: listing._id.toString(),
@@ -164,6 +176,31 @@ const updateListingStatus = async (req, res) => {
     if (!listing) {
       return res.status(404).json({ message: 'Listing not found' });
     }
+
+    // Trigger status update notifications
+    const sLower = (status || '').toLowerCase();
+    if (sLower === 'available' || sLower === 'approved') {
+      await sendNotification({
+        title: 'Donation Approved & Live!',
+        desc: `Your listing "${listing.title}" was approved by moderators and is now visible on Find Food.`,
+        linkTab: 'my-donations',
+        userId: listing.donorId,
+        role: 'donor',
+        category: 'listing',
+        relatedId: listing._id.toString(),
+      });
+    } else if (sLower.includes('reject')) {
+      await sendNotification({
+        title: 'Donation Not Approved',
+        desc: `Your listing "${listing.title}" could not be approved at this time.`,
+        linkTab: 'my-donations',
+        userId: listing.donorId,
+        role: 'donor',
+        category: 'listing',
+        relatedId: listing._id.toString(),
+      });
+    }
+
     res.status(200).json(listing);
   } catch (err) {
     res.status(400).json({ message: err.message });

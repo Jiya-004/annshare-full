@@ -1,5 +1,6 @@
 const Request = require('../models/Request');
 const Listing = require('../models/listing');
+const { sendNotification } = require('./notificationController');
 
 // GET all food requests
 const getRequests = async (req, res) => {
@@ -105,6 +106,29 @@ const createRequest = async (req, res) => {
 
     const newRequest = await Request.create(data);
 
+    // Notify Admin about new food request
+    await sendNotification({
+      title: 'New NGO Food Request',
+      desc: `${data.ngoName || data.receiverName || 'NGO'} requested "${data.foodTitle}" (${data.requestedQuantity || 'Portions'}). Review required.`,
+      linkTab: 'Requests',
+      role: 'admin',
+      category: 'request',
+      relatedId: newRequest._id.toString(),
+    });
+
+    // Notify NGO that request was submitted
+    if (data.ngoId || data.receiverId) {
+      await sendNotification({
+        title: 'Food Request Submitted',
+        desc: `Your request for "${data.foodTitle}" is currently under administrative moderation.`,
+        linkTab: 'requests',
+        userId: data.ngoId || data.receiverId,
+        role: 'ngo',
+        category: 'request',
+        relatedId: newRequest._id.toString(),
+      });
+    }
+
     res.status(201).json({
       _id: newRequest._id,
       id: newRequest._id.toString(),
@@ -129,9 +153,79 @@ const updateRequestStatus = async (req, res) => {
       return res.status(404).json({ message: 'Request not found' });
     }
 
+    const normalizedStatus = (status || '').toLowerCase();
+
+    // 1. Admin Approved -> Notify Donor & NGO
+    if (normalizedStatus.includes('approved')) {
+      await sendNotification({
+        title: 'Action Required: NGO Request Verified',
+        desc: `Admin approved ${request.ngoName || request.receiverName}'s request for "${request.foodTitle}". Review and accept to share contact.`,
+        linkTab: 'requests',
+        userId: request.donorId,
+        role: 'donor',
+        category: 'request',
+        relatedId: request._id.toString(),
+      });
+
+      await sendNotification({
+        title: 'Admin Verified Your Request',
+        desc: `Your claim for "${request.foodTitle}" was approved by moderator. Awaiting donor confirmation.`,
+        linkTab: 'requests',
+        userId: request.ngoId || request.receiverId,
+        role: 'ngo',
+        category: 'request',
+        relatedId: request._id.toString(),
+      });
+    }
+
+    // 2. Donor Accepted -> Confirmed / Matched -> Unlocked Contacts
+    if (normalizedStatus === 'confirmed' || normalizedStatus === 'matched' || normalizedStatus === 'approved by donor') {
+      await sendNotification({
+        title: 'Match Confirmed! Contact Unlocked',
+        desc: `${request.donorName} accepted your request! Donor contact: ${request.donorPhone || '+977 980-1234567'} (${request.location || 'Kathmandu'}).`,
+        linkTab: 'pickups',
+        userId: request.ngoId || request.receiverId,
+        role: 'ngo',
+        category: 'match',
+        relatedId: request._id.toString(),
+      });
+
+      await sendNotification({
+        title: 'Match Confirmed & Contact Shared',
+        desc: `Contact details shared with ${request.ngoName || request.receiverName}. Phone: ${request.ngoPhone || '+977 984-1234567'}.`,
+        linkTab: 'requests',
+        userId: request.donorId,
+        role: 'donor',
+        category: 'match',
+        relatedId: request._id.toString(),
+      });
+    }
+
+    // 3. Pickup Completed
+    if (normalizedStatus === 'completed') {
+      await sendNotification({
+        title: 'Pickup Successfully Completed!',
+        desc: `Donation "${request.foodTitle}" (${request.requestedQuantity || 'portions'}) was successfully transferred.`,
+        linkTab: 'history',
+        userId: request.donorId,
+        role: 'donor',
+        category: 'match',
+        relatedId: request._id.toString(),
+      });
+
+      await sendNotification({
+        title: 'Pickup Completed & Verified!',
+        desc: `"${request.foodTitle}" has been received and added to your redistribution impact log.`,
+        linkTab: 'redistributions',
+        userId: request.ngoId || request.receiverId,
+        role: 'ngo',
+        category: 'match',
+        relatedId: request._id.toString(),
+      });
+    }
+
     // Sync listing status if completed or confirmed
     if (request.listingId) {
-      const normalizedStatus = (status || '').toLowerCase();
       if (normalizedStatus === 'confirmed' || normalizedStatus === 'matched' || normalizedStatus === 'approved by donor') {
         await Listing.findByIdAndUpdate(request.listingId, {
           status: 'Claimed',

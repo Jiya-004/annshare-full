@@ -42,6 +42,7 @@ import {
 } from "react-icons/io5";
 
 import { addListing, formatCurrentTime, normalizeCategory } from "../../data/listingsStore";
+import { isValidPhone, formatPhoneNumber } from "../../utils/validation";
 
 export default function DonatePage() {
   const navigate = useNavigate();
@@ -84,17 +85,42 @@ export default function DonatePage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const [formError, setFormError] = useState("");
+
   const handleNext = () => {
+    setFormError("");
+    if (currentStep === 1) {
+      if (!formData.foodName.trim()) {
+        setFormError("Please enter a food dish or title.");
+        return;
+      }
+      if (!formData.quantity || Number(formData.quantity) <= 0) {
+        setFormError("Please specify a valid quantity greater than 0.");
+        return;
+      }
+    }
+    if (currentStep === 2) {
+      if (formData.contactPhone && !isValidPhone(formData.contactPhone)) {
+        setFormError("Please enter a valid phone number (e.g. +977 980-1234567 or 9841234567).");
+        return;
+      }
+    }
     setCurrentStep((prev) => Math.min(prev + 1, 3));
     window.scrollTo({ top: 120, behavior: "smooth" });
   };
 
   const handleBack = () => {
+    setFormError("");
     setCurrentStep((prev) => Math.max(prev - 1, 1));
     window.scrollTo({ top: 120, behavior: "smooth" });
   };
 
   const handlePublish = () => {
+    if (formData.contactPhone && !isValidPhone(formData.contactPhone)) {
+      setFormError("Please enter a valid phone number.");
+      return;
+    }
+
     requireAuth({
       role: "donor",
       intent: "donate_food",
@@ -104,6 +130,7 @@ export default function DonatePage() {
           const now = new Date();
           const currentFormattedTime = formatCurrentTime(now);
           const fallbackImg = `/food/food${Math.floor(Math.random() * 8) + 1}.jpg`;
+          const formattedPhone = formData.contactPhone ? formatPhoneNumber(formData.contactPhone) : "+977 980-1234567";
           const newListing = {
             title: formData.foodName,
             category: normalizeCategory(formData.category),
@@ -125,7 +152,7 @@ export default function DonatePage() {
             description: formData.description || "",
             safetyInfo: formData.condition ? `Condition: ${formData.condition}. Prepared at ${currentFormattedTime} under food hygiene standards.` : `Prepared at ${currentFormattedTime}.`,
             contactName: user?.name || formData.contactName || "Donor",
-            contactPhone: formData.contactPhone || "+977 980-1234567",
+            contactPhone: formattedPhone,
             status: "Pending Approval",
             donorId: user?.id || `donor-${Date.now()}`,
             instructions: formData.instructions || "",
@@ -271,6 +298,23 @@ export default function DonatePage() {
                 currentStep={currentStep}
                 onStepClick={(step) => setCurrentStep(step)}
               />
+
+              {formError && (
+                <div
+                  style={{
+                    background: "#FEF2F2",
+                    border: "1px solid #FCA5A5",
+                    color: "#B91C1C",
+                    padding: "10px 14px",
+                    borderRadius: "10px",
+                    marginBottom: "16px",
+                    fontSize: "0.88rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  ⚠️ {formError}
+                </div>
+              )}
 
               {/* STEP 1: FOOD DETAILS */}
               {currentStep === 1 && (

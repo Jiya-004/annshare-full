@@ -25,9 +25,12 @@ import {
   IoMenu,
   IoClose,
   IoSettingsOutline,
+  IoAlertCircleOutline,
+  IoRestaurantOutline,
 } from "react-icons/io5";
 import { FaHandshake } from "react-icons/fa6";
 import AccountSettings from "../../components/dashboard/AccountSettings";
+import api from "../../services/api";
 
 /* ==========================================================================
    STYLED COMPONENTS: MODERN SIDEBAR + CONTENT LAYOUT
@@ -685,6 +688,101 @@ export const NGODashboard = () => {
   });
   const completedRequests = requests.filter((r) => (r.status || "").toLowerCase().includes("completed"));
 
+  // Dynamic Notifications Management
+  const [notificationsList, setNotificationsList] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+
+  const fetchNgoNotifications = React.useCallback(async () => {
+    try {
+      setNotificationsLoading(true);
+      const data = await api.notifications.getAll({ role: "ngo", userId: user?.id || "" });
+      if (Array.isArray(data) && data.length > 0) {
+        setNotificationsList(data);
+      } else {
+        // Build contextual notifications from NGO requests & available surplus
+        const list = [];
+        if (confirmedRequests.length > 0) {
+          confirmedRequests.forEach((req, idx) => {
+            list.push({
+              id: `notif-conf-${req.id || idx}`,
+              title: "Match Confirmed! Contact Unlocked",
+              desc: `${req.donorName || "Food Donor"} accepted your request for "${req.foodTitle || "food listing"}". Direct contact numbers are now active.`,
+              time: "Just now",
+              read: false,
+              linkTab: "pickups",
+              category: "match",
+            });
+          });
+        }
+        if (requests.length > 0) {
+          requests.forEach((req, idx) => {
+            const isApproved = (req.status || "").toLowerCase().includes("approved");
+            if (isApproved && !(req.status || "").toLowerCase().includes("confirmed")) {
+              list.push({
+                id: `notif-app-${req.id || idx}`,
+                title: "Admin Verified Your Request",
+                desc: `Your request for "${req.foodTitle || "Food batch"}" was verified by admin and sent to ${req.donorName || "donor"} for final contact exchange.`,
+                time: req.requestedAt || "Recently",
+                read: false,
+                linkTab: "requests",
+                category: "request",
+              });
+            }
+          });
+        }
+        if (availableListings.length > 0) {
+          availableListings.slice(0, 3).forEach((item, idx) => {
+            list.push({
+              id: `notif-surplus-${item.id || idx}`,
+              title: "New Surplus Food Available Nearby",
+              desc: `${item.partner || "Donor"} posted ${item.quantity} portions of "${item.title}" in ${item.area || item.location || "Kathmandu"}.`,
+              time: item.postedTime || "Today",
+              read: true,
+              linkTab: "find-food",
+              category: "listing",
+            });
+          });
+        }
+        setNotificationsList(list);
+      }
+    } catch (err) {
+      console.warn("Could not fetch remote NGO notifications:", err);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [user, confirmedRequests, requests, availableListings]);
+
+  useEffect(() => {
+    fetchNgoNotifications();
+  }, [fetchNgoNotifications]);
+
+  const handleMarkNotificationRead = async (notif) => {
+    setNotificationsList((prev) =>
+      prev.map((n) => ((n.id && n.id === notif.id) || (n._id && n._id === notif.id) ? { ...n, read: true } : n))
+    );
+    try {
+      if (notif._id) {
+        await api.notifications.markRead(notif._id);
+      }
+    } catch {}
+    if (notif.linkTab) {
+      const target = notif.linkTab.toLowerCase();
+      if (target.includes("pickup") || target.includes("logistics")) handleTabChange("pickups");
+      else if (target.includes("find") || target.includes("surplus")) handleTabChange("find-food");
+      else if (target.includes("request")) handleTabChange("requests");
+      else handleTabChange(target);
+    }
+  };
+
+  const handleMarkAllNotificationsRead = async () => {
+    setNotificationsList((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await api.notifications.markAllRead({ role: "ngo", userId: user?.id || "" });
+    } catch {}
+  };
+
+  const unreadNotificationsCount = notificationsList.filter((n) => !n.read).length;
+
   const mealsReceived = requests.reduce((sum, r) => {
     const portionsNum = parseInt(r.portions, 10) || 0;
     return sum + portionsNum;
@@ -804,7 +902,15 @@ export const NGODashboard = () => {
                   <span className="icon"><IoNotificationsOutline /></span>
                   <span>Notifications</span>
                 </div>
-                <span className="badge-count">{requests.length > 0 ? 1 : 0}</span>
+                <span
+                  className="badge-count"
+                  style={{
+                    background: unreadNotificationsCount > 0 ? "#E11D48" : undefined,
+                    color: unreadNotificationsCount > 0 ? "#FFFFFF" : undefined,
+                  }}
+                >
+                  {unreadNotificationsCount}
+                </span>
               </NavItem>
 
               <NavItem
@@ -1339,45 +1445,116 @@ export const NGODashboard = () => {
             {/* TAB 7: NOTIFICATIONS */}
             {activeTab === "notifications" && (
               <div>
-                <SectionTitle>Surplus Alerts & Request Updates</SectionTitle>
-                <ItemsList>
-                  <ItemCard>
-                    <div className="item-main">
-                      <div style={{ fontSize: "1.4rem", color: "#1565C0" }}>
-                        <IoSearchOutline />
-                      </div>
-                      <div className="item-info">
-                        <h4>New Surplus Batch Available Nearby</h4>
-                        <div className="meta">
-                          <span>40 Fresh Meals posted by Himalayan Kitchen (1.2 km away)</span>
-                          <span>•</span>
-                          <span>10m ago</span>
-                        </div>
-                      </div>
-                    </div>
-                    <ClaimButton onClick={() => handleTabChange("find-food")}>
-                      View Listing
-                    </ClaimButton>
-                  </ItemCard>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
+                  <SectionTitle $margin="0">Surplus Alerts & Request Updates</SectionTitle>
+                  {unreadNotificationsCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleMarkAllNotificationsRead}
+                      style={{
+                        background: "#E8F5E9",
+                        color: "#2E7D5B",
+                        border: "1px solid #A7F3D0",
+                        padding: "8px 14px",
+                        borderRadius: "10px",
+                        fontSize: "0.82rem",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <IoCheckmarkDoneCircleOutline size={16} /> Mark All as Read
+                    </button>
+                  )}
+                </div>
 
-                  <ItemCard>
-                    <div className="item-main">
-                      <div style={{ fontSize: "1.4rem", color: "#2E7D5B" }}>
-                        <IoCheckmarkCircle />
-                      </div>
-                      <div className="item-info">
-                        <h4>Request Accepted by Green Leaf Café</h4>
-                        <div className="meta">
-                          <span>Your order request #REQ-101 has been confirmed for collection</span>
-                          <span>•</span>
-                          <span>25m ago</span>
-                        </div>
-                      </div>
+                <ItemsList>
+                  {notificationsList.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "48px 20px", color: "#71827B", background: "#FFFFFF", borderRadius: "18px", border: "1px solid rgba(23,74,58,0.08)" }}>
+                      <IoNotificationsOutline size={40} style={{ color: "#9CA3AF", marginBottom: "8px" }} />
+                      <h4 style={{ margin: "0 0 4px", color: "#174A3A" }}>No notifications yet</h4>
+                      <p style={{ margin: 0, fontSize: "0.88rem" }}>You'll receive notifications when new surplus food is listed nearby or your requests are verified.</p>
                     </div>
-                    <ClaimButton onClick={() => handleTabChange("pickups")}>
-                      View Logistics
-                    </ClaimButton>
-                  </ItemCard>
+                  ) : (
+                    notificationsList.map((item) => {
+                      const isUnread = !item.read;
+                      const isMatch = item.category === "match" || (item.title && item.title.includes("Matched") || item.title && item.title.includes("Confirmed"));
+                      const isListing = item.category === "listing" || (item.title && item.title.includes("Surplus"));
+
+                      return (
+                        <ItemCard
+                          key={item.id || item._id}
+                          style={{
+                            background: isUnread ? "#FAFDFB" : "#FFFFFF",
+                            borderColor: isUnread ? "#86EFAC" : "rgba(23, 74, 58, 0.08)",
+                            boxShadow: isUnread ? "0 4px 14px rgba(46, 125, 91, 0.08)" : undefined,
+                            cursor: "pointer",
+                          }}
+                          onClick={() => handleMarkNotificationRead(item)}
+                        >
+                          <div className="item-main">
+                            <div
+                              style={{
+                                fontSize: "1.4rem",
+                                color: isMatch ? "#2E7D5B" : isListing ? "#1565C0" : "#D97706",
+                                background: isMatch ? "#E8F5E9" : isListing ? "#E3F2FD" : "#FEF3C7",
+                                width: "44px",
+                                height: "44px",
+                                borderRadius: "12px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {isMatch ? <IoCheckmarkCircle /> : isListing ? <IoSearchOutline /> : <IoAlertCircleOutline />}
+                            </div>
+                            <div className="item-info">
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <h4 style={{ margin: 0, color: "#174A3A" }}>{item.title}</h4>
+                                {isUnread && (
+                                  <span
+                                    style={{
+                                      background: "#E11D48",
+                                      color: "#FFFFFF",
+                                      fontSize: "0.68rem",
+                                      fontWeight: 800,
+                                      padding: "2px 6px",
+                                      borderRadius: "6px",
+                                      textTransform: "uppercase",
+                                    }}
+                                  >
+                                    New
+                                  </span>
+                                )}
+                              </div>
+                              <p style={{ margin: "4px 0 6px", fontSize: "0.88rem", color: "#4A5D54", lineHeight: "1.4" }}>
+                                {item.desc || item.message}
+                              </p>
+                              <div className="meta">
+                                <span>{item.time || "Recent"}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <ClaimButton
+                            type="button"
+                            style={{
+                              background: isMatch ? "#2E7D5B" : "#174A3A",
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMarkNotificationRead(item);
+                            }}
+                          >
+                            {isMatch ? "View Logistics →" : isListing ? "Find Food →" : "View Details →"}
+                          </ClaimButton>
+                        </ItemCard>
+                      );
+                    })
+                  )}
                 </ItemsList>
               </div>
             )}
