@@ -157,10 +157,15 @@ export async function syncListingsFromBackend() {
       // Preserve local custom donations so user submissions don't disappear on sync
       const currentListings = getListings();
       const localOnly = currentListings.filter(
-        (l) => l.id && String(l.id).startsWith("listing-") && !normalized.some((b) => b.id === l.id || b._id === l.id)
+        (l) => l.isCustomDonation || (l.id && String(l.id).startsWith("listing-"))
       );
 
-      saveListings([...localOnly, ...normalized]);
+      const mergedMap = new Map();
+      [...normalized, ...localOnly].forEach((item) => {
+        mergedMap.set(String(item.id || item._id), item);
+      });
+
+      saveListings(Array.from(mergedMap.values()));
     }
   } catch (err) {
     console.warn("Could not sync listings from live backend, using local store:", err.message);
@@ -191,7 +196,7 @@ export function addListing(listing) {
     quantity: Number(listing.quantity) || 1,
     unit: listing.unit || "portions",
     condition: listing.condition || "Freshly Prepared",
-    partner: listing.partner || listing.donor || "Community Food Donor",
+    partner: listing.partner || listing.donor || "Utsha Cafe",
     partnerType: listing.partnerType || "Verified Food Donor",
     verified: listing.verified ?? true,
     location: listing.location || "Kathmandu, Nepal",
@@ -211,9 +216,11 @@ export function addListing(listing) {
     description: listing.description || "",
     safetyInfo: listing.safetyInfo || `Prepared fresh today at ${currentTimeStr}. Maintained according to food hygiene safety standards.`,
     expiresIn: listing.expiresIn || "4 hours",
-    contactName: listing.contactName || "Donor Contact",
+    contactName: listing.contactName || "Utsha",
     contactPhone: listing.contactPhone || "+977 980-1234567",
-    donorId: listing.donorId || null,
+    donorId: listing.donorId || "donor-user",
+    donorEmail: listing.donorEmail || "",
+    isCustomDonation: true,
     matchedWith: listing.matchedWith || null,
   };
 

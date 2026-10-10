@@ -14,6 +14,7 @@ import {
 } from "react-icons/io5";
 import { usePlatform } from "../context/PlatformContext";
 import { registerAccount, findAccount } from "../data/accountsStore";
+import { isValidEmail } from "../utils/validation";
 
 /* ==========================================================================
    ANIMATIONS & STYLED COMPONENTS
@@ -558,8 +559,18 @@ export const SignInModal = () => {
       return;
     }
 
+    if (isSignUp && !isValidEmail(identifier.trim())) {
+      setErrorMessage("Please enter a valid email address (e.g. name@gmail.com).");
+      return;
+    }
+
     if (!password.trim()) {
       setErrorMessage("Please enter your password.");
+      return;
+    }
+
+    if (isSignUp && password.length < 6) {
+      setErrorMessage("Password must be at least 6 characters long.");
       return;
     }
 

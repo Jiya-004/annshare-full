@@ -194,6 +194,28 @@ export const api = {
     },
   },
 
+  // Notifications
+  notifications: {
+    getAll: (params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return request(`/notifications${query ? `?${query}` : ''}`);
+    },
+    create: (notifData) =>
+      request('/notifications', {
+        method: 'POST',
+        body: JSON.stringify(notifData),
+      }),
+    markRead: (id) =>
+      request(`/notifications/${id}/read`, {
+        method: 'PATCH',
+      }),
+    markAllRead: (params = {}) =>
+      request('/notifications/read-all', {
+        method: 'PATCH',
+        body: JSON.stringify(params),
+      }),
+  },
+
   // Dashboard Stats
   stats: {
     getSummary: () => request('/stats/summary'),

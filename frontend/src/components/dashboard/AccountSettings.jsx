@@ -20,6 +20,7 @@ import {
   IoCallOutline,
 } from "react-icons/io5";
 import { FaHandshake } from "react-icons/fa6";
+import { isValidEmail, isValidPhone, formatPhoneNumber } from "../../utils/validation";
 
 /* ==========================================================================
    STYLED COMPONENTS FOR ACCOUNT SETTINGS
@@ -586,11 +587,23 @@ export default function AccountSettings({ role = "donor" }) {
       return;
     }
 
+    if (email.trim() && !isValidEmail(email.trim())) {
+      setProfileAlert({ type: "error", message: "Please enter a valid email address (e.g. name@domain.com)." });
+      return;
+    }
+
+    if (phone.trim() && !isValidPhone(phone.trim())) {
+      setProfileAlert({ type: "error", message: "Please enter a valid phone number (e.g. +977 980-1234567 or 9841234567)." });
+      return;
+    }
+
+    const formattedPhone = phone.trim() ? formatPhoneNumber(phone.trim()) : "";
+
     updateUser({
       name: name.trim(),
       organization: organization.trim(),
       email: email.trim(),
-      phone: phone.trim(),
+      phone: formattedPhone || phone.trim(),
       location: location.trim(),
       avatar: name.trim().charAt(0).toUpperCase(),
     });
