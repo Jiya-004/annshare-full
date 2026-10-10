@@ -224,6 +224,40 @@ const verifyNGO = async (req, res) => {
   }
 };
 
+// CHANGE PASSWORD
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const cleanCurrent = (currentPassword || '').trim();
+    const cleanNew = (newPassword || '').trim();
+
+    if (!cleanCurrent || !cleanNew) {
+      return res.status(400).json({ message: 'Current password and new password are required' });
+    }
+
+    if (cleanNew.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters long' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const isMatch = await user.matchPassword(cleanCurrent);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
+
+    user.password = cleanNew;
+    await user.save();
+
+    res.status(200).json({ message: 'Password updated successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // ADMIN: DELETE user
 const deleteUser = async (req, res) => {
   try {
@@ -240,6 +274,7 @@ module.exports = {
   loginUser,
   getMe,
   updateProfile,
+  changePassword,
   getAllUsers,
   updateUserStatus,
   verifyNGO,

@@ -16,9 +16,11 @@ import {
   FiAlertTriangle,
   FiSave,
   FiCheck,
-  FiBriefcase
+  FiBriefcase,
+  FiEye,
+  FiEyeOff
 } from 'react-icons/fi';
-import { getAdminProfile, updateAdminProfile, subscribeToAdminService } from '../../services/adminService';
+import { getAdminProfile, updateAdminProfile, changeAdminPassword, subscribeToAdminService } from '../../services/adminService';
 
 // Styled Components matching ANNShare Brand System
 const PageHeader = styled.div`
@@ -102,8 +104,9 @@ const StyledInputGroupText = styled(InputGroup.Text)`
 const StyledFormInput = styled(Form.Control)`
   border: 1px solid #E6ECE8;
   border-left: none;
-  border-top-right-radius: 12px;
-  border-bottom-right-radius: 12px;
+  border-top-right-radius: ${props => (props.$hasRightBtn ? '0 !important' : '12px')};
+  border-bottom-right-radius: ${props => (props.$hasRightBtn ? '0 !important' : '12px')};
+  border-right: ${props => (props.$hasRightBtn ? 'none !important' : '1px solid #E6ECE8')};
   height: 42px;
   font-size: 0.86rem;
   background: #ffffff;
@@ -114,6 +117,29 @@ const StyledFormInput = styled(Form.Control)`
     background: #ffffff;
     border-color: #185C4A;
     box-shadow: 0 0 0 3px rgba(24, 92, 74, 0.08);
+  }
+`;
+
+const TogglePasswordBtn = styled(Button)`
+  background: #F7F8F6 !important;
+  border: 1px solid #E6ECE8 !important;
+  border-left: none !important;
+  border-top-right-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  color: #66736D !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 14px !important;
+  transition: all 0.15s ease !important;
+
+  &:hover, &:focus, &:active {
+    background: #EEF8F4 !important;
+    border-color: #185C4A !important;
+    color: #185C4A !important;
+    box-shadow: none !important;
   }
 `;
 
@@ -145,10 +171,14 @@ const Settings = () => {
   const [email, setEmail] = useState(profile.email);
   const [phone, setPhone] = useState(profile.phone || '+977 9841234567');
 
-  // Security states
+  // Security states & Eye Toggles
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
 
   // System settings states
   const [emailAlerts, setEmailAlerts] = useState(profile.emailAlerts ?? true);
@@ -183,17 +213,37 @@ const Settings = () => {
     triggerToast('Admin profile details saved successfully!');
   };
 
-  const handleChangePassword = (e) => {
+  const handleChangePassword = async (e) => {
     e.preventDefault();
-    if (!newPassword) return;
+    if (!currentPassword) {
+      triggerToast('Please enter your current password.');
+      return;
+    }
+    if (!newPassword) {
+      triggerToast('Please enter a new password.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      triggerToast('New password must be at least 6 characters long.');
+      return;
+    }
     if (newPassword !== confirmPassword) {
       triggerToast('New password and confirmation do not match!');
       return;
     }
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    triggerToast('Admin password changed successfully!');
+
+    setIsSubmittingPassword(true);
+    try {
+      await changeAdminPassword(currentPassword, newPassword);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      triggerToast('Admin password updated successfully in the backend!');
+    } catch (err) {
+      triggerToast(err.message || 'Failed to update password. Please check your current password.');
+    } finally {
+      setIsSubmittingPassword(false);
+    }
   };
 
   const handleSaveSystemSettings = (e) => {
@@ -377,12 +427,20 @@ const Settings = () => {
                     <InputGroup>
                       <StyledInputGroupText><FiLock size={16} /></StyledInputGroupText>
                       <StyledFormInput
-                        type="password"
+                        $hasRightBtn
+                        type={showCurrentPassword ? 'text' : 'password'}
                         placeholder="Enter current password..."
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                         required
                       />
+                      <TogglePasswordBtn
+                        type="button"
+                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        title={showCurrentPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showCurrentPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                      </TogglePasswordBtn>
                     </InputGroup>
                   </Form.Group>
 
@@ -391,12 +449,20 @@ const Settings = () => {
                     <InputGroup>
                       <StyledInputGroupText><FiKey size={16} /></StyledInputGroupText>
                       <StyledFormInput
-                        type="password"
-                        placeholder="Enter new password (min 8 characters)..."
+                        $hasRightBtn
+                        type={showNewPassword ? 'text' : 'password'}
+                        placeholder="Enter new password (min 6 characters)..."
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         required
                       />
+                      <TogglePasswordBtn
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        title={showNewPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showNewPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                      </TogglePasswordBtn>
                     </InputGroup>
                   </Form.Group>
 
@@ -405,17 +471,25 @@ const Settings = () => {
                     <InputGroup>
                       <StyledInputGroupText><FiCheckCircle size={16} /></StyledInputGroupText>
                       <StyledFormInput
-                        type="password"
+                        $hasRightBtn
+                        type={showConfirmPassword ? 'text' : 'password'}
                         placeholder="Re-type new password to confirm..."
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         required
                       />
+                      <TogglePasswordBtn
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showConfirmPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                      </TogglePasswordBtn>
                     </InputGroup>
                   </Form.Group>
 
-                  <SaveButton type="submit">
-                    <FiLock size={16} /> Update Password
+                  <SaveButton type="submit" disabled={isSubmittingPassword}>
+                    <FiLock size={16} /> {isSubmittingPassword ? 'Updating...' : 'Update Password'}
                   </SaveButton>
                 </Form>
               </SectionCard>

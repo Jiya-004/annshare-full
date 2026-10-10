@@ -5,6 +5,7 @@ const {
   loginUser,
   getMe,
   updateProfile,
+  changePassword,
   getAllUsers,
   updateUserStatus,
   verifyNGO,
@@ -17,6 +18,7 @@ router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
+router.put('/change-password', protect, changePassword);
 
 // Admin user management routes
 router.get('/users', getAllUsers); // Open or with protect, allows admin dashboard to retrieve user roster

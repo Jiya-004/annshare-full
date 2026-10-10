@@ -615,6 +615,29 @@ export const updateAdminProfile = (data) => {
   notifyListeners();
 };
 
+export const changeAdminPassword = async (currentPassword, newPassword) => {
+  const token = currentAdminSession?.token || localStorage.getItem('annshare_admin_token');
+  if (token) {
+    const res = await fetch(`${API_BASE}/auth/change-password`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || 'Failed to update password.');
+    }
+  }
+
+  if (currentAdminSession) {
+    currentAdminSession.password = newPassword;
+    localStorage.setItem('annshare_admin_session', JSON.stringify(currentAdminSession));
+  }
+  notifyListeners();
+  return { message: 'Password updated successfully' };
+};
+
 export const searchAll = (query) => {
   if (!query || query.trim() === '') return { users: [], donations: [], requests: [], ngos: [] };
   const q = query.toLowerCase();

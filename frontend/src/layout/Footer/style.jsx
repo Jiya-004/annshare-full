@@ -331,10 +331,7 @@ export const ColumnHeading = styled.h4`
   justify-content: space-between;
 
   @media (max-width: 768px) {
-    margin: 0;
-    padding: 8px 0;
-    cursor: pointer;
-    user-select: none;
+    display: none;
   }
 `;
 
