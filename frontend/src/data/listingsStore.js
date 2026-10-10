@@ -103,7 +103,26 @@ function saveListings(listings) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(listings));
     window.dispatchEvent(new Event("annshare_listings_updated"));
   } catch (err) {
-    console.error("Failed to save listings to localStorage:", err);
+    console.warn("Storage quota exceeded or error occurred, attempting pruned save:", err);
+    try {
+      // Fallback: prune heavy base64 strings and keep only safe URLs/placeholders
+      const pruned = listings.map((item) => {
+        const isBase64 = (str) => typeof str === "string" && str.startsWith("data:image/");
+        const safeImage = isBase64(item.image) ? "/food/food1.jpg" : item.image;
+        const safeImages = Array.isArray(item.images)
+          ? item.images.map((img) => (isBase64(img) ? "/food/food1.jpg" : img))
+          : [safeImage];
+        return {
+          ...item,
+          image: safeImage,
+          images: safeImages,
+        };
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(pruned));
+      window.dispatchEvent(new Event("annshare_listings_updated"));
+    } catch (fallbackErr) {
+      console.error("Critical: Failed to save listings even after image pruning:", fallbackErr);
+    }
   }
 }
 
