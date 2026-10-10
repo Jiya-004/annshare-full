@@ -26,7 +26,7 @@ const runAutoSeed = async () => {
       {
         name: 'Sarah Jenkins',
         email: 'admin@annshare.org',
-        password: 'password123',
+        password: 'admin123',
         role: 'admin',
         orgName: 'ANNShare Operations',
         organization: 'ANNShare Operations',
