@@ -6,28 +6,28 @@ const StepsContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 36px;
+  margin-bottom: 24px;
   position: relative;
 
   &::before {
     content: "";
     position: absolute;
-    top: 20px;
-    left: 40px;
-    right: 40px;
+    top: 16px;
+    left: 36px;
+    right: 36px;
     height: 2px;
     background: rgba(23, 74, 58, 0.1);
     z-index: 1;
 
     @media (max-width: 600px) {
-      top: 16px;
-      left: 20px;
-      right: 20px;
+      top: 14px;
+      left: 16px;
+      right: 16px;
     }
   }
 
   @media (max-width: 600px) {
-    margin-bottom: 22px;
+    margin-bottom: 16px;
   }
 `;
 
@@ -37,29 +37,29 @@ const StepItem = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   cursor: ${({ $isPassed }) => ($isPassed ? "pointer" : "default")};
 
   @media (max-width: 600px) {
-    gap: 4px;
+    gap: 3px;
   }
 
   .step-circle {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: var(--font-display, 'Poppins', sans-serif);
-    font-size: 0.88rem;
+    font-size: 0.78rem;
     font-weight: 700;
     transition: all 0.3s ease;
 
     @media (max-width: 600px) {
-      width: 32px;
-      height: 32px;
-      font-size: 0.78rem;
+      width: 26px;
+      height: 26px;
+      font-size: 0.7rem;
     }
 
     background: ${({ $isActive, $isPassed }) =>
@@ -81,23 +81,23 @@ const StepItem = styled.div`
           : "rgba(23, 74, 58, 0.15)"};
 
     box-shadow: ${({ $isActive }) =>
-      $isActive ? "0 4px 14px rgba(23, 74, 58, 0.3)" : "none"};
+      $isActive ? "0 3px 10px rgba(23, 74, 58, 0.25)" : "none"};
   }
 
   .step-label {
     font-family: var(--font-display, 'Poppins', sans-serif);
-    font-size: 0.84rem;
+    font-size: 0.76rem;
     font-weight: ${({ $isActive }) => ($isActive ? "700" : "600")};
     color: ${({ $isActive, $isPassed }) =>
       $isActive ? "#174A3A" : $isPassed ? "#2E7D5B" : "#8C9E98"};
     white-space: nowrap;
 
     @media (max-width: 600px) {
-      font-size: 0.68rem;
+      font-size: 0.65rem;
     }
 
     @media (max-width: 380px) {
-      font-size: 0.62rem;
+      font-size: 0.58rem;
     }
   }
 `;

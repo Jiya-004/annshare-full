@@ -14,11 +14,15 @@ import api from "../../../services/api";
 const CategoriesGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  gap: 8px;
 
-  @media (max-width: 768px) {
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (max-width: 600px) {
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    gap: 6px;
   }
 `;
 
@@ -27,49 +31,49 @@ const CategoryCard = styled.button`
   color: ${({ $selected }) => ($selected ? "#FFFFFF" : "#174A3A")};
   border: 1.5px solid
     ${({ $selected }) => ($selected ? "#174A3A" : "rgba(23, 74, 58, 0.1)")};
-  border-radius: 14px;
-  padding: 12px 10px;
+  border-radius: 12px;
+  padding: 10px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
   @media (max-width: 768px) {
-    padding: 10px 8px;
-    border-radius: 12px;
-    gap: 4px;
+    padding: 8px 6px;
+    border-radius: 10px;
+    gap: 3px;
   }
 
   &:hover {
     border-color: #2E7D5B;
     transform: translateY(-2px);
-    box-shadow: 0 4px 14px rgba(23, 74, 58, 0.08);
+    box-shadow: 0 3px 10px rgba(23, 74, 58, 0.08);
   }
 
   .cat-icon-wrap {
-    font-size: 1.35rem;
+    font-size: 1.2rem;
     color: ${({ $selected }) => ($selected ? "#A3E7C9" : "#2E7D5B")};
     display: flex;
     align-items: center;
     justify-content: center;
 
     @media (max-width: 768px) {
-      font-size: 1.15rem;
+      font-size: 1.05rem;
     }
   }
 
   .cat-name {
     font-family: var(--font-display, 'Poppins', sans-serif);
-    font-size: 0.8rem;
+    font-size: 0.76rem;
     font-weight: 600;
     text-align: center;
-    line-height: 1.25;
+    line-height: 1.2;
 
     @media (max-width: 768px) {
-      font-size: 0.74rem;
+      font-size: 0.7rem;
     }
   }
 `;

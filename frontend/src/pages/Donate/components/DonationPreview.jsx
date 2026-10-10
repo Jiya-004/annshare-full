@@ -17,24 +17,24 @@ const PreviewContainer = styled.div`
 
 const PreviewCard = styled.div`
   background: #FFFFFF;
-  border-radius: 28px;
+  border-radius: 20px;
   overflow: hidden;
   border: 1px solid rgba(23, 74, 58, 0.1);
-  box-shadow: 0 16px 40px rgba(23, 74, 58, 0.08);
+  box-shadow: 0 8px 24px rgba(23, 74, 58, 0.06);
   transition: all 0.3s ease;
 
   @media (max-width: 768px) {
-    border-radius: 20px;
+    border-radius: 16px;
   }
 
   .image-box {
     position: relative;
-    height: 240px;
+    height: 180px;
     background: #EFECE5;
     overflow: hidden;
 
     @media (max-width: 768px) {
-      height: 190px;
+      height: 150px;
     }
 
     img {
@@ -51,24 +51,24 @@ const PreviewCard = styled.div`
 
     .badge-available {
       position: absolute;
-      top: 18px;
-      left: 18px;
+      top: 12px;
+      left: 12px;
       background: rgba(23, 74, 58, 0.92);
       backdrop-filter: blur(8px);
       color: #FFFFFF;
-      font-size: 0.76rem;
+      font-size: 0.7rem;
       font-weight: 700;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
-      padding: 6px 12px;
+      padding: 4px 10px;
       border-radius: 999px;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
 
       .dot {
-        width: 6px;
-        height: 6px;
+        width: 5px;
+        height: 5px;
         border-radius: 50%;
         background: #2E7D5B;
       }
@@ -76,10 +76,10 @@ const PreviewCard = styled.div`
 
     .btn-save {
       position: absolute;
-      top: 18px;
-      right: 18px;
-      width: 38px;
-      height: 38px;
+      top: 12px;
+      right: 12px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.9);
       backdrop-filter: blur(8px);
@@ -87,10 +87,10 @@ const PreviewCard = styled.div`
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.2rem;
+      font-size: 1.05rem;
       color: ${({ $isSaved }) => ($isSaved ? "#E11D48" : "#174A3A")};
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       transition: all 0.2s ease;
 
       &:hover {
@@ -101,14 +101,14 @@ const PreviewCard = styled.div`
   }
 
   .content-box {
-    padding: 24px;
+    padding: 16px 18px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 10px;
 
     @media (max-width: 768px) {
-      padding: 16px 14px;
-      gap: 12px;
+      padding: 12px 14px;
+      gap: 8px;
     }
 
     .top-meta {
@@ -117,64 +117,64 @@ const PreviewCard = styled.div`
       justify-content: space-between;
 
       .category-tag {
-        font-size: 0.78rem;
+        font-size: 0.72rem;
         font-weight: 700;
         color: #2E7D5B;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.06em;
 
         @media (max-width: 768px) {
-          font-size: 0.72rem;
+          font-size: 0.66rem;
         }
       }
 
       .portions-badge {
-        font-size: 0.82rem;
+        font-size: 0.74rem;
         font-weight: 700;
         color: #174A3A;
         background: #F8F5ED;
-        padding: 4px 12px;
+        padding: 3px 9px;
         border-radius: 999px;
         border: 1px solid rgba(23, 74, 58, 0.08);
 
         @media (max-width: 768px) {
-          font-size: 0.76rem;
-          padding: 3px 10px;
+          font-size: 0.68rem;
+          padding: 2px 8px;
         }
       }
     }
 
     .food-title {
       font-family: var(--font-display, 'Poppins', sans-serif);
-      font-size: 1.25rem;
+      font-size: 1.05rem;
       font-weight: 600;
       color: #174A3A;
       margin: 0;
-      line-height: 1.3;
+      line-height: 1.25;
 
       @media (max-width: 768px) {
-        font-size: 1.05rem;
+        font-size: 0.95rem;
       }
     }
 
     .donor-info {
       display: flex;
       align-items: center;
-      gap: 6px;
-      font-size: 0.9rem;
+      gap: 5px;
+      font-size: 0.8rem;
       color: #174A3A;
       font-weight: 600;
 
       @media (max-width: 768px) {
-        font-size: 0.82rem;
+        font-size: 0.75rem;
       }
 
       svg {
         color: #2E7D5B;
-        font-size: 1rem;
+        font-size: 0.92rem;
 
         @media (max-width: 768px) {
-          font-size: 0.9rem;
+          font-size: 0.82rem;
         }
       }
     }
@@ -182,20 +182,20 @@ const PreviewCard = styled.div`
     .meta-details {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      padding-top: 12px;
+      gap: 4px;
+      padding-top: 8px;
       border-top: 1px solid rgba(23, 74, 58, 0.06);
-      font-size: 0.82rem;
+      font-size: 0.75rem;
       color: #556B64;
 
       .meta-line {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 5px;
 
         svg {
           color: #2E7D5B;
-          font-size: 0.95rem;
+          font-size: 0.85rem;
         }
       }
     }

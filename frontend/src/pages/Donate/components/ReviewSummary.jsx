@@ -12,92 +12,92 @@ import {
 
 const SummaryCard = styled.div`
   background: #F8F5ED;
-  border-radius: 22px;
+  border-radius: 18px;
   border: 1px solid rgba(23, 74, 58, 0.1);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 28px;
+  gap: 16px;
+  padding: 20px 22px;
 
   @media (max-width: 768px) {
-    padding: 18px 14px;
-    border-radius: 16px;
-    gap: 14px;
+    padding: 14px 12px;
+    border-radius: 14px;
+    gap: 12px;
   }
 
   .main-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 16px;
+    gap: 12px;
     border-bottom: 1px solid rgba(23, 74, 58, 0.08);
-    padding-bottom: 20px;
+    padding-bottom: 14px;
 
     @media (max-width: 768px) {
       flex-direction: column;
-      gap: 10px;
-      padding-bottom: 14px;
+      gap: 8px;
+      padding-bottom: 10px;
     }
 
     .title-block {
       .badge-cat {
-        font-size: 0.76rem;
+        font-size: 0.7rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.06em;
         color: #2E7D5B;
         background: rgba(46, 125, 91, 0.12);
-        padding: 4px 10px;
+        padding: 3px 8px;
         border-radius: 999px;
         display: inline-block;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
 
         @media (max-width: 768px) {
-          font-size: 0.68rem;
-          padding: 3px 8px;
-          margin-bottom: 6px;
+          font-size: 0.65rem;
+          padding: 2px 6px;
+          margin-bottom: 4px;
         }
       }
 
       h3 {
         font-family: var(--font-display, 'Poppins', sans-serif);
-        font-size: 1.45rem;
+        font-size: 1.15rem;
         font-weight: 600;
         color: #174A3A;
-        margin: 0 0 6px;
+        margin: 0 0 4px;
 
         @media (max-width: 768px) {
-          font-size: 1.15rem;
-          margin: 0 0 4px;
+          font-size: 1.02rem;
+          margin: 0 0 2px;
         }
       }
 
       .condition-tag {
-        font-size: 0.82rem;
+        font-size: 0.76rem;
         color: #66756F;
 
         @media (max-width: 768px) {
-          font-size: 0.74rem;
+          font-size: 0.7rem;
         }
       }
     }
 
     .portions-pill {
       font-family: var(--font-display, 'Poppins', sans-serif);
-      font-size: 1.15rem;
+      font-size: 0.95rem;
       font-weight: 700;
       color: #174A3A;
       background: #FFFFFF;
-      padding: 10px 18px;
-      border-radius: 14px;
+      padding: 7px 14px;
+      border-radius: 12px;
       border: 1px solid rgba(23, 74, 58, 0.1);
-      box-shadow: 0 4px 12px rgba(23, 74, 58, 0.04);
+      box-shadow: 0 2px 8px rgba(23, 74, 58, 0.04);
       white-space: nowrap;
 
       @media (max-width: 768px) {
-        font-size: 0.92rem;
-        padding: 6px 12px;
+        font-size: 0.84rem;
+        padding: 5px 10px;
         align-self: flex-start;
       }
     }
@@ -106,57 +106,57 @@ const SummaryCard = styled.div`
   .details-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    gap: 12px;
 
     @media (max-width: 580px) {
       grid-template-columns: 1fr;
-      gap: 10px;
+      gap: 8px;
     }
 
     .detail-item {
       background: #FFFFFF;
-      border-radius: 14px;
-      padding: 14px 16px;
+      border-radius: 12px;
+      padding: 10px 14px;
       border: 1px solid rgba(23, 74, 58, 0.06);
 
       @media (max-width: 768px) {
-        padding: 10px 12px;
-        border-radius: 12px;
+        padding: 8px 10px;
+        border-radius: 10px;
       }
 
       .label {
-        font-size: 0.74rem;
+        font-size: 0.7rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.05em;
         color: #8C9E98;
         display: flex;
         align-items: center;
-        gap: 6px;
-        margin-bottom: 4px;
+        gap: 5px;
+        margin-bottom: 3px;
 
         @media (max-width: 768px) {
-          font-size: 0.68rem;
+          font-size: 0.65rem;
         }
       }
 
       .val {
-        font-size: 0.92rem;
+        font-size: 0.84rem;
         font-weight: 600;
         color: #174A3A;
 
         @media (max-width: 768px) {
-          font-size: 0.84rem;
+          font-size: 0.78rem;
         }
       }
 
       .sub-val {
-        font-size: 0.8rem;
+        font-size: 0.74rem;
         color: #66756F;
         margin-top: 2px;
 
         @media (max-width: 768px) {
-          font-size: 0.74rem;
+          font-size: 0.7rem;
         }
       }
     }

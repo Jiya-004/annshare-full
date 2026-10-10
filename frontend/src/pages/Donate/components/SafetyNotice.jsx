@@ -4,85 +4,85 @@ import { IoShieldCheckmark, IoCheckmarkCircle } from "react-icons/io5";
 
 const NoticeCard = styled.div`
   background: #F4F7F5;
-  border-radius: 20px;
-  padding: 24px;
+  border-radius: 14px;
+  padding: 16px 18px;
   border: 1px solid rgba(46, 125, 91, 0.18);
-  margin-top: 10px;
+  margin-top: 8px;
 
   @media (max-width: 768px) {
-    padding: 16px 14px;
-    border-radius: 16px;
+    padding: 12px 10px;
+    border-radius: 12px;
   }
 
   .notice-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 8px;
+    gap: 8px;
+    margin-bottom: 6px;
 
     .shield-icon {
       color: #2E7D5B;
-      font-size: 1.3rem;
+      font-size: 1.15rem;
 
       @media (max-width: 768px) {
-        font-size: 1.15rem;
+        font-size: 1rem;
       }
     }
 
     h4 {
       font-family: var(--font-display, 'Poppins', sans-serif);
-      font-size: 1.05rem;
+      font-size: 0.92rem;
       font-weight: 600;
       color: #174A3A;
       margin: 0;
 
       @media (max-width: 768px) {
-        font-size: 0.92rem;
+        font-size: 0.84rem;
       }
     }
   }
 
   p {
-    font-size: 0.88rem;
+    font-size: 0.8rem;
     color: #556B64;
-    line-height: 1.5;
-    margin: 0 0 16px;
+    line-height: 1.45;
+    margin: 0 0 12px;
 
     @media (max-width: 768px) {
-      font-size: 0.78rem;
-      margin-bottom: 12px;
+      font-size: 0.74rem;
+      margin-bottom: 8px;
     }
   }
 
   .checklist-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px 16px;
+    gap: 8px 12px;
 
     @media (max-width: 580px) {
       grid-template-columns: 1fr;
-      gap: 8px;
+      gap: 6px;
     }
 
     .check-item {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 0.84rem;
+      gap: 6px;
+      font-size: 0.78rem;
       color: #174A3A;
       font-weight: 600;
 
       @media (max-width: 768px) {
-        font-size: 0.76rem;
+        font-size: 0.72rem;
       }
 
       svg {
         color: #2E7D5B;
-        font-size: 1.05rem;
+        font-size: 0.95rem;
         flex-shrink: 0;
 
         @media (max-width: 768px) {
-          font-size: 0.92rem;
+          font-size: 0.85rem;
         }
       }
     }

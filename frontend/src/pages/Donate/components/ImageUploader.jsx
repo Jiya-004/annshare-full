@@ -21,20 +21,20 @@ const DropZone = styled.div`
     ${({ $isDragOver }) => ($isDragOver ? "#2E7D5B" : "rgba(23, 74, 58, 0.2)")};
   background: ${({ $isDragOver }) =>
     $isDragOver ? "rgba(46, 125, 91, 0.05)" : "#F8F5ED"};
-  border-radius: 20px;
-  padding: 32px 20px;
+  border-radius: 14px;
+  padding: 20px 16px;
   text-align: center;
   cursor: pointer;
   transition: all 0.25s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 
   @media (max-width: 768px) {
-    padding: 20px 14px;
-    border-radius: 16px;
-    gap: 8px;
+    padding: 14px 10px;
+    border-radius: 12px;
+    gap: 6px;
   }
 
   &:hover {
@@ -43,58 +43,58 @@ const DropZone = styled.div`
   }
 
   .upload-icon-circle {
-    width: 52px;
-    height: 52px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: #FFFFFF;
     color: #2E7D5B;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.6rem;
-    box-shadow: 0 4px 12px rgba(23, 74, 58, 0.08);
+    font-size: 1.25rem;
+    box-shadow: 0 2px 8px rgba(23, 74, 58, 0.08);
 
     @media (max-width: 768px) {
-      width: 40px;
-      height: 40px;
-      font-size: 1.25rem;
+      width: 32px;
+      height: 32px;
+      font-size: 1.05rem;
     }
   }
 
   h4 {
     font-family: var(--font-display, 'Poppins', sans-serif);
-    font-size: 1rem;
+    font-size: 0.88rem;
     font-weight: 600;
     color: #174A3A;
     margin: 0;
 
     @media (max-width: 768px) {
-      font-size: 0.88rem;
+      font-size: 0.8rem;
     }
   }
 
   p {
-    font-size: 0.84rem;
+    font-size: 0.76rem;
     color: #66756F;
-    max-width: 380px;
+    max-width: 340px;
     margin: 0;
-    line-height: 1.45;
+    line-height: 1.4;
 
     @media (max-width: 768px) {
-      font-size: 0.74rem;
+      font-size: 0.7rem;
     }
   }
 
   .file-specs {
-    font-size: 0.74rem;
+    font-size: 0.68rem;
     color: #8C9E98;
     background: rgba(23, 74, 58, 0.06);
-    padding: 3px 10px;
+    padding: 2px 8px;
     border-radius: 999px;
 
     @media (max-width: 768px) {
-      font-size: 0.68rem;
-      padding: 2px 8px;
+      font-size: 0.62rem;
+      padding: 2px 6px;
     }
   }
 `;
@@ -102,17 +102,17 @@ const DropZone = styled.div`
 const ThumbnailGrid = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 
   .thumb-item {
     position: relative;
-    width: 80px;
-    height: 80px;
-    border-radius: 14px;
+    width: 64px;
+    height: 64px;
+    border-radius: 10px;
     overflow: hidden;
     border: 2px solid #FFFFFF;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
     img {
       width: 100%;
