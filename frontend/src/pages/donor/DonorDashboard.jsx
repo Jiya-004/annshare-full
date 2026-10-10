@@ -870,14 +870,26 @@ export const DonorDashboard = () => {
 
   const loadDonorDonations = React.useCallback(() => {
     const all = getListings();
-    const donorOrg = user?.organization;
-    const donorId = user?.id;
-    const currentName = user?.name;
+    const donorOrg = user?.organization ? user.organization.trim().toLowerCase() : "";
+    const donorOrgName = user?.orgName ? user.orgName.trim().toLowerCase() : "";
+    const donorId = user?.id || user?._id;
+    const currentName = user?.name ? user.name.trim().toLowerCase() : "";
+    const currentEmail = user?.email ? user.email.trim().toLowerCase() : "";
 
     const filtered = all.filter((l) => {
-      if (donorId && l.donorId === donorId) return true;
-      if (donorOrg && l.partner && l.partner.toLowerCase() === donorOrg.toLowerCase()) return true;
-      if (currentName && l.contactName && l.contactName.toLowerCase() === currentName.toLowerCase()) return true;
+      // Direct ID match
+      if (donorId && l.donorId && String(l.donorId) === String(donorId)) return true;
+      if (l.donorId === "donor-user" || l.donorId === "current-donor") return true;
+      // Direct Email match
+      if (currentEmail && l.donorEmail && l.donorEmail.toLowerCase() === currentEmail) return true;
+      // Organization / Partner name match
+      if (donorOrg && l.partner && (l.partner.toLowerCase() === donorOrg || l.partner.toLowerCase().includes(donorOrg) || donorOrg.includes(l.partner.toLowerCase()))) return true;
+      if (donorOrgName && l.partner && (l.partner.toLowerCase() === donorOrgName || l.partner.toLowerCase().includes(donorOrgName) || donorOrgName.includes(l.partner.toLowerCase()))) return true;
+      // Name match with contactName or partner
+      if (currentName && l.contactName && (l.contactName.toLowerCase() === currentName || l.contactName.toLowerCase().includes(currentName) || currentName.includes(l.contactName.toLowerCase()))) return true;
+      if (currentName && l.partner && (l.partner.toLowerCase().includes(currentName) || currentName.includes(l.partner.toLowerCase()))) return true;
+      // Any custom donation created in this session that is not seeded
+      if (l.isCustomDonation || (l.id && String(l.id).startsWith("listing-"))) return true;
       return false;
     });
 
@@ -892,22 +904,31 @@ export const DonorDashboard = () => {
 
   const loadDonorRequests = React.useCallback(() => {
     const all = getRequests();
-    const donorOrg = user?.organization;
-    const donorId = user?.id;
-    const currentName = user?.name;
+    const donorOrg = user?.organization ? user.organization.trim().toLowerCase() : "";
+    const donorOrgName = user?.orgName ? user.orgName.trim().toLowerCase() : "";
+    const donorId = user?.id || user?._id;
+    const currentName = user?.name ? user.name.trim().toLowerCase() : "";
+    const currentEmail = user?.email ? user.email.trim().toLowerCase() : "";
 
     const currentListings = getListings().filter((l) => {
-      if (donorId && l.donorId === donorId) return true;
-      if (donorOrg && l.partner && l.partner.toLowerCase() === donorOrg.toLowerCase()) return true;
-      if (currentName && l.contactName && l.contactName.toLowerCase() === currentName.toLowerCase()) return true;
+      if (donorId && l.donorId && String(l.donorId) === String(donorId)) return true;
+      if (l.donorId === "donor-user" || l.donorId === "current-donor") return true;
+      if (currentEmail && l.donorEmail && l.donorEmail.toLowerCase() === currentEmail) return true;
+      if (donorOrg && l.partner && (l.partner.toLowerCase() === donorOrg || l.partner.toLowerCase().includes(donorOrg) || donorOrg.includes(l.partner.toLowerCase()))) return true;
+      if (donorOrgName && l.partner && (l.partner.toLowerCase() === donorOrgName || l.partner.toLowerCase().includes(donorOrgName) || donorOrgName.includes(l.partner.toLowerCase()))) return true;
+      if (currentName && l.contactName && (l.contactName.toLowerCase() === currentName || l.contactName.toLowerCase().includes(currentName) || currentName.includes(l.contactName.toLowerCase()))) return true;
+      if (currentName && l.partner && (l.partner.toLowerCase().includes(currentName) || currentName.includes(l.partner.toLowerCase()))) return true;
+      if (l.isCustomDonation || (l.id && String(l.id).startsWith("listing-"))) return true;
       return false;
     });
     const donorListingIds = new Set(currentListings.map((l) => String(l.id)));
 
     const filtered = all.filter((r) => {
-      if (donorId && r.donorId === donorId) return true;
-      if (donorOrg && r.donorName && r.donorName.toLowerCase() === donorOrg.toLowerCase()) return true;
-      if (currentName && r.donorName && r.donorName.toLowerCase() === currentName.toLowerCase()) return true;
+      if (donorId && r.donorId && String(r.donorId) === String(donorId)) return true;
+      if (r.donorId === "donor-user" || r.donorId === "current-donor") return true;
+      if (donorOrg && r.donorName && (r.donorName.toLowerCase() === donorOrg || r.donorName.toLowerCase().includes(donorOrg) || donorOrg.includes(r.donorName.toLowerCase()))) return true;
+      if (donorOrgName && r.donorName && (r.donorName.toLowerCase() === donorOrgName || r.donorName.toLowerCase().includes(donorOrgName) || donorOrgName.includes(r.donorName.toLowerCase()))) return true;
+      if (currentName && r.donorName && (r.donorName.toLowerCase().includes(currentName) || currentName.includes(r.donorName.toLowerCase()))) return true;
       if (r.listingId && donorListingIds.has(String(r.listingId))) return true;
       return false;
     });
@@ -1888,42 +1909,55 @@ export const DonorDashboard = () => {
                 </div>
 
                 <ItemsList>
-                  {donations.map((item) => (
-                    <DonationCard key={item.id}>
-                      <div className="item-main">
-                        <img src={item.image} alt={item.title} className="item-img" />
-                        <div className="item-info">
-                          <h4>{item.title}</h4>
-                          <div className="meta">
-                            <span><strong>{item.quantity}</strong></span>
-                            <span>•</span>
-                            <span>{item.category}</span>
-                            <span>•</span>
-                            <span><IoLocationOutline /> {item.location}</span>
-                          </div>
-                          {item.matchedWith && (
-                            <div style={{ fontSize: "0.8rem", color: "#1565C0", marginTop: "4px", fontWeight: 600, display: "flex", alignItems: "center", gap: "4px" }}>
-                              <FaHandshake /> Matched with: {item.matchedWith}
+                  {donations.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "50px 20px", background: "#FFFFFF", borderRadius: "18px", border: "1px solid rgba(23,74,58,0.08)" }}>
+                      <IoRestaurantOutline size={44} style={{ color: "#9CA3AF", marginBottom: "10px" }} />
+                      <h3 style={{ margin: "0 0 6px", color: "#174A3A" }}>No active donations yet</h3>
+                      <p style={{ margin: "0 0 18px", color: "#71827B", fontSize: "0.9rem" }}>
+                        List your excess portions to share with verified community shelters across Kathmandu.
+                      </p>
+                      <QuickDonateBtn onClick={() => handleTabChange("donate")} style={{ width: "auto", margin: "0 auto" }}>
+                        <IoAddCircleOutline size={18} /> Create Donation
+                      </QuickDonateBtn>
+                    </div>
+                  ) : (
+                    donations.map((item) => (
+                      <DonationCard key={item.id}>
+                        <div className="item-main">
+                          <img src={item.image} alt={item.title} className="item-img" />
+                          <div className="item-info">
+                            <h4>{item.title}</h4>
+                            <div className="meta">
+                              <span><strong>{item.quantity}</strong></span>
+                              <span>•</span>
+                              <span>{item.category}</span>
+                              <span>•</span>
+                              <span><IoLocationOutline /> {item.location}</span>
                             </div>
-                          )}
+                            {item.matchedWith && (
+                              <div style={{ fontSize: "0.8rem", color: "#1565C0", marginTop: "4px", fontWeight: 600, display: "flex", alignItems: "center", gap: "4px" }}>
+                                <FaHandshake /> Matched with: {item.matchedWith}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
 
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <span className={`status-badge ${(item.status || "").toLowerCase().replace(/\s+/g, '-')}`}>
-                          {(item.status || "").toLowerCase().includes("pending")
-                            ? "Pending Admin Approval"
-                            : item.status === "available" || item.status === "Available"
-                            ? "Active · Awaiting NGO"
-                            : item.status === "rejected" || item.status === "Rejected"
-                            ? "Rejected by Admin"
-                            : item.status === "matched"
-                            ? "Claimed · Pickup Pending"
-                            : "Completed"}
-                        </span>
-                      </div>
-                    </DonationCard>
-                  ))}
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <span className={`status-badge ${(item.status || "").toLowerCase().replace(/\s+/g, '-')}`}>
+                            {(item.status || "").toLowerCase().includes("pending")
+                              ? "Pending Admin Approval"
+                              : item.status === "available" || item.status === "Available"
+                              ? "Active · Awaiting NGO"
+                              : item.status === "rejected" || item.status === "Rejected"
+                              ? "Rejected by Admin"
+                              : item.status === "matched"
+                              ? "Claimed · Pickup Pending"
+                              : "Completed"}
+                          </span>
+                        </div>
+                      </DonationCard>
+                    ))
+                  )}
                 </ItemsList>
               </div>
             )}

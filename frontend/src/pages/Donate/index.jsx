@@ -71,15 +71,28 @@ export default function DonatePage() {
       "Freshly prepared vegetable meals packed in hygienic meal containers, ready for immediate redistribution.",
     condition: "Freshly Prepared",
     images: [],
-    businessName: user?.organization || user?.name || "Green Leaf Café",
+    businessName: user?.organization || user?.orgName || user?.name || "Utsha Cafe",
     location: user?.location || "Thamel, Kathmandu",
     pickupDate: "Today",
     pickupFromTime: initialTimes.from,
     pickupToTime: initialTimes.to,
-    contactName: user?.name || "Ramesh Shrestha",
-    contactPhone: "+977 980-1234567",
+    contactName: user?.name || "Utsha",
+    contactPhone: user?.phone || "+977 980-1234567",
     instructions: "Please collect directly from the back kitchen service entrance.",
   });
+
+  // Keep form synced with user if user updates
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        businessName: user.organization || user.orgName || user.name || prev.businessName,
+        contactName: user.name || prev.contactName,
+        contactPhone: user.phone || prev.contactPhone,
+        location: user.location || prev.location,
+      }));
+    }
+  }, [user]);
 
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -130,14 +143,18 @@ export default function DonatePage() {
           const now = new Date();
           const currentFormattedTime = formatCurrentTime(now);
           const fallbackImg = `/food/food${Math.floor(Math.random() * 8) + 1}.jpg`;
-          const formattedPhone = formData.contactPhone ? formatPhoneNumber(formData.contactPhone) : "+977 980-1234567";
+          const formattedPhone = formData.contactPhone ? formatPhoneNumber(formData.contactPhone) : (user?.phone || "+977 980-1234567");
+          const donorOrg = user?.organization || user?.orgName || formData.businessName || user?.name || "Utsha Cafe";
+          const donorContact = user?.name || formData.contactName || "Utsha";
+          const donorIdentifier = user?.id || user?._id || user?.email || "donor-user";
+
           const newListing = {
             title: formData.foodName,
             category: normalizeCategory(formData.category),
             quantity: Number(formData.quantity) || 1,
             unit: formData.unit || "portions",
             condition: formData.condition || "Freshly Prepared",
-            partner: user?.organization || formData.businessName || user?.name || "Your Organization",
+            partner: donorOrg,
             partnerType: user?.badge || "Verified Food Donor",
             verified: true,
             location: formData.location || user?.location || "Thamel, Kathmandu",
@@ -151,10 +168,12 @@ export default function DonatePage() {
             images: formData.images && formData.images.length > 0 ? formData.images : [fallbackImg],
             description: formData.description || "",
             safetyInfo: formData.condition ? `Condition: ${formData.condition}. Prepared at ${currentFormattedTime} under food hygiene standards.` : `Prepared at ${currentFormattedTime}.`,
-            contactName: user?.name || formData.contactName || "Donor",
+            contactName: donorContact,
             contactPhone: formattedPhone,
             status: "Pending Approval",
-            donorId: user?.id || `donor-${Date.now()}`,
+            donorId: donorIdentifier,
+            donorEmail: user?.email || "",
+            isCustomDonation: true,
             instructions: formData.instructions || "",
           };
 
