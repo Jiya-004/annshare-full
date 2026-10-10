@@ -295,14 +295,59 @@ const DonationManagement = () => {
           </div>
 
           <div className="d-flex align-items-center gap-2 flex-shrink-0">
+            {don.status?.toLowerCase().includes('pending') && (
+              <>
+                <Button
+                  variant="success"
+                  size="sm"
+                  style={{
+                    borderRadius: '20px',
+                    height: '38px',
+                    padding: '0 16px',
+                    fontWeight: 700,
+                    fontSize: '0.84rem',
+                    background: '#185C4A',
+                    borderColor: '#185C4A',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                  onClick={() => handleStatusChange('Available')}
+                >
+                  <FiCheckCircle size={16} />
+                  <span>Approve & Publish</span>
+                </Button>
+                <Button
+                  variant="outline-danger"
+                  size="sm"
+                  style={{
+                    borderRadius: '20px',
+                    height: '38px',
+                    padding: '0 14px',
+                    fontWeight: 600,
+                    fontSize: '0.82rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                  onClick={() => handleStatusChange('Rejected')}
+                >
+                  <FiAlertCircle size={15} />
+                  <span>Reject</span>
+                </Button>
+              </>
+            )}
+
             <StyledStatusSelect
               value={don.status}
               onChange={(e) => handleStatusChange(e.target.value)}
             >
+              <option value="Pending Approval">Pending Approval</option>
               <option value="Available">Available</option>
               <option value="Requested">Requested</option>
               <option value="Picked Up">Picked Up</option>
               <option value="Completed">Completed</option>
+              <option value="Rejected">Rejected</option>
               <option value="Expired">Expired</option>
             </StyledStatusSelect>
 
@@ -637,10 +682,12 @@ const DonationManagement = () => {
               style={{ borderRadius: '20px', height: '38px', fontSize: '0.84rem', background: '#F7F8F6', border: '1px solid #E6ECE8' }}
             >
               <option value="All">Filter Status: All</option>
+              <option value="Pending Approval">Pending Approval</option>
               <option value="Available">Available</option>
               <option value="Requested">Requested</option>
               <option value="Picked Up">Picked Up</option>
               <option value="Completed">Completed</option>
+              <option value="Rejected">Rejected</option>
               <option value="Expired">Expired</option>
             </Form.Select>
           </Col>
@@ -689,6 +736,8 @@ const DonationManagement = () => {
               {filteredDonations.length > 0 ? (
                 filteredDonations.map(don => {
                   const cleanQuantity = don.quantity ? don.quantity.replace(/\s*\([^)]*\)/g, '') : '';
+                  const isPending = (don.status || '').toLowerCase().includes('pending');
+
                   return (
                     <tr key={don.id}>
                       <td>
@@ -724,20 +773,55 @@ const DonationManagement = () => {
                         <StatusBadge status={don.status} />
                       </td>
                       <td className="text-end">
-                        <Dropdown align="end">
-                          <Dropdown.Toggle as={ActionIconButton}>
-                            <FiMoreVertical size={16} />
-                          </Dropdown.Toggle>
-                          <StyledDropdownMenu>
-                            <StyledDropdownItem onClick={() => handleOpenDetail(don)}>
-                              <FiEye className="me-2 text-primary" size={15} /> View Listing Details
-                            </StyledDropdownItem>
-                            <Dropdown.Divider />
-                            <StyledDropdownItem onClick={() => promptDelete(don)} $variant="danger">
-                              <FiTrash2 className="me-2" size={15} /> Remove Listing
-                            </StyledDropdownItem>
-                          </StyledDropdownMenu>
-                        </Dropdown>
+                        <div className="d-inline-flex align-items-center gap-1">
+                          {isPending && (
+                            <Button
+                              variant="success"
+                              size="sm"
+                              style={{
+                                borderRadius: '14px',
+                                fontSize: '0.74rem',
+                                padding: '3px 10px',
+                                fontWeight: 700,
+                                background: '#185C4A',
+                                borderColor: '#185C4A',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                              onClick={() => updateDonationStatus(don.id, 'Available')}
+                              title="Approve and make available for community pickup"
+                            >
+                              <FiCheckCircle size={13} /> Approve
+                            </Button>
+                          )}
+
+                          <Dropdown align="end">
+                            <Dropdown.Toggle as={ActionIconButton}>
+                              <FiMoreVertical size={16} />
+                            </Dropdown.Toggle>
+                            <StyledDropdownMenu>
+                              {isPending && (
+                                <>
+                                  <StyledDropdownItem onClick={() => updateDonationStatus(don.id, 'Available')} style={{ color: '#185C4A', fontWeight: 600 }}>
+                                    <FiCheckCircle className="me-2 text-success" size={15} /> Approve & Publish
+                                  </StyledDropdownItem>
+                                  <StyledDropdownItem onClick={() => updateDonationStatus(don.id, 'Rejected')} $variant="danger">
+                                    <FiAlertCircle className="me-2 text-danger" size={15} /> Reject Listing
+                                  </StyledDropdownItem>
+                                  <Dropdown.Divider />
+                                </>
+                              )}
+                              <StyledDropdownItem onClick={() => handleOpenDetail(don)}>
+                                <FiEye className="me-2 text-primary" size={15} /> View Listing Details
+                              </StyledDropdownItem>
+                              <Dropdown.Divider />
+                              <StyledDropdownItem onClick={() => promptDelete(don)} $variant="danger">
+                                <FiTrash2 className="me-2" size={15} /> Remove Listing
+                              </StyledDropdownItem>
+                            </StyledDropdownMenu>
+                          </Dropdown>
+                        </div>
                       </td>
                     </tr>
                   );

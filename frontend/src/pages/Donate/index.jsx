@@ -111,7 +111,7 @@ export default function DonatePage() {
             safetyInfo: formData.condition ? `Condition: ${formData.condition}. Prepared under food hygiene safety standards.` : "Maintained at safe temperatures.",
             contactName: user?.name || formData.contactName || "Donor",
             contactPhone: formData.contactPhone || "+977 980-1234567",
-            status: "available",
+            status: "Pending Approval",
             donorId: user?.id || `donor-${Date.now()}`,
             instructions: formData.instructions || "",
           };

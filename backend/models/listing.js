@@ -31,8 +31,8 @@ const listingSchema = new mongoose.Schema(
     pickupWindow: { type: String, default: 'Today · 4:00 PM – 7:30 PM' },
     status: {
       type: String,
-      enum: ['Available', 'Requested', 'Claimed', 'Picked Up', 'Completed', 'Expired', 'available', 'claimed', 'picked_up', 'expired'],
-      default: 'Available',
+      enum: ['Pending Approval', 'Pending', 'Available', 'Requested', 'Claimed', 'Picked Up', 'Completed', 'Expired', 'Rejected', 'pending', 'available', 'claimed', 'picked_up', 'expired', 'rejected'],
+      default: 'Pending Approval',
     },
     claimedBy: { type: String, default: null },
     claimedById: { type: String, default: null },

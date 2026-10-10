@@ -690,7 +690,7 @@ export const DonorDashboard = () => {
       unit: newFood.unit || "portions",
       partner: user?.organization || user?.name || "Your Organization",
       location: user?.location || "Kathmandu Kitchen",
-      status: "available",
+      status: "Pending Approval",
       pickupDate: "Today",
       pickupTime: newFood.pickupTime || "5:00 PM - 7:00 PM",
       image: chosenImage,
@@ -964,8 +964,14 @@ export const DonorDashboard = () => {
                       </div>
 
                       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        <span className={`status-badge ${item.status}`}>
-                          {item.status === "available" ? "Active Listing" : "Matched with NGO"}
+                        <span className={`status-badge ${(item.status || "").toLowerCase().replace(/\s+/g, '-')}`}>
+                          {(item.status || "").toLowerCase().includes("pending")
+                            ? "Pending Admin Approval"
+                            : item.status === "available" || item.status === "Available"
+                            ? "Active Listing"
+                            : item.status === "rejected" || item.status === "Rejected"
+                            ? "Rejected"
+                            : "Matched with NGO"}
                         </span>
                         <button
                           type="button"
@@ -1012,7 +1018,7 @@ export const DonorDashboard = () => {
                     }}
                   >
                     <IoCheckmarkCircle size={20} />
-                    <span>Donation successfully listed! It is now visible in the verified NGO marketplace.</span>
+                    <span>Donation submitted! It is now pending Admin approval before appearing publicly in the NGO marketplace.</span>
                   </div>
                 )}
 
@@ -1134,9 +1140,13 @@ export const DonorDashboard = () => {
                       </div>
 
                       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <span className={`status-badge ${item.status}`}>
-                          {item.status === "available"
+                        <span className={`status-badge ${(item.status || "").toLowerCase().replace(/\s+/g, '-')}`}>
+                          {(item.status || "").toLowerCase().includes("pending")
+                            ? "Pending Admin Approval"
+                            : item.status === "available" || item.status === "Available"
                             ? "Active · Awaiting NGO"
+                            : item.status === "rejected" || item.status === "Rejected"
+                            ? "Rejected by Admin"
                             : item.status === "matched"
                             ? "Claimed · Pickup Pending"
                             : "Completed"}

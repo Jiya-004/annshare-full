@@ -123,6 +123,9 @@ const createListing = async (req, res) => {
     if (!data.donor && req.user) data.donor = req.user.organization || req.user.name;
     if (!data.donorId && req.user) data.donorId = req.user._id.toString();
     if (!data.restaurantName && data.donor) data.restaurantName = data.donor;
+    if (!data.status || data.status.toLowerCase() === 'available') {
+      data.status = 'Pending Approval';
+    }
 
     const listing = await Listing.create(data);
     res.status(201).json({
