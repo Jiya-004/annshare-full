@@ -168,8 +168,30 @@ export const SearchHero = styled.div`
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
       transition: all 0.2s ease;
+
+      .chip-icon {
+        font-size: 0.95rem;
+        flex-shrink: 0;
+        transition: color 0.2s ease, transform 0.2s ease;
+
+        &.icon-meals {
+          color: #D97706;
+        }
+
+        &.icon-bakery {
+          color: #B45309;
+        }
+
+        &.icon-produce {
+          color: #16A34A;
+        }
+
+        &.icon-today {
+          color: #EAB308;
+        }
+      }
 
       &:hover {
         background: #FFFFFF;
@@ -177,6 +199,10 @@ export const SearchHero = styled.div`
         color: #174A3A;
         transform: translateY(-1px);
         box-shadow: 0 2px 8px rgba(23, 74, 58, 0.08);
+
+        .chip-icon {
+          transform: scale(1.08);
+        }
       }
 
       &.active {
@@ -184,6 +210,10 @@ export const SearchHero = styled.div`
         border-color: #174A3A;
         color: #FFFFFF;
         font-weight: 600;
+
+        .chip-icon {
+          color: #A3E7C9;
+        }
       }
     }
 

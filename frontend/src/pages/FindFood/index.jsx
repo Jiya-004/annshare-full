@@ -29,6 +29,7 @@ import {
   IoListOutline,
   IoSparkles,
 } from "react-icons/io5";
+import { LuSoup, LuCroissant, LuLeafyGreen, LuZap } from "react-icons/lu";
 
 export default function FindFoodPage() {
   // Search inputs
@@ -216,28 +217,32 @@ export default function FindFoodPage() {
               className={`chip-btn ${matchCategory(activeFilter, "Prepared Meals") ? "active" : ""}`}
               onClick={() => handlePillSelect(matchCategory(activeFilter, "Prepared Meals") ? "all" : "Prepared Meals")}
             >
-              🍲 Prepared Meals
+              <LuSoup className="chip-icon icon-meals" />
+              <span>Prepared Meals</span>
             </button>
             <button
               type="button"
               className={`chip-btn ${matchCategory(activeFilter, "Bakery & Bread") ? "active" : ""}`}
               onClick={() => handlePillSelect(matchCategory(activeFilter, "Bakery & Bread") ? "all" : "Bakery & Bread")}
             >
-              🥐 Bakery & Bread
+              <LuCroissant className="chip-icon icon-bakery" />
+              <span>Bakery</span>
             </button>
             <button
               type="button"
               className={`chip-btn ${matchCategory(activeFilter, "Fruits & Veggies") ? "active" : ""}`}
               onClick={() => handlePillSelect(matchCategory(activeFilter, "Fruits & Veggies") ? "all" : "Fruits & Veggies")}
             >
-              🥬 Fresh Produce
+              <LuLeafyGreen className="chip-icon icon-produce" />
+              <span>Fresh Produce</span>
             </button>
             <button
               type="button"
               className={`chip-btn ${activeFilter === "today" ? "active" : ""}`}
               onClick={() => handlePillSelect(activeFilter === "today" ? "all" : "today")}
             >
-              ⚡ Available Today
+              <LuZap className="chip-icon icon-today" />
+              <span>Available Today</span>
             </button>
           </div>
         </SearchHero>
