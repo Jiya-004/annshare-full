@@ -151,9 +151,11 @@ export const syncAllFromBackend = async () => {
           foodName: r.foodName || r.foodTitle || 'Requested Food',
           donationId: r.donationId || r.listingId || '',
           donorName: r.donorName || 'Food Partner',
+          donorPhone: r.donorPhone || '+977 980-1234567',
+          ngoPhone: r.ngoPhone || r.contact || '+977 984-1234567',
           requestedQuantity: r.requestedQuantity || r.portions || '1 batch',
           requestDate: r.requestDate || r.requestedAt || 'Today',
-          status: r.status === 'confirmed' ? 'Confirmed' : r.status === 'pending' ? 'Pending' : r.status || 'Confirmed',
+          status: r.status || 'Pending Admin Approval',
           reason: r.reason || 'Community food distribution',
         }));
       }

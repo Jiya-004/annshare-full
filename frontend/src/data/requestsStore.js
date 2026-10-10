@@ -87,10 +87,17 @@ export async function syncRequestsFromBackend() {
         donationId: r.donationId || r.listingId,
         foodTitle: r.foodTitle || r.foodName || "Requested Food Item",
         donorName: r.donorName || "Community Food Partner",
+        donorId: r.donorId,
+        donorPhone: r.donorPhone || "+977 980-1234567",
+        donorEmail: r.donorEmail || "",
+        donorLocation: r.donorLocation || r.location || "Kathmandu",
+        ngoPhone: r.ngoPhone || r.contact || "+977 984-1234567",
+        ngoEmail: r.ngoEmail || "",
+        ngoLocation: r.ngoLocation || "",
         portions: r.portions || r.requestedQuantity || "Standard Portions",
         location: r.location || "Kathmandu, Nepal",
         pickupWindow: r.pickupWindow || "Flexible Pickup",
-        status: (r.status || "confirmed").toLowerCase(),
+        status: r.status || "Pending Admin Approval",
         requestedAt: r.requestedAt || "Recently",
         image: r.image || "/food.png",
         contact: r.contact || "+977 9841234567",
@@ -123,10 +130,17 @@ export function addRequest(request) {
     listingId: request.listingId || null,
     foodTitle: request.foodTitle || request.foodName || "Requested Food Item",
     donorName: request.donorName || "Community Food Partner",
+    donorId: request.donorId || null,
+    donorPhone: request.donorPhone || "+977 980-1234567",
+    donorEmail: request.donorEmail || "",
+    donorLocation: request.donorLocation || request.location || "Kathmandu",
+    ngoPhone: request.ngoPhone || request.contact || "+977 984-1234567",
+    ngoEmail: request.ngoEmail || "",
+    ngoLocation: request.ngoLocation || "",
     portions: request.portions || "Standard Portions",
     location: request.location || "Kathmandu, Nepal",
     pickupWindow: request.pickupWindow || "Flexible Pickup",
-    status: request.status || "confirmed",
+    status: request.status || "Pending Admin Approval",
     requestedAt: request.requestedAt || "Just now",
     image: request.image || "/food.png",
     contact: request.contact || "Contact through platform",
@@ -146,6 +160,11 @@ export function addRequest(request) {
       foodTitle: formattedRequest.foodTitle,
       foodName: formattedRequest.foodTitle,
       donorName: formattedRequest.donorName,
+      donorId: formattedRequest.donorId,
+      donorPhone: formattedRequest.donorPhone,
+      donorLocation: formattedRequest.donorLocation,
+      ngoPhone: formattedRequest.ngoPhone,
+      ngoEmail: formattedRequest.ngoEmail,
       requestedQuantity: formattedRequest.portions,
       portions: formattedRequest.portions,
       location: formattedRequest.location,
@@ -165,11 +184,11 @@ export function addRequest(request) {
 /**
  * Update request status in store and backend
  */
-export function updateRequestStatus(id, status) {
+export function updateRequestStatus(id, status, extraData = {}) {
   const current = getRequests();
   const updated = current.map((r) => {
     if (String(r.id) === String(id) || (r._id && String(r._id) === String(id))) {
-      return { ...r, status };
+      return { ...r, status, ...extraData };
     }
     return r;
   });
@@ -177,7 +196,7 @@ export function updateRequestStatus(id, status) {
   saveRequests(updated);
 
   if (id) {
-    api.requests.updateStatus(id, status).catch(() => {});
+    api.requests.updateStatus(id, { status, ...extraData }).catch(() => {});
   }
 
   return updated;

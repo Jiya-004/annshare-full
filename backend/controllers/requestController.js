@@ -23,6 +23,12 @@ const getRequests = async (req, res) => {
       receiverId: r.receiverId || r.ngoId,
       donorName: r.donorName,
       donorId: r.donorId,
+      donorPhone: r.donorPhone,
+      donorEmail: r.donorEmail,
+      donorLocation: r.donorLocation || r.location,
+      ngoPhone: r.ngoPhone || r.contact,
+      ngoEmail: r.ngoEmail,
+      ngoLocation: r.ngoLocation,
       requestedQuantity: r.requestedQuantity || r.portions,
       portions: r.portions || r.requestedQuantity,
       location: r.location,
@@ -65,24 +71,39 @@ const createRequest = async (req, res) => {
     if (!data.foodTitle && data.foodName) data.foodTitle = data.foodName;
     if (!data.foodName && data.foodTitle) data.foodName = data.foodTitle;
 
+    // Default initial status for newly submitted requests is 'Pending Admin Approval'
+    if (!data.status) {
+      data.status = 'Pending Admin Approval';
+    }
+
     if (req.user) {
       if (!data.receiverId) data.receiverId = req.user._id.toString();
       if (!data.ngoId) data.ngoId = req.user._id.toString();
       if (!data.receiverName) data.receiverName = req.user.organization || req.user.name;
       if (!data.ngoName) data.ngoName = req.user.organization || req.user.name;
       if (!data.ngoOrg) data.ngoOrg = req.user.organization || req.user.name;
+      if (!data.ngoPhone) data.ngoPhone = req.user.phone || '+977 984-1234567';
+      if (!data.ngoEmail) data.ngoEmail = req.user.email;
+    }
+
+    // If linked to a listing, fetch donor info if missing
+    if (data.listingId) {
+      try {
+        const listing = await Listing.findById(data.listingId);
+        if (listing) {
+          if (!data.donorName) data.donorName = listing.partner || listing.donor || 'Food Partner';
+          if (!data.donorId) data.donorId = listing.donorId;
+          if (!data.donorPhone) data.donorPhone = listing.contactPhone || '+977 980-1234567';
+          if (!data.donorLocation) data.donorLocation = listing.location;
+          if (!data.location) data.location = listing.location;
+          if (!data.image) data.image = listing.image;
+        }
+      } catch (e) {
+        // Continue if listing lookup fails
+      }
     }
 
     const newRequest = await Request.create(data);
-
-    // Optionally update the associated listing status to Requested / Claimed
-    if (data.listingId) {
-      await Listing.findByIdAndUpdate(data.listingId, {
-        status: 'Requested',
-        claimedBy: data.receiverName || 'NGO Partner',
-        claimedById: data.receiverId,
-      });
-    }
 
     res.status(201).json({
       _id: newRequest._id,
@@ -97,18 +118,34 @@ const createRequest = async (req, res) => {
 // PATCH update request status
 const updateRequestStatus = async (req, res) => {
   try {
-    const { status } = req.body;
-    const request = await Request.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    const { status, donorPhone, donorLocation, ngoPhone } = req.body;
+    const updateData = { status };
+    if (donorPhone) updateData.donorPhone = donorPhone;
+    if (donorLocation) updateData.donorLocation = donorLocation;
+    if (ngoPhone) updateData.ngoPhone = ngoPhone;
+
+    const request = await Request.findByIdAndUpdate(req.params.id, updateData, { new: true });
     if (!request) {
       return res.status(404).json({ message: 'Request not found' });
     }
 
     // Sync listing status if completed or confirmed
     if (request.listingId) {
-      if (status === 'confirmed' || status === 'Confirmed') {
-        await Listing.findByIdAndUpdate(request.listingId, { status: 'Claimed' });
-      } else if (status === 'completed' || status === 'Completed') {
+      const normalizedStatus = (status || '').toLowerCase();
+      if (normalizedStatus === 'confirmed' || normalizedStatus === 'matched' || normalizedStatus === 'approved by donor') {
+        await Listing.findByIdAndUpdate(request.listingId, {
+          status: 'Claimed',
+          claimedBy: request.ngoName || request.receiverName || 'NGO Partner',
+          claimedById: request.ngoId || request.receiverId,
+        });
+      } else if (normalizedStatus === 'completed') {
         await Listing.findByIdAndUpdate(request.listingId, { status: 'Picked Up' });
+      } else if (normalizedStatus === 'rejected' || normalizedStatus === 'declined' || normalizedStatus === 'cancelled') {
+        await Listing.findByIdAndUpdate(request.listingId, {
+          status: 'Available',
+          claimedBy: null,
+          claimedById: null,
+        });
       }
     }
 

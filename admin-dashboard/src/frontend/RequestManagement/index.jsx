@@ -206,12 +206,22 @@ const RequestManagement = () => {
   const filteredRequests = requests.filter(req => {
     const matchesSearch =
       searchTerm === '' ||
-      req.foodName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      req.receiverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      req.donorName.toLowerCase().includes(searchTerm.toLowerCase());
+      (req.foodName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (req.receiverName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (req.donorName || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     if (!matchesSearch) return false;
-    if (statusFilter !== 'All' && req.status !== statusFilter) return false;
+    if (statusFilter !== 'All') {
+      const s = (req.status || '').toLowerCase();
+      const f = statusFilter.toLowerCase();
+      if (f.includes('pending') && !s.includes('pending')) return false;
+      if (f.includes('approved') && !s.includes('approved')) return false;
+      if (f.includes('confirmed') && !s.includes('confirmed') && !s.includes('matched')) return false;
+      if (f.includes('completed') && !s.includes('completed')) return false;
+      if (f.includes('rejected') && !s.includes('rejected')) return false;
+      if (f.includes('declined') && !s.includes('declined')) return false;
+      if (f.includes('cancelled') && !s.includes('cancelled')) return false;
+    }
 
     return true;
   });
@@ -248,20 +258,18 @@ const RequestManagement = () => {
   // -------------------------------------------------------------
   if (viewingRequest) {
     const req = viewingRequest;
+    const reqStatusLower = (req.status || '').toLowerCase();
 
     const getTimelineStep = (status) => {
-      switch (status) {
-        case 'Pending': return 1;
-        case 'Approved': return 2;
-        case 'In Transit': return 3;
-        case 'Completed': return 4;
-        case 'Rejected':
-        case 'Cancelled': return 1;
-        default: return 1;
-      }
+      const s = (status || '').toLowerCase();
+      if (s.includes('completed')) return 4;
+      if (s.includes('confirmed') || s.includes('matched') || s.includes('transit')) return 3;
+      if (s.includes('approved')) return 2;
+      return 1;
     };
 
     const currentStep = getTimelineStep(req.status);
+    const isPendingAdmin = reqStatusLower.includes('pending');
 
     return (
       <Container fluid className="p-0">
@@ -284,14 +292,16 @@ const RequestManagement = () => {
               value={req.status}
               onChange={(e) => handleStatusSelectChange(e.target.value)}
             >
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
+              <option value="Pending Admin Approval">Pending Admin Approval</option>
+              <option value="Approved by Admin">Approved by Admin</option>
+              <option value="Confirmed">Confirmed / Matched</option>
               <option value="Completed">Completed</option>
+              <option value="Rejected">Rejected by Admin</option>
+              <option value="Declined">Declined by Donor</option>
               <option value="Cancelled">Cancelled</option>
             </StyledStatusSelect>
 
-            {req.status === 'Pending' && (
+            {isPendingAdmin && (
               <>
                 <Button
                   variant="success"
@@ -309,9 +319,9 @@ const RequestManagement = () => {
                     alignItems: 'center',
                     gap: '6px'
                   }}
-                  onClick={() => handleActionClick('Approved', req)}
+                  onClick={() => handleActionClick('Approved by Admin', req)}
                 >
-                  <FiCheck size={15} /> Approve
+                  <FiCheck size={15} /> Approve Request
                 </Button>
                 <Button
                   variant="outline-danger"
@@ -359,7 +369,7 @@ const RequestManagement = () => {
               {/* Parties Details Card */}
               <div className="p-3 rounded mb-4" style={{ background: '#F7F8F6', border: '1px solid #E6ECE8' }}>
                 <h6 style={{ fontWeight: 700, color: '#12201B', marginBottom: '14px' }} className="d-flex align-items-center gap-2">
-                  <FiUser style={{ color: '#185C4A' }} /> Request Parties & Logistics Channel
+                  <FiUser style={{ color: '#185C4A' }} /> Request Parties & Contact Details
                 </h6>
 
                 <Row className="g-3" style={{ fontSize: '0.86rem' }}>
@@ -369,6 +379,9 @@ const RequestManagement = () => {
                     </div>
                     <div style={{ fontWeight: 700, color: '#12201B', fontSize: '0.98rem', marginTop: '2px' }}>
                       {req.receiverName}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#185C4A', fontWeight: 600, marginTop: '2px' }}>
+                      📞 {req.ngoPhone || '+977 984-1234567'}
                     </div>
                     <div style={{ fontSize: '0.76rem', color: '#66736D', marginTop: '2px' }}>
                       Account ID: {req.receiverId || 'USR-102'}
@@ -381,6 +394,9 @@ const RequestManagement = () => {
                     </div>
                     <div style={{ fontWeight: 700, color: '#12201B', fontSize: '0.98rem', marginTop: '2px' }}>
                       {req.donorName}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#185C4A', fontWeight: 600, marginTop: '2px' }}>
+                      📞 {req.donorPhone || '+977 980-1234567'}
                     </div>
                     <div style={{ fontSize: '0.76rem', color: '#66736D', marginTop: '2px' }}>
                       Listing Ref: #{req.donationId || 'DON-501'}
@@ -405,7 +421,7 @@ const RequestManagement = () => {
           <Col lg={5}>
             <DetailCard>
               <h5 style={{ fontWeight: 700, color: '#12201B', fontSize: '1.1rem', marginBottom: '20px' }} className="d-flex align-items-center gap-2">
-                <FiTruck style={{ color: '#185C4A' }} /> Approval & Dispatch Lifecycle
+                <FiTruck style={{ color: '#185C4A' }} /> 3-Step Approval & Match Lifecycle
               </h5>
 
               <div className="d-flex flex-column gap-3 position-relative ps-2">
@@ -430,10 +446,10 @@ const RequestManagement = () => {
                   </div>
                   <div>
                     <div style={{ fontWeight: 700, color: currentStep >= 1 ? '#12201B' : '#9CA3AF', fontSize: '0.88rem' }}>
-                      Request Submitted
+                      Step 1: Request Submitted by NGO
                     </div>
                     <div style={{ fontSize: '0.76rem', color: '#66736D' }}>
-                      Logged by receiver on {req.requestDate}
+                      Logged by {req.receiverName} on {req.requestDate}
                     </div>
                   </div>
                 </div>
@@ -445,8 +461,8 @@ const RequestManagement = () => {
                       width: '28px',
                       height: '28px',
                       borderRadius: '50%',
-                      background: currentStep >= 2 ? '#185C4A' : req.status === 'Rejected' ? '#DC2626' : '#E5E7EB',
-                      color: currentStep >= 2 || req.status === 'Rejected' ? '#ffffff' : '#9CA3AF',
+                      background: currentStep >= 2 ? '#185C4A' : reqStatusLower.includes('rejected') ? '#DC2626' : '#E5E7EB',
+                      color: currentStep >= 2 || reqStatusLower.includes('rejected') ? '#ffffff' : '#9CA3AF',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -458,15 +474,15 @@ const RequestManagement = () => {
                     2
                   </div>
                   <div>
-                    <div style={{ fontWeight: 700, color: currentStep >= 2 ? '#12201B' : req.status === 'Rejected' ? '#DC2626' : '#9CA3AF', fontSize: '0.88rem' }}>
-                      Admin Moderation & Approval
+                    <div style={{ fontWeight: 700, color: currentStep >= 2 ? '#12201B' : reqStatusLower.includes('rejected') ? '#DC2626' : '#9CA3AF', fontSize: '0.88rem' }}>
+                      Step 2: Admin Moderation & Approval
                     </div>
                     <div style={{ fontSize: '0.76rem', color: '#66736D' }}>
-                      {req.status === 'Approved'
-                        ? 'Request approved by platform moderator'
-                        : req.status === 'Rejected'
-                        ? 'Request rejected during review'
-                        : 'Pending administrative evaluation'}
+                      {currentStep >= 2
+                        ? 'Request approved by platform moderator · Notification dispatched to Donor'
+                        : reqStatusLower.includes('rejected')
+                        ? 'Request rejected during admin review'
+                        : 'Awaiting administrative verification'}
                     </div>
                   </div>
                 </div>
@@ -478,8 +494,8 @@ const RequestManagement = () => {
                       width: '28px',
                       height: '28px',
                       borderRadius: '50%',
-                      background: currentStep >= 3 ? '#185C4A' : '#E5E7EB',
-                      color: currentStep >= 3 ? '#ffffff' : '#9CA3AF',
+                      background: currentStep >= 3 ? '#185C4A' : reqStatusLower.includes('declined') ? '#DC2626' : '#E5E7EB',
+                      color: currentStep >= 3 || reqStatusLower.includes('declined') ? '#ffffff' : '#9CA3AF',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -492,10 +508,14 @@ const RequestManagement = () => {
                   </div>
                   <div>
                     <div style={{ fontWeight: 700, color: currentStep >= 3 ? '#12201B' : '#9CA3AF', fontSize: '0.88rem' }}>
-                      Pickup & Dispatch Scheduled
+                      Step 3: Donor Acceptance & Contact Unlock
                     </div>
                     <div style={{ fontSize: '0.76rem', color: '#66736D' }}>
-                      Cold-chain transport window verified
+                      {currentStep >= 3
+                        ? 'Donor accepted request · Direct phone contacts exchanged for pickup'
+                        : reqStatusLower.includes('declined')
+                        ? 'Declined by donor'
+                        : 'Pending donor confirmation in Donor Portal'}
                     </div>
                   </div>
                 </div>
@@ -521,10 +541,10 @@ const RequestManagement = () => {
                   </div>
                   <div>
                     <div style={{ fontWeight: 700, color: currentStep >= 4 ? '#12201B' : '#9CA3AF', fontSize: '0.88rem' }}>
-                      Completed & Received
+                      Completed & Food Transferred
                     </div>
                     <div style={{ fontSize: '0.76rem', color: '#66736D' }}>
-                      Food transferred to recipient shelter
+                      Food successfully picked up and distributed to community
                     </div>
                   </div>
                 </div>
@@ -541,17 +561,17 @@ const RequestManagement = () => {
                   variant="outline-success"
                   size="sm"
                   style={{ borderRadius: '20px', fontWeight: 600, fontSize: '0.8rem' }}
-                  onClick={() => handleActionClick('Approved', req)}
-                  disabled={req.status === 'Approved'}
+                  onClick={() => handleActionClick('Approved by Admin', req)}
+                  disabled={reqStatusLower.includes('approved')}
                 >
-                  <FiCheck className="me-1" /> Mark Approved
+                  <FiCheck className="me-1" /> Approve & Forward to Donor
                 </Button>
                 <Button
                   variant="outline-danger"
                   size="sm"
                   style={{ borderRadius: '20px', fontWeight: 600, fontSize: '0.8rem' }}
                   onClick={() => handleActionClick('Rejected', req)}
-                  disabled={req.status === 'Rejected'}
+                  disabled={reqStatusLower.includes('rejected')}
                 >
                   <FiX className="me-1" /> Mark Rejected
                 </Button>
@@ -560,7 +580,7 @@ const RequestManagement = () => {
                   size="sm"
                   style={{ borderRadius: '20px', fontWeight: 600, fontSize: '0.8rem' }}
                   onClick={() => handleActionClick('Cancelled', req)}
-                  disabled={req.status === 'Cancelled' || req.status === 'Completed'}
+                  disabled={reqStatusLower.includes('cancelled') || reqStatusLower.includes('completed')}
                 >
                   <FiSlash className="me-1" /> Mark Cancelled
                 </Button>
@@ -575,7 +595,7 @@ const RequestManagement = () => {
           title={`Confirm Request ${targetStatus}`}
           message={`Are you sure you want to mark Request #${selectedRequest?.id} as ${targetStatus}?`}
           confirmText={`Confirm ${targetStatus}`}
-          confirmVariant={targetStatus === 'Approved' ? 'success' : 'danger'}
+          confirmVariant={targetStatus.includes('Approved') ? 'success' : 'danger'}
           onConfirm={handleConfirmStatusChange}
         />
       </Container>
@@ -589,7 +609,7 @@ const RequestManagement = () => {
     <Container fluid className="p-0">
       <PageHeader>
         <h2>Food Request Management</h2>
-        <p>Manage NGO claim requests and approval workflows across network recipients.</p>
+        <p>Review and approve NGO food requests before forwarding to donors for contact exchange.</p>
       </PageHeader>
 
       <MainCard>
@@ -615,10 +635,12 @@ const RequestManagement = () => {
               style={{ borderRadius: '20px', height: '38px', fontSize: '0.84rem', background: '#F7F8F6', border: '1px solid #E6ECE8' }}
             >
               <option value="All">Filter Status: All</option>
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
+              <option value="Pending Admin Approval">Pending Admin Approval</option>
+              <option value="Approved by Admin">Approved by Admin</option>
+              <option value="Confirmed">Confirmed / Matched</option>
               <option value="Completed">Completed</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Declined">Declined</option>
               <option value="Cancelled">Cancelled</option>
             </Form.Select>
           </Col>
@@ -652,56 +674,61 @@ const RequestManagement = () => {
             </thead>
             <tbody>
               {filteredRequests.length > 0 ? (
-                filteredRequests.map(req => (
-                  <tr key={req.id}>
-                    <td>
-                      <strong style={{ color: '#185C4A' }}>#{req.id}</strong>
-                    </td>
-                    <td>
-                      <strong style={{ color: '#12201B' }}>{req.receiverName}</strong>
-                    </td>
-                    <td style={{ color: '#12201B', fontWeight: 500 }}>{req.foodName}</td>
-                    <td style={{ color: '#66736D' }}>{req.donorName}</td>
-                    <td style={{ fontWeight: 600, color: '#12201B' }}>{req.requestedQuantity}</td>
-                    <td style={{ color: '#66736D', fontSize: '0.82rem' }}>{req.requestDate}</td>
-                    <td>
-                      <StatusBadge status={req.status} />
-                    </td>
-                    <td className="text-end">
-                      <Dropdown align="end">
-                        <Dropdown.Toggle as={ActionIconButton}>
-                          <FiMoreVertical size={16} />
-                        </Dropdown.Toggle>
-                        <StyledDropdownMenu>
-                          <StyledDropdownItem onClick={() => handleOpenDetail(req)}>
-                            <FiEye className="me-2 text-primary" size={15} /> View Request Timeline
-                          </StyledDropdownItem>
+                filteredRequests.map(req => {
+                  const sLower = (req.status || '').toLowerCase();
+                  const isPending = sLower.includes('pending');
 
-                          {req.status === 'Pending' && (
-                            <>
-                              <Dropdown.Divider />
-                              <StyledDropdownItem onClick={() => handleActionClick('Approved', req)} $variant="success">
-                                <FiCheck className="me-2" size={15} /> Approve Request
-                              </StyledDropdownItem>
-                              <StyledDropdownItem onClick={() => handleActionClick('Rejected', req)} $variant="danger">
-                                <FiX className="me-2" size={15} /> Reject Request
-                              </StyledDropdownItem>
-                            </>
-                          )}
+                  return (
+                    <tr key={req.id}>
+                      <td>
+                        <strong style={{ color: '#185C4A' }}>#{req.id}</strong>
+                      </td>
+                      <td>
+                        <strong style={{ color: '#12201B' }}>{req.receiverName}</strong>
+                      </td>
+                      <td style={{ color: '#12201B', fontWeight: 500 }}>{req.foodName}</td>
+                      <td style={{ color: '#66736D' }}>{req.donorName}</td>
+                      <td style={{ fontWeight: 600, color: '#12201B' }}>{req.requestedQuantity}</td>
+                      <td style={{ color: '#66736D', fontSize: '0.82rem' }}>{req.requestDate}</td>
+                      <td>
+                        <StatusBadge status={req.status} />
+                      </td>
+                      <td className="text-end">
+                        <Dropdown align="end">
+                          <Dropdown.Toggle as={ActionIconButton}>
+                            <FiMoreVertical size={16} />
+                          </Dropdown.Toggle>
+                          <StyledDropdownMenu>
+                            <StyledDropdownItem onClick={() => handleOpenDetail(req)}>
+                              <FiEye className="me-2 text-primary" size={15} /> View Request Timeline
+                            </StyledDropdownItem>
 
-                          {req.status !== 'Cancelled' && req.status !== 'Completed' && (
-                            <>
-                              <Dropdown.Divider />
-                              <StyledDropdownItem onClick={() => handleActionClick('Cancelled', req)} $variant="warning">
-                                <FiSlash className="me-2" size={15} /> Cancel Request
-                              </StyledDropdownItem>
-                            </>
-                          )}
-                        </StyledDropdownMenu>
-                      </Dropdown>
-                    </td>
-                  </tr>
-                ))
+                            {isPending && (
+                              <>
+                                <Dropdown.Divider />
+                                <StyledDropdownItem onClick={() => handleActionClick('Approved by Admin', req)} $variant="success">
+                                  <FiCheck className="me-2" size={15} /> Approve Request
+                                </StyledDropdownItem>
+                                <StyledDropdownItem onClick={() => handleActionClick('Rejected', req)} $variant="danger">
+                                  <FiX className="me-2" size={15} /> Reject Request
+                                </StyledDropdownItem>
+                              </>
+                            )}
+
+                            {!sLower.includes('cancelled') && !sLower.includes('completed') && (
+                              <>
+                                <Dropdown.Divider />
+                                <StyledDropdownItem onClick={() => handleActionClick('Cancelled', req)} $variant="warning">
+                                  <FiSlash className="me-2" size={15} /> Cancel Request
+                                </StyledDropdownItem>
+                              </>
+                            )}
+                          </StyledDropdownMenu>
+                        </Dropdown>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={8} className="text-center py-4 text-muted">
@@ -720,7 +747,7 @@ const RequestManagement = () => {
         title={`Confirm Request ${targetStatus}`}
         message={`Are you sure you want to mark Request #${selectedRequest?.id} as ${targetStatus}?`}
         confirmText={`Confirm ${targetStatus}`}
-        confirmVariant={targetStatus === 'Approved' ? 'success' : 'danger'}
+        confirmVariant={targetStatus.includes('Approved') ? 'success' : 'danger'}
         onConfirm={handleConfirmStatusChange}
       />
     </Container>

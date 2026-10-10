@@ -651,20 +651,26 @@ export const NGODashboard = () => {
       listingId: listing.id,
       foodTitle: listing.title,
       donorName: listing.partner,
+      donorId: listing.donorId,
+      donorPhone: listing.contactPhone || "+977 980-1234567",
+      donorLocation: listing.location,
+      ngoPhone: user?.phone || "+977 984-1234567",
+      ngoEmail: user?.email || "",
+      ngoLocation: user?.location || "Kathmandu",
       portions: `${listing.quantity} ${listing.unit || "portions"}`,
       location: listing.location,
       pickupWindow: `${listing.pickupDate || "Today"} · ${listing.pickupTime || "Flexible"}`,
-      status: "confirmed",
+      status: "Pending Admin Approval",
       requestedAt: "Just now",
       image: listing.image || "/food.png",
-      contact: listing.contactName ? `${listing.contactName} (${listing.contactPhone || ""})` : "Contact donor via chat",
+      contact: listing.contactName ? `${listing.contactName} (${listing.contactPhone || ""})` : "Contact donor via platform",
       ngoId: currentNgoId,
       ngoName: currentNgoName,
       ngoOrg: currentNgoOrg,
     };
 
     addRequest(newReq);
-    updateListingStatus(listing.id, "matched", currentNgoName);
+    updateListingStatus(listing.id, "Requested", currentNgoName);
     setRequests(loadNgoRequests());
     setAvailableListings(loadAvailableListings());
     handleTabChange("requests");
@@ -673,8 +679,11 @@ export const NGODashboard = () => {
   const ngoName = user?.name || "NGO Partner";
 
   // Dynamic real stats computed from NGO requests
-  const confirmedRequests = requests.filter((r) => r.status === "confirmed");
-  const completedRequests = requests.filter((r) => r.status === "completed");
+  const confirmedRequests = requests.filter((r) => {
+    const s = (r.status || "").toLowerCase();
+    return s.includes("confirmed") || s.includes("matched");
+  });
+  const completedRequests = requests.filter((r) => (r.status || "").toLowerCase().includes("completed"));
 
   const mealsReceived = requests.reduce((sum, r) => {
     const portionsNum = parseInt(r.portions, 10) || 0;
@@ -925,35 +934,61 @@ export const NGODashboard = () => {
                 </div>
 
                 <ItemsList>
-                  {requests.map((req) => (
-                    <ItemCard key={req.id}>
-                      <div className="item-main">
-                        <img src={req.image} alt={req.foodTitle} className="item-img" />
-                        <div className="item-info">
-                          <h4>{req.foodTitle}</h4>
-                          <div className="meta">
-                            <span><strong>{req.portions}</strong></span>
-                            <span>•</span>
-                            <span><IoLocationOutline /> {req.location}</span>
-                            <span>•</span>
-                            <span><IoTimeOutline /> {req.pickupWindow}</span>
-                          </div>
-                          <div className="partner-line">
-                            Provided by: {req.donorName}
+                  {requests.map((req) => {
+                    const s = (req.status || "").toLowerCase();
+                    const isConfirmed = s.includes("confirmed") || s.includes("matched");
+                    const isAdminApproved = s.includes("approved") && !s.includes("declined") && !s.includes("rejected");
+                    const isPendingAdmin = s.includes("pending");
+
+                    return (
+                      <ItemCard key={req.id}>
+                        <div className="item-main">
+                          <img src={req.image} alt={req.foodTitle} className="item-img" />
+                          <div className="item-info">
+                            <h4>{req.foodTitle}</h4>
+                            <div className="meta">
+                              <span><strong>{req.portions}</strong></span>
+                              <span>•</span>
+                              <span><IoLocationOutline /> {req.location}</span>
+                              <span>•</span>
+                              <span><IoTimeOutline /> {req.pickupWindow}</span>
+                            </div>
+                            <div className="partner-line">
+                              Provided by: {req.donorName}
+                              {isConfirmed && req.donorPhone ? ` · 📞 ${req.donorPhone}` : ""}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="actions-cluster">
-                        <span className={`status-pill ${req.status}`}>
-                          {req.status === "confirmed" ? "✓ Pickup Confirmed" : "⏳ Awaiting Donor"}
-                        </span>
-                        <ContactButton onClick={() => alert(`Contacting donor: ${req.contact}`)}>
-                          <IoCallOutline /> Contact Donor
-                        </ContactButton>
-                      </div>
-                    </ItemCard>
-                  ))}
+                        <div className="actions-cluster">
+                          <span
+                            className="status-pill"
+                            style={{
+                              background: isConfirmed ? "#E8F5E9" : isAdminApproved ? "#E3F2FD" : isPendingAdmin ? "#FFF8E1" : "#F3F4F1",
+                              color: isConfirmed ? "#2E7D5B" : isAdminApproved ? "#1565C0" : isPendingAdmin ? "#F57F17" : "#556B64",
+                            }}
+                          >
+                            {isConfirmed
+                              ? "✓ Matched · Contact Unlocked"
+                              : isAdminApproved
+                              ? "🔔 Admin Verified · Awaiting Donor"
+                              : isPendingAdmin
+                              ? "⏳ Under Admin Review"
+                              : req.status}
+                          </span>
+                          {isConfirmed ? (
+                            <ContactButton onClick={() => alert(`Donor Contact:\nName: ${req.donorName}\nPhone: ${req.donorPhone || req.contact || "+977 980-1234567"}\nPickup Location: ${req.location}`)}>
+                              <IoCallOutline /> Call Donor ({req.donorPhone || "+977 980-1234567"})
+                            </ContactButton>
+                          ) : (
+                            <span style={{ fontSize: "0.8rem", color: "#66736D", fontStyle: "italic" }}>
+                              {isAdminApproved ? "Awaiting donor confirmation..." : "Admin review in progress..."}
+                            </span>
+                          )}
+                        </div>
+                      </ItemCard>
+                    );
+                  })}
                 </ItemsList>
               </div>
             )}
@@ -996,10 +1031,6 @@ export const NGODashboard = () => {
                         </div>
 
                         <div className="actions-cluster">
-                          <ContactButton onClick={() => alert(`Donor contact: ${item.contactName || item.partner || "Donor"} - ${item.contactPhone || "+977 980-1234567"}`)}>
-                            <IoCallOutline /> Donor Info
-                          </ContactButton>
-
                           <ClaimButton onClick={() => handleClaimListing(item)}>
                             Request This Food →
                           </ClaimButton>
@@ -1017,9 +1048,9 @@ export const NGODashboard = () => {
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
                   <div>
-                    <SectionTitle $margin="0 0 4px">Order Requests & Match Pipeline</SectionTitle>
+                    <SectionTitle $margin="0 0 4px">Order Requests & 3-Step Match Pipeline</SectionTitle>
                     <p style={{ color: "#71827B", margin: 0, fontSize: "0.9rem" }}>
-                      All outgoing food requests made by your organization.
+                      Workflow: 1. Request Submitted → 2. Admin Verifies → 3. Donor Confirms & Unlocks Contact.
                     </p>
                   </div>
                   <QuickActionBtn onClick={() => handleTabChange("find-food")} style={{ width: "auto" }}>
@@ -1028,35 +1059,116 @@ export const NGODashboard = () => {
                 </div>
 
                 <ItemsList>
-                  {requests.map((req) => (
-                    <ItemCard key={req.id}>
-                      <div className="item-main">
-                        <img src={req.image} alt={req.foodTitle} className="item-img" />
-                        <div className="item-info">
-                          <h4>{req.foodTitle}</h4>
-                          <div className="meta">
-                            <span><strong>{req.portions}</strong></span>
-                            <span>•</span>
-                            <span><IoLocationOutline /> {req.location}</span>
-                            <span>•</span>
-                            <span>Requested {req.requestedAt}</span>
-                          </div>
-                          <div className="partner-line">
-                            Donor: {req.donorName} · {req.contact}
-                          </div>
-                        </div>
-                      </div>
+                  {requests.map((req) => {
+                    const s = (req.status || "").toLowerCase();
+                    const isConfirmed = s.includes("confirmed") || s.includes("matched");
+                    const isAdminApproved = s.includes("approved") && !s.includes("declined") && !s.includes("rejected");
+                    const isPendingAdmin = s.includes("pending");
 
-                      <div className="actions-cluster">
-                        <span className={`status-pill ${req.status}`}>
-                          {req.status === "confirmed" ? "✓ Matched & Confirmed" : "⏳ Pending Approval"}
-                        </span>
-                        <ClaimButton onClick={() => handleTabChange("pickups")}>
-                          View Pickup Details →
-                        </ClaimButton>
+                    return (
+                      <div
+                        key={req.id}
+                        style={{
+                          background: "#FFFFFF",
+                          borderRadius: "18px",
+                          padding: "20px",
+                          border: isConfirmed ? "1.5px solid #A7F3D0" : "1px solid rgba(23, 74, 58, 0.08)",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "14px",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                            <img src={req.image} alt={req.foodTitle} style={{ width: "64px", height: "64px", borderRadius: "14px", objectFit: "cover" }} />
+                            <div className="item-info">
+                              <h4 style={{ margin: "0 0 4px", fontSize: "1.05rem", color: "#174A3A" }}>{req.foodTitle}</h4>
+                              <div style={{ fontSize: "0.84rem", color: "#71827B", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                                <span><strong>{req.portions}</strong></span>
+                                <span>•</span>
+                                <span><IoLocationOutline /> {req.location}</span>
+                                <span>•</span>
+                                <span>Requested {req.requestedAt}</span>
+                              </div>
+                              <div style={{ fontSize: "0.84rem", color: "#2E7D5B", fontWeight: 600, marginTop: "4px" }}>
+                                Donor Facility: {req.donorName}
+                              </div>
+                            </div>
+                          </div>
+
+                          <span
+                            className="status-pill"
+                            style={{
+                              background: isConfirmed ? "#E8F5E9" : isAdminApproved ? "#E3F2FD" : isPendingAdmin ? "#FFF8E1" : "#FEE2E2",
+                              color: isConfirmed ? "#2E7D5B" : isAdminApproved ? "#1565C0" : isPendingAdmin ? "#F57F17" : "#991B1B",
+                              padding: "6px 14px",
+                              borderRadius: "20px",
+                              fontWeight: 700,
+                              fontSize: "0.8rem",
+                            }}
+                          >
+                            {isConfirmed
+                              ? "✓ Matched · Contact Unlocked"
+                              : isAdminApproved
+                              ? "🔔 Admin Verified · Awaiting Donor"
+                              : isPendingAdmin
+                              ? "⏳ Step 2: Under Admin Review"
+                              : req.status}
+                          </span>
+                        </div>
+
+                        {/* UNLOCKED DIRECT DONOR CONTACT ON CONFIRMED */}
+                        {isConfirmed ? (
+                          <div
+                            style={{
+                              background: "#F0FDF4",
+                              padding: "14px 16px",
+                              borderRadius: "12px",
+                              border: "1px solid #BBF7D0",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              flexWrap: "wrap",
+                              gap: "12px",
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontWeight: 700, color: "#166534", fontSize: "0.9rem" }}>
+                                📞 Direct Donor Contact: {req.donorPhone || req.contact || "+977 980-1234567"}
+                              </div>
+                              <div style={{ fontSize: "0.82rem", color: "#4B5563", marginTop: "2px" }}>
+                                Pickup Location: {req.donorLocation || req.location} · Window: {req.pickupWindow}
+                              </div>
+                            </div>
+                            <div style={{ display: "flex", gap: "8px" }}>
+                              <ContactButton onClick={() => alert(`Calling Donor at: ${req.donorPhone || req.contact || "+977 980-1234567"}`)}>
+                                <IoCallOutline /> Call Donor
+                              </ContactButton>
+                              <ClaimButton onClick={() => handleTabChange("pickups")}>
+                                View Logistics →
+                              </ClaimButton>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            style={{
+                              background: "#FAFBF9",
+                              padding: "10px 14px",
+                              borderRadius: "10px",
+                              fontSize: "0.82rem",
+                              color: "#66736D",
+                            }}
+                          >
+                            {isAdminApproved ? (
+                              <span>🔔 <strong>Admin verified this request:</strong> The donor has been notified to accept & unlock direct pickup phone coordination.</span>
+                            ) : (
+                              <span>⏳ <strong>Step 2 in progress:</strong> ANNShare admin moderators are reviewing your claim request. Once approved, the donor will confirm pickup.</span>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    </ItemCard>
-                  ))}
+                    );
+                  })}
                 </ItemsList>
               </div>
             )}

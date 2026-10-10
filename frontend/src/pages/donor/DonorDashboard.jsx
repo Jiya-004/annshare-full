@@ -23,10 +23,16 @@ import {
   IoMenu,
   IoClose,
   IoSettingsOutline,
+  IoDocumentTextOutline,
+  IoCallOutline,
+  IoMailOutline,
+  IoCheckmarkDoneCircleOutline,
+  IoAlertCircleOutline,
 } from "react-icons/io5";
 import { FaHandshake } from "react-icons/fa6";
 import AccountSettings from "../../components/dashboard/AccountSettings";
-import { getListings, addListing, formatCurrentTime, normalizeCategory } from "../../data/listingsStore";
+import { getListings, addListing, updateListingStatus, formatCurrentTime, normalizeCategory } from "../../data/listingsStore";
+import { getRequests, updateRequestStatus } from "../../data/requestsStore";
 import api from "../../services/api";
 import ImageUploader from "../Donate/components/ImageUploader";
 
@@ -621,18 +627,77 @@ export const DonorDashboard = () => {
 
   const [donations, setDonations] = useState(loadDonorDonations);
 
+  const loadDonorRequests = React.useCallback(() => {
+    const all = getRequests();
+    const donorOrg = user?.organization;
+    const donorId = user?.id;
+    const currentName = user?.name;
+
+    const currentListings = getListings().filter((l) => {
+      if (donorId && l.donorId === donorId) return true;
+      if (donorOrg && l.partner && l.partner.toLowerCase() === donorOrg.toLowerCase()) return true;
+      if (currentName && l.contactName && l.contactName.toLowerCase() === currentName.toLowerCase()) return true;
+      return false;
+    });
+    const donorListingIds = new Set(currentListings.map((l) => String(l.id)));
+
+    const filtered = all.filter((r) => {
+      if (donorId && r.donorId === donorId) return true;
+      if (donorOrg && r.donorName && r.donorName.toLowerCase() === donorOrg.toLowerCase()) return true;
+      if (currentName && r.donorName && r.donorName.toLowerCase() === currentName.toLowerCase()) return true;
+      if (r.listingId && donorListingIds.has(String(r.listingId))) return true;
+      return false;
+    });
+
+    return filtered;
+  }, [user]);
+
+  const [requests, setRequests] = useState(loadDonorRequests);
+
   useEffect(() => {
     setDonations(loadDonorDonations());
-    const handleUpdate = () => {
+    setRequests(loadDonorRequests());
+
+    const handleListingsUpdate = () => {
       setDonations(loadDonorDonations());
+      setRequests(loadDonorRequests());
     };
-    window.addEventListener("annshare_listings_updated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
+    const handleRequestsUpdate = () => {
+      setRequests(loadDonorRequests());
+    };
+
+    window.addEventListener("annshare_listings_updated", handleListingsUpdate);
+    window.addEventListener("annshare_requests_updated", handleRequestsUpdate);
+    window.addEventListener("storage", handleListingsUpdate);
     return () => {
-      window.removeEventListener("annshare_listings_updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
+      window.removeEventListener("annshare_listings_updated", handleListingsUpdate);
+      window.removeEventListener("annshare_requests_updated", handleRequestsUpdate);
+      window.removeEventListener("storage", handleListingsUpdate);
     };
-  }, [loadDonorDonations]);
+  }, [loadDonorDonations, loadDonorRequests]);
+
+  const handleAcceptRequest = (req) => {
+    const donorPhone = user?.phone || "+977 980-1234567";
+    const donorLocation = user?.location || "Kathmandu";
+    updateRequestStatus(req.id, "Confirmed", {
+      donorPhone,
+      donorLocation,
+    });
+    if (req.listingId) {
+      updateListingStatus(req.listingId, "matched", req.ngoName || req.receiverName || "Verified NGO Partner");
+    }
+    setRequests(loadDonorRequests());
+    setDonations(loadDonorDonations());
+  };
+
+  const handleDeclineRequest = (req) => {
+    updateRequestStatus(req.id, "Declined");
+    if (req.listingId) {
+      updateListingStatus(req.listingId, "available", null);
+    }
+    setRequests(loadDonorRequests());
+    setDonations(loadDonorDonations());
+  };
 
   const [categoriesList, setCategoriesList] = useState([
     "Prepared Meals",
@@ -713,7 +778,7 @@ export const DonorDashboard = () => {
       description: newFood.instructions || "Fresh surplus food ready for pickup.",
       safetyInfo: `Prepared at ${currentFormattedTime} today under food hygiene safety standards.`,
       contactName: user?.name || "Donor",
-      contactPhone: "+977 980-1234567",
+      contactPhone: user?.phone || "+977 980-1234567",
       donorId: user?.id || `donor-${Date.now()}`,
       matchedWith: null,
     };
@@ -737,12 +802,29 @@ export const DonorDashboard = () => {
   const donorName = user?.name || "Donor";
   const donorOrg = user?.organization || user?.name || "Your Organization";
 
+  // Filter requests by 3-step lifecycle
+  const adminApprovedRequests = requests.filter((r) => {
+    const s = (r.status || "").toLowerCase();
+    return s.includes("approved") && !s.includes("declined") && !s.includes("rejected");
+  });
+
+  const confirmedRequests = requests.filter((r) => {
+    const s = (r.status || "").toLowerCase();
+    return s.includes("confirmed") || s.includes("matched");
+  });
+
   // Sidebar dynamic badge computations
   const opportunitiesCount = getListings().filter(
     (l) => l.status === "available" && l.partner !== (user?.organization || donorName)
   ).length;
 
-  const [notificationsCount, setNotificationsCount] = useState(donations.length > 0 ? 1 : 0);
+  const [notificationsCount, setNotificationsCount] = useState(
+    adminApprovedRequests.length > 0 ? adminApprovedRequests.length : donations.length > 0 ? 1 : 0
+  );
+
+  useEffect(() => {
+    setNotificationsCount(adminApprovedRequests.length > 0 ? adminApprovedRequests.length : donations.length > 0 ? 1 : 0);
+  }, [adminApprovedRequests.length, donations.length]);
 
   // Real data stats computed from user's donations
   const completedListings = donations.filter((d) => d.status === "completed");
@@ -810,6 +892,26 @@ export const DonorDashboard = () => {
                   <span className="icon"><IoRestaurantOutline /></span>
                   <span>Donate Food</span>
                 </div>
+              </NavItem>
+
+              <NavItem
+                $isActive={activeTab === "requests" || activeTab === "incoming-requests"}
+                onClick={() => handleTabChange("requests")}
+              >
+                <div className="left-cluster">
+                  <span className="icon"><IoDocumentTextOutline /></span>
+                  <span>Incoming Requests</span>
+                </div>
+                <span
+                  className="badge-count"
+                  style={{
+                    background: adminApprovedRequests.length > 0 ? "#E65100" : undefined,
+                    color: adminApprovedRequests.length > 0 ? "#FFFFFF" : undefined,
+                    fontWeight: 700,
+                  }}
+                >
+                  {adminApprovedRequests.length > 0 ? `${adminApprovedRequests.length} new` : requests.length}
+                </span>
               </NavItem>
 
               <NavItem
@@ -913,6 +1015,41 @@ export const DonorDashboard = () => {
                   </div>
                 </HeaderBanner>
 
+                {/* Admin Approved Request Action Notice */}
+                {adminApprovedRequests.length > 0 && (
+                  <div
+                    style={{
+                      background: "#FFFBEB",
+                      border: "1.5px solid #FCD34D",
+                      borderRadius: "18px",
+                      padding: "18px 22px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "16px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <IoAlertCircleOutline style={{ color: "#D97706", fontSize: "1.8rem", flexShrink: 0 }} />
+                      <div>
+                        <strong style={{ color: "#92400E", fontSize: "1.02rem" }}>
+                          {adminApprovedRequests.length} Food Request{adminApprovedRequests.length > 1 ? "s" : ""} Approved by Admin!
+                        </strong>
+                        <div style={{ color: "#78350F", fontSize: "0.86rem", marginTop: "2px" }}>
+                          Verified NGOs are waiting for your confirmation. Accept to unlock & exchange direct contact numbers for pickup coordination.
+                        </div>
+                      </div>
+                    </div>
+                    <QuickDonateBtn
+                      onClick={() => handleTabChange("requests")}
+                      style={{ width: "auto", background: "#D97706", borderColor: "#D97706" }}
+                    >
+                      <span>Review & Share Contact →</span>
+                    </QuickDonateBtn>
+                  </div>
+                )}
+
                 <StatsGrid>
                   <StatCard $bg="#E8F5E9" $color="#2E7D5B">
                     <div className="icon-row">
@@ -959,52 +1096,275 @@ export const DonorDashboard = () => {
                   </StatCard>
                 </StatsGrid>
 
-                <SectionTitle $margin="24px 0 14px">
-                  Active Donations Status
-                </SectionTitle>
-                <ItemsList>
-                  {donations.slice(0, 2).map((item) => (
-                    <DonationCard key={item.id}>
-                      <div className="item-main">
-                        <img src={item.image} alt={item.title} className="item-img" />
-                        <div className="item-info">
-                          <h4>{item.title}</h4>
-                          <div className="meta">
-                            <span>{item.quantity}</span>
-                            <span>•</span>
-                            <span>{item.category}</span>
-                            <span>•</span>
-                            <span>{item.location}</span>
-                          </div>
-                        </div>
-                      </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "24px 0 14px" }}>
+                  <SectionTitle $margin="0">
+                    Incoming NGO Requests ({requests.length})
+                  </SectionTitle>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange("requests")}
+                    style={{ background: "none", border: "none", color: "#174A3A", fontWeight: 700, cursor: "pointer" }}
+                  >
+                    View all requests →
+                  </button>
+                </div>
 
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        <span className={`status-badge ${(item.status || "").toLowerCase().replace(/\s+/g, '-')}`}>
-                          {(item.status || "").toLowerCase().includes("pending")
-                            ? "Pending Admin Approval"
-                            : item.status === "available" || item.status === "Available"
-                            ? "Active Listing"
-                            : item.status === "rejected" || item.status === "Rejected"
-                            ? "Rejected"
-                            : "Matched with NGO"}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleTabChange("my-donations")}
+                <ItemsList>
+                  {requests.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "24px 20px", color: "#71827B", background: "#FFFFFF", borderRadius: "18px", border: "1px solid rgba(23, 74, 58, 0.08)" }}>
+                      <p style={{ margin: 0 }}>No food requests received yet. When an NGO requests your donations, they will appear here after Admin verification.</p>
+                    </div>
+                  ) : (
+                    requests.slice(0, 3).map((req) => {
+                      const s = (req.status || "").toLowerCase();
+                      const isAdminApproved = s.includes("approved") && !s.includes("declined") && !s.includes("rejected");
+                      const isConfirmed = s.includes("confirmed") || s.includes("matched");
+
+                      return (
+                        <DonationCard key={req.id}>
+                          <div className="item-main">
+                            <img src={req.image || "/food.png"} alt={req.foodTitle} className="item-img" />
+                            <div className="item-info">
+                              <h4>{req.foodTitle}</h4>
+                              <div className="meta">
+                                <span><strong>{req.portions}</strong> requested</span>
+                                <span>•</span>
+                                <span>NGO: <strong>{req.ngoName || req.receiverName}</strong></span>
+                                <span>•</span>
+                                <span><IoLocationOutline /> {req.location}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <span
+                              className="status-badge"
+                              style={{
+                                background: isConfirmed ? "#E8F5E9" : isAdminApproved ? "#FEF3C7" : "#F3F4F1",
+                                color: isConfirmed ? "#166534" : isAdminApproved ? "#B45309" : "#4B5563",
+                              }}
+                            >
+                              {isConfirmed
+                                ? "✓ Matched & Confirmed"
+                                : isAdminApproved
+                                ? "🔔 Admin Verified · Action Required"
+                                : s.includes("pending")
+                                ? "⏳ Pending Admin Approval"
+                                : s.includes("declined")
+                                ? "Declined"
+                                : "Under Review"}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleTabChange("requests")}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                color: "#174A3A",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                              }}
+                            >
+                              Details →
+                            </button>
+                          </div>
+                        </DonationCard>
+                      );
+                    })
+                  )}
+                </ItemsList>
+              </div>
+            )}
+
+            {/* TAB: INCOMING REQUESTS (ADMIN APPROVED & WORKFLOW) */}
+            {(activeTab === "requests" || activeTab === "incoming-requests") && (
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
+                  <div>
+                    <SectionTitle $margin="0 0 4px">Incoming Food Requests & Matches</SectionTitle>
+                    <p style={{ color: "#71827B", margin: 0, fontSize: "0.9rem" }}>
+                      Review claim requests verified by platform moderators. Accepting unlocks and exchanges direct contact phone numbers.
+                    </p>
+                  </div>
+                </div>
+
+                <ItemsList>
+                  {requests.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "48px 20px", color: "#71827B", background: "#FFFFFF", borderRadius: "18px", border: "1px solid rgba(23, 74, 58, 0.08)" }}>
+                      <IoDocumentTextOutline size={40} style={{ color: "#174A3A", marginBottom: "12px" }} />
+                      <h4 style={{ color: "#174A3A", marginBottom: "6px" }}>No Food Requests Yet</h4>
+                      <p style={{ margin: 0 }}>
+                        When verified NGOs request food from your listings, Admin moderators verify them first. Approved requests will show here for your confirmation.
+                      </p>
+                    </div>
+                  ) : (
+                    requests.map((req) => {
+                      const s = (req.status || "").toLowerCase();
+                      const isAdminApproved = s.includes("approved") && !s.includes("declined") && !s.includes("rejected");
+                      const isConfirmed = s.includes("confirmed") || s.includes("matched");
+                      const isPendingAdmin = s.includes("pending");
+                      const isDeclined = s.includes("declined");
+
+                      return (
+                        <div
+                          key={req.id}
                           style={{
-                            background: "none",
-                            border: "none",
-                            color: "#174A3A",
-                            fontWeight: 700,
-                            cursor: "pointer",
+                            background: "#FFFFFF",
+                            borderRadius: "18px",
+                            padding: "22px",
+                            border: isAdminApproved ? "1.5px solid #FCD34D" : "1px solid rgba(23, 74, 58, 0.08)",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "16px",
                           }}
                         >
-                          Manage →
-                        </button>
-                      </div>
-                    </DonationCard>
-                  ))}
+                          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                              <img
+                                src={req.image || "/food.png"}
+                                alt={req.foodTitle}
+                                style={{ width: "68px", height: "68px", borderRadius: "14px", objectFit: "cover", flexShrink: 0 }}
+                              />
+                              <div>
+                                <h4 style={{ margin: "0 0 4px", fontSize: "1.08rem", color: "#174A3A" }}>{req.foodTitle}</h4>
+                                <div style={{ fontSize: "0.84rem", color: "#71827B", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                                  <span><strong>{req.portions}</strong> requested</span>
+                                  <span>•</span>
+                                  <span>Requested by: <strong style={{ color: "#174A3A" }}>{req.ngoName || req.receiverName}</strong></span>
+                                  <span>•</span>
+                                  <span><IoLocationOutline /> {req.location}</span>
+                                </div>
+                                {req.reason && (
+                                  <div style={{ fontSize: "0.82rem", color: "#4B5563", marginTop: "6px", fontStyle: "italic", background: "#F8F5ED", padding: "6px 12px", borderRadius: "8px", display: "inline-block" }}>
+                                    "{req.reason}"
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <span
+                              className="status-badge"
+                              style={{
+                                padding: "6px 14px",
+                                borderRadius: "20px",
+                                fontSize: "0.8rem",
+                                fontWeight: 700,
+                                background: isConfirmed ? "#E8F5E9" : isAdminApproved ? "#FEF3C7" : isDeclined ? "#FEE2E2" : "#F3F4F1",
+                                color: isConfirmed ? "#166534" : isAdminApproved ? "#B45309" : isDeclined ? "#991B1B" : "#4B5563",
+                              }}
+                            >
+                              {isConfirmed
+                                ? "✓ Matched · Contact Exchanged"
+                                : isAdminApproved
+                                ? "🔔 Admin Approved · Awaiting Your Confirmation"
+                                : isPendingAdmin
+                                ? "⏳ Pending Admin Moderation"
+                                : isDeclined
+                                ? "Declined by You"
+                                : "Under Review"}
+                            </span>
+                          </div>
+
+                          {/* ACTION BUTTONS WHEN ADMIN HAS APPROVED */}
+                          {isAdminApproved && (
+                            <div
+                              style={{
+                                background: "#FFFBEB",
+                                padding: "16px 18px",
+                                borderRadius: "14px",
+                                border: "1px solid #FDE68A",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: "14px",
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              <div style={{ fontSize: "0.88rem", color: "#92400E" }}>
+                                <strong>Admin Moderator Verified: </strong>
+                                This request has been approved by ANNShare. Accept to share your phone and pickup address with <strong>{req.ngoName || req.receiverName}</strong>.
+                              </div>
+                              <div style={{ display: "flex", gap: "10px" }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAcceptRequest(req)}
+                                  style={{
+                                    background: "#185C4A",
+                                    color: "#FFFFFF",
+                                    border: "none",
+                                    padding: "10px 18px",
+                                    borderRadius: "12px",
+                                    fontSize: "0.88rem",
+                                    fontWeight: 700,
+                                    cursor: "pointer",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    boxShadow: "0 2px 8px rgba(24, 92, 74, 0.2)",
+                                  }}
+                                >
+                                  <IoCheckmarkCircle size={18} /> Accept & Share Contact
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeclineRequest(req)}
+                                  style={{
+                                    background: "transparent",
+                                    color: "#DC2626",
+                                    border: "1.5px solid #FCA5A5",
+                                    padding: "10px 16px",
+                                    borderRadius: "12px",
+                                    fontSize: "0.88rem",
+                                    fontWeight: 700,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  Decline
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* UNLOCKED CONTACT DETAILS WHEN MATCHED / CONFIRMED */}
+                          {isConfirmed && (
+                            <div
+                              style={{
+                                background: "#F0FDF4",
+                                padding: "16px 18px",
+                                borderRadius: "14px",
+                                border: "1.5px solid #BBF7D0",
+                              }}
+                            >
+                              <div style={{ fontWeight: 700, color: "#166534", fontSize: "0.92rem", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
+                                <IoShieldCheckmark size={18} /> Contact Info Exchanged for Pickup Coordination
+                              </div>
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", fontSize: "0.86rem" }}>
+                                <div>
+                                  <span style={{ color: "#6B7280", fontSize: "0.78rem", textTransform: "uppercase" }}>NGO Contact Phone</span>
+                                  <div style={{ fontWeight: 700, color: "#166534", marginTop: "2px" }}>
+                                    📞 {req.ngoPhone || req.contact || "+977 984-1234567"}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span style={{ color: "#6B7280", fontSize: "0.78rem", textTransform: "uppercase" }}>Organization Name</span>
+                                  <div style={{ fontWeight: 700, color: "#12201B", marginTop: "2px" }}>
+                                    {req.ngoOrg || req.ngoName || "Verified NGO Partner"}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span style={{ color: "#6B7280", fontSize: "0.78rem", textTransform: "uppercase" }}>Designated Window</span>
+                                  <div style={{ fontWeight: 700, color: "#12201B", marginTop: "2px" }}>
+                                    ⏱️ {req.pickupWindow || "Today, Flexible"}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
                 </ItemsList>
               </div>
             )}
