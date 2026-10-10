@@ -224,22 +224,22 @@ export default function DonatePage() {
         {isPublished ? (
           /* SUCCESS STATE SCREEN */
           <SuccessStateWrapper>
-            <div className="check-circle">
-              <IoCheckmark />
+            <div className="check-circle" style={{ background: "#EEF8F4", color: "#185C4A" }}>
+              <IoCheckmarkCircle size={54} />
             </div>
 
-            <h2>Your food is now shared.</h2>
+            <h2>Donation Submitted for Review!</h2>
             <p className="success-desc">
-              ANNShare is actively matching your surplus with verified organizations nearby across Kathmandu Valley.
+              Your surplus food listing has been submitted and is pending verification by ANNShare platform moderators. Once approved, it will become publicly available on the Find Food marketplace for verified NGOs.
             </p>
 
             <div className="status-radar-box">
               <div className="radar-indicator">
                 <div className="pulsing-dot" />
-                <span className="radar-text">Searching for closest match...</span>
+                <span className="radar-text">⏳ Status: Pending Admin Approval</span>
               </div>
               <div className="portions-badge">
-                {formData.quantity} {formData.unit} Available
+                {formData.quantity} {formData.unit} · {formData.category}
               </div>
             </div>
 
@@ -249,7 +249,7 @@ export default function DonatePage() {
                 className="btn-view-donation"
                 onClick={() => navigate("/donor/dashboard?tab=my-donations")}
               >
-                <span>View In Donor Dashboard</span>
+                <span>View in Donor Dashboard</span>
                 <IoArrowForward />
               </button>
 
