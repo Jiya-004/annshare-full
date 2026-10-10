@@ -31,8 +31,8 @@ import {
 } from "react-icons/io5";
 import { FaHandshake } from "react-icons/fa6";
 import AccountSettings from "../../components/dashboard/AccountSettings";
-import { getListings, addListing, updateListingStatus, formatCurrentTime, normalizeCategory } from "../../data/listingsStore";
-import { getRequests, updateRequestStatus } from "../../data/requestsStore";
+import { getListings, addListing, updateListingStatus, formatCurrentTime, normalizeCategory, syncListingsFromBackend } from "../../data/listingsStore";
+import { getRequests, updateRequestStatus, syncRequestsFromBackend } from "../../data/requestsStore";
 import api from "../../services/api";
 import ImageUploader from "../Donate/components/ImageUploader";
 import { isValidPhone, formatPhoneNumber } from "../../utils/validation";
@@ -1012,7 +1012,7 @@ export const DonorDashboard = () => {
       if (l.isCustomDonation || (l.id && String(l.id).startsWith("listing-"))) return true;
       return false;
     });
-    const donorListingIds = new Set(currentListings.map((l) => String(l.id)));
+    const donorListingIds = new Set(currentListings.flatMap((l) => [l.id, l._id].filter(Boolean).map(String)));
 
     const filtered = all.filter((r) => {
       if (donorId && r.donorId && String(r.donorId) === String(donorId)) return true;
@@ -1021,6 +1021,7 @@ export const DonorDashboard = () => {
       if (donorOrgName && r.donorName && (r.donorName.toLowerCase() === donorOrgName || r.donorName.toLowerCase().includes(donorOrgName) || donorOrgName.includes(r.donorName.toLowerCase()))) return true;
       if (currentName && r.donorName && (r.donorName.toLowerCase().includes(currentName) || currentName.includes(r.donorName.toLowerCase()))) return true;
       if (r.listingId && donorListingIds.has(String(r.listingId))) return true;
+      if (r.donationId && donorListingIds.has(String(r.donationId))) return true;
       return false;
     });
 
@@ -1030,6 +1031,14 @@ export const DonorDashboard = () => {
   const [requests, setRequests] = useState(loadDonorRequests);
 
   useEffect(() => {
+    // Sync freshest records from live backend
+    syncRequestsFromBackend()
+      .then(() => setRequests(loadDonorRequests()))
+      .catch(() => {});
+    syncListingsFromBackend()
+      .then(() => setDonations(loadDonorDonations()))
+      .catch(() => {});
+
     setDonations(loadDonorDonations());
     setRequests(loadDonorRequests());
 
@@ -1216,15 +1225,20 @@ export const DonorDashboard = () => {
   const donorName = user?.name || "Donor";
   const donorOrg = user?.organization || user?.name || "Your Organization";
 
-  // Filter requests by 3-step lifecycle
+  // Filter requests by 4-step lifecycle
+  const completedRequests = requests.filter((r) => {
+    const s = (r.status || "").toLowerCase();
+    return s.includes("completed") || s.includes("distributed") || s.includes("received");
+  });
+
   const adminApprovedRequests = requests.filter((r) => {
     const s = (r.status || "").toLowerCase();
-    return s.includes("approved") && !s.includes("declined") && !s.includes("rejected");
+    return s.includes("approved") && !s.includes("declined") && !s.includes("rejected") && !s.includes("completed");
   });
 
   const confirmedRequests = requests.filter((r) => {
     const s = (r.status || "").toLowerCase();
-    return s.includes("confirmed") || s.includes("matched");
+    return (s.includes("confirmed") || s.includes("matched")) && !s.includes("completed");
   });
 
   // Dynamic Notifications Management
@@ -1331,8 +1345,42 @@ export const DonorDashboard = () => {
     (l) => l.status === "available" && l.partner !== (user?.organization || donorName)
   ).length;
 
-  // Real data stats computed from user's donations
-  const completedListings = donations.filter((d) => d.status === "completed");
+  // Real data stats computed from user's donations & completed requests
+  const completedListingIds = new Set(
+    completedRequests.map((r) => String(r.listingId || r.donationId || "")).filter(Boolean)
+  );
+
+  const completedFromDonations = donations.filter((d) => {
+    const s = (d.status || "").toLowerCase();
+    return (
+      s.includes("completed") ||
+      s.includes("picked up") ||
+      completedListingIds.has(String(d.id || d._id))
+    );
+  }).map((d) => {
+    const linkedReq = completedRequests.find(
+      (r) => String(r.listingId) === String(d.id || d._id) || String(r.donationId) === String(d.id || d._id)
+    );
+    return {
+      ...d,
+      matchedWith: linkedReq ? (linkedReq.ngoOrg || linkedReq.ngoName || linkedReq.receiverName) : d.matchedWith || "Verified NGO Partner",
+    };
+  });
+
+  const standaloneCompletedRequests = completedRequests.filter(
+    (r) => !completedFromDonations.some((d) => String(d.id || d._id) === String(r.listingId || r.donationId))
+  ).map((r) => ({
+    id: r.id || r._id,
+    _id: r._id || r.id,
+    title: r.foodTitle || "Food Package",
+    quantity: r.portions || "Standard Portions",
+    image: r.image || "/food.png",
+    matchedWith: r.ngoOrg || r.ngoName || r.receiverName || "Verified NGO Partner",
+    date: r.requestedAt || r.requestDate || "Recently",
+    status: "completed",
+  }));
+
+  const completedListings = [...completedFromDonations, ...standaloneCompletedRequests];
   const totalPortionsShared = donations.reduce((sum, d) => {
     const qty = typeof d.quantity === "number" ? d.quantity : parseInt(d.quantity, 10);
     return sum + (Number.isFinite(qty) && qty > 0 ? qty : 0);
@@ -1438,6 +1486,11 @@ export const DonorDashboard = () => {
                   <span className="icon"><IoTimeOutline /></span>
                   <span>Donation History</span>
                 </div>
+                {completedListings.length > 0 && (
+                  <span className="badge-count" style={{ background: "#E8F5E9", color: "#166534", fontWeight: 700 }}>
+                    {completedListings.length}
+                  </span>
+                )}
               </NavItem>
 
               <NavItem
@@ -1633,6 +1686,10 @@ export const DonorDashboard = () => {
                       const isAdminApproved = s.includes("approved") && !s.includes("declined") && !s.includes("rejected");
                       const isConfirmed = s.includes("confirmed") || s.includes("matched");
 
+                      const isCompleted = s.includes("completed") || s.includes("distributed") || s.includes("received");
+                      const isConfirmedActive = !isCompleted && isConfirmed;
+                      const isAdminApprovedActive = !isCompleted && isAdminApproved;
+
                       return (
                         <DonationCard key={req.id}>
                           <div className="item-main">
@@ -1653,13 +1710,17 @@ export const DonorDashboard = () => {
                             <span
                               className="status-badge"
                               style={{
-                                background: isConfirmed ? "#E8F5E9" : isAdminApproved ? "#FEF3C7" : "#F3F4F1",
-                                color: isConfirmed ? "#166534" : isAdminApproved ? "#B45309" : "#4B5563",
+                                background: isCompleted ? "#E8F5E9" : isConfirmedActive ? "#E8F5E9" : isAdminApprovedActive ? "#FEF3C7" : s.includes("declined") ? "#FEE2E2" : "#F3F4F1",
+                                color: isCompleted ? "#166534" : isConfirmedActive ? "#166534" : isAdminApprovedActive ? "#B45309" : s.includes("declined") ? "#991B1B" : "#4B5563",
+                                border: isCompleted ? "1px solid #BBF7D0" : isConfirmedActive ? "1px solid #BBF7D0" : isAdminApprovedActive ? "1px solid #FDE68A" : "none",
+                                fontWeight: 700,
                               }}
                             >
-                              {isConfirmed
+                              {isCompleted
+                                ? "✓ Completed & Handed Over"
+                                : isConfirmedActive
                                 ? "✓ Matched & Confirmed"
-                                : isAdminApproved
+                                : isAdminApprovedActive
                                 ? "🔔 Admin Verified · Action Required"
                                 : s.includes("pending")
                                 ? "⏳ Pending Admin Approval"
@@ -1713,10 +1774,11 @@ export const DonorDashboard = () => {
                   ) : (
                     requests.map((req) => {
                       const s = (req.status || "").toLowerCase();
-                      const isAdminApproved = s.includes("approved") && !s.includes("declined") && !s.includes("rejected");
-                      const isConfirmed = s.includes("confirmed") || s.includes("matched");
-                      const isPendingAdmin = s.includes("pending");
-                      const isDeclined = s.includes("declined");
+                      const isCompleted = s.includes("completed") || s.includes("distributed") || s.includes("received");
+                      const isAdminApproved = !isCompleted && s.includes("approved") && !s.includes("declined") && !s.includes("rejected");
+                      const isConfirmed = !isCompleted && (s.includes("confirmed") || s.includes("matched"));
+                      const isPendingAdmin = !isCompleted && s.includes("pending");
+                      const isDeclined = !isCompleted && s.includes("declined");
 
                       return (
                         <div
@@ -1725,7 +1787,7 @@ export const DonorDashboard = () => {
                             background: "#FFFFFF",
                             borderRadius: "18px",
                             padding: "22px",
-                            border: isAdminApproved ? "1.5px solid #FCD34D" : "1px solid rgba(23, 74, 58, 0.08)",
+                            border: isCompleted ? "1.5px solid #86EFAC" : isAdminApproved ? "1.5px solid #FCD34D" : "1px solid rgba(23, 74, 58, 0.08)",
                             boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
                             display: "flex",
                             flexDirection: "column",
@@ -1763,11 +1825,14 @@ export const DonorDashboard = () => {
                                 borderRadius: "20px",
                                 fontSize: "0.8rem",
                                 fontWeight: 700,
-                                background: isConfirmed ? "#E8F5E9" : isAdminApproved ? "#FEF3C7" : isDeclined ? "#FEE2E2" : "#F3F4F1",
-                                color: isConfirmed ? "#166534" : isAdminApproved ? "#B45309" : isDeclined ? "#991B1B" : "#4B5563",
+                                background: isCompleted ? "#E8F5E9" : isConfirmed ? "#E8F5E9" : isAdminApproved ? "#FEF3C7" : isDeclined ? "#FEE2E2" : "#F3F4F1",
+                                color: isCompleted ? "#166534" : isConfirmed ? "#166534" : isAdminApproved ? "#B45309" : isDeclined ? "#991B1B" : "#4B5563",
+                                border: isCompleted ? "1px solid #BBF7D0" : isConfirmed ? "1px solid #BBF7D0" : isAdminApproved ? "1px solid #FDE68A" : "none",
                               }}
                             >
-                              {isConfirmed
+                              {isCompleted
+                                ? "✓ Completed & Handed Over"
+                                : isConfirmed
                                 ? "✓ Matched · Contact Exchanged"
                                 : isAdminApproved
                                 ? "🔔 Admin Approved · Awaiting Your Confirmation"
@@ -1778,6 +1843,42 @@ export const DonorDashboard = () => {
                                 : "Under Review"}
                             </span>
                           </div>
+
+                          {/* COMPLETED & HANDED OVER SUCCESS BOX */}
+                          {isCompleted && (
+                            <div
+                              style={{
+                                background: "#F0FDF4",
+                                padding: "16px 18px",
+                                borderRadius: "14px",
+                                border: "1.5px solid #86EFAC",
+                              }}
+                            >
+                              <div style={{ fontWeight: 700, color: "#166534", fontSize: "0.92rem", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
+                                <IoCheckmarkDoneCircleOutline size={20} color="#166534" /> Food Handover Completed & Verified
+                              </div>
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", fontSize: "0.86rem" }}>
+                                <div>
+                                  <span style={{ color: "#6B7280", fontSize: "0.78rem", textTransform: "uppercase" }}>Distributed To</span>
+                                  <div style={{ fontWeight: 700, color: "#166534", marginTop: "2px" }}>
+                                    🤝 {req.ngoOrg || req.ngoName || req.receiverName || "Verified NGO Partner"}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span style={{ color: "#6B7280", fontSize: "0.78rem", textTransform: "uppercase" }}>Recipient Contact</span>
+                                  <div style={{ fontWeight: 700, color: "#12201B", marginTop: "2px" }}>
+                                    📞 {req.ngoPhone || req.contact || "+977 984-1234567"}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span style={{ color: "#6B7280", fontSize: "0.78rem", textTransform: "uppercase" }}>Portions Transferred</span>
+                                  <div style={{ fontWeight: 700, color: "#166534", marginTop: "2px" }}>
+                                    🥗 {req.portions || "Meals"}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
 
                           {/* ACTION BUTTONS WHEN ADMIN HAS APPROVED */}
                           {isAdminApproved && (
@@ -2061,9 +2162,22 @@ export const DonorDashboard = () => {
                         </div>
 
                         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <span className={`status-badge ${(item.status || "").toLowerCase().replace(/\s+/g, '-')}`}>
+                          <span
+                            className={`status-badge ${(item.status || "").toLowerCase().replace(/\s+/g, '-')}`}
+                            style={
+                              ((item.status || "").toLowerCase().includes("completed") ||
+                              (item.status || "").toLowerCase().includes("picked up") ||
+                              completedListingIds.has(String(item.id || item._id)))
+                                ? { background: "#E8F5E9", color: "#166534", border: "1px solid #BBF7D0" }
+                                : undefined
+                            }
+                          >
                             {(item.status || "").toLowerCase().includes("pending")
                               ? "Pending Admin Approval"
+                              : (item.status || "").toLowerCase().includes("completed") ||
+                                (item.status || "").toLowerCase().includes("picked up") ||
+                                completedListingIds.has(String(item.id || item._id))
+                              ? "✓ Completed & Distributed"
                               : item.status === "available" || item.status === "Available"
                               ? "Active · Awaiting NGO"
                               : item.status === "rejected" || item.status === "Rejected"
@@ -2091,22 +2205,22 @@ export const DonorDashboard = () => {
                     </div>
                   ) : (
                     completedListings.map((item) => (
-                    <DonationCard key={item.id}>
+                    <DonationCard key={item.id || item._id}>
                       <div className="item-main">
-                        <img src={item.image} alt={item.title} className="item-img" />
+                        <img src={item.image || "/food.png"} alt={item.title} className="item-img" />
                         <div className="item-info">
                           <h4>{item.title}</h4>
                           <div className="meta">
-                            <span>{item.quantity}</span>
+                            <span><strong>{item.quantity}</strong></span>
                             <span>•</span>
-                            <span>Delivered to: {item.matchedWith}</span>
+                            <span>Delivered to: <strong>{item.matchedWith || "Verified NGO Partner"}</strong></span>
                             <span>•</span>
-                            <span>{item.date}</span>
+                            <span>{item.date || item.postedTime || "Recently"}</span>
                           </div>
                         </div>
                       </div>
-                      <span className="status-badge completed">
-                        <IoCheckmarkCircle /> Verified Delivered
+                      <span className="status-badge" style={{ background: "#E8F5E9", color: "#166534", border: "1px solid #BBF7D0", fontWeight: 700 }}>
+                        <IoCheckmarkCircle /> Verified Handed Over
                       </span>
                     </DonationCard>
                   ))

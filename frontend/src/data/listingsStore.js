@@ -190,14 +190,15 @@ export async function syncListingsFromBackend() {
         };
       });
 
-      // Preserve local custom donations so user submissions don't disappear on sync
+      // Preserve local custom donations that have not yet synced to the backend
       const currentListings = getListings();
+      const normalizedIds = new Set(normalized.map((b) => String(b.id || b._id)));
       const localOnly = currentListings.filter(
-        (l) => l.isCustomDonation || (l.id && String(l.id).startsWith("listing-"))
+        (l) => !normalizedIds.has(String(l.id || l._id)) && (l.isCustomDonation || (l.id && String(l.id).startsWith("listing-")))
       );
 
       const mergedMap = new Map();
-      [...normalized, ...localOnly].forEach((item) => {
+      [...localOnly, ...normalized].forEach((item) => {
         mergedMap.set(String(item.id || item._id), item);
       });
 
