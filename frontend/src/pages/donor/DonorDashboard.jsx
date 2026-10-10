@@ -1066,7 +1066,7 @@ export const DonorDashboard = () => {
       location: user?.location || "Kathmandu Kitchen",
       area: user?.location ? user?.location.split(",")[0].trim() : "Kathmandu",
       distance: "1.2 km",
-      status: "available",
+      status: "Pending Approval",
       pickupDate: "Today",
       pickupTime: pickupWindow,
       postedTime: currentFormattedTime,

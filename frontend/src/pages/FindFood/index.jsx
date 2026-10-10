@@ -112,7 +112,7 @@ export default function FindFoodPage() {
     return allListings
       .filter((item) => {
         const s = (item.status || "available").toLowerCase();
-        return s === "available" || s.includes("pending") || s === "pickup_soon";
+        return s === "available" || s === "pickup_soon";
       })
       .filter((item) => {
         // 1. Text search
