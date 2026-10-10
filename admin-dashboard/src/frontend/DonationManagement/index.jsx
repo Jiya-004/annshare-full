@@ -336,8 +336,12 @@ const DonationManagement = () => {
             <DetailCard>
               <div style={{ position: 'relative', marginBottom: '20px' }}>
                 <img
-                  src={don.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80'}
+                  src={don.image || '/food.png'}
                   alt={don.title || don.foodName}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80';
+                  }}
                   style={{
                     width: '100%',
                     height: '280px',
@@ -690,8 +694,12 @@ const DonationManagement = () => {
                       <td>
                         <div className="d-flex align-items-center gap-2">
                           <img
-                            src={don.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=100&q=80'}
+                            src={don.image || '/food.png'}
                             alt={don.title || don.foodName}
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=100&q=80';
+                            }}
                             style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #E6ECE8' }}
                           />
                           <div>

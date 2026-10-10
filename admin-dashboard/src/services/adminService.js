@@ -16,7 +16,19 @@ import {
   mockSummaryReport,
 } from '../data/adminStore';
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const BACKEND_HOST = API_BASE.replace(/\/api\/?$/, '');
+
+export const formatImageUrl = (url) => {
+  if (!url) return '/food.png';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+  if (url.startsWith('/uploads/')) {
+    return `${BACKEND_HOST}${url}`;
+  }
+  return url;
+};
 
 let listeners = [];
 
@@ -120,7 +132,7 @@ export const syncAllFromBackend = async () => {
           expires_at: d.expires_at || '',
           status: d.status || 'Available',
           claimedBy: d.claimedBy || null,
-          image: d.image || '/food.png',
+          image: formatImageUrl(d.image || (d.images && d.images[0]) || '/food.png'),
         }));
       }
     }
@@ -208,7 +220,7 @@ export const syncAllFromBackend = async () => {
           category: b.category || 'Community Impact',
           readTime: b.readTime || '5 min read',
           publishedDate: b.publishedDate || 'Today',
-          image: b.image || '/food.png',
+          image: formatImageUrl(b.image || '/food.png'),
           excerpt: b.excerpt || '',
           content: b.content || '',
           isFeatured: b.isFeatured || false,
