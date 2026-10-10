@@ -139,16 +139,47 @@ const createRequest = async (req, res) => {
   }
 };
 
+const mongoose = require('mongoose');
+
 // PATCH update request status
 const updateRequestStatus = async (req, res) => {
   try {
-    const { status, donorPhone, donorLocation, ngoPhone } = req.body;
-    const updateData = { status };
+    let { status, donorPhone, donorLocation, ngoPhone } = req.body;
+
+    // In case payload was passed as { status: { status, donorPhone, ... } }
+    if (typeof status === 'object' && status !== null) {
+      if (status.donorPhone) donorPhone = status.donorPhone;
+      if (status.donorLocation) donorLocation = status.donorLocation;
+      if (status.ngoPhone) ngoPhone = status.ngoPhone;
+      status = status.status;
+    }
+
+    const updateData = {};
+    if (status) updateData.status = status;
     if (donorPhone) updateData.donorPhone = donorPhone;
     if (donorLocation) updateData.donorLocation = donorLocation;
     if (ngoPhone) updateData.ngoPhone = ngoPhone;
 
-    const request = await Request.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    let request = null;
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      request = await Request.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    }
+    if (!request) {
+      request = await Request.findOneAndUpdate(
+        {
+          $or: [
+            { id: req.params.id },
+            { listingId: req.params.id },
+            { donationId: req.params.id },
+            { foodTitle: req.params.id },
+            { foodName: req.params.id },
+          ],
+        },
+        updateData,
+        { new: true }
+      );
+    }
+
     if (!request) {
       return res.status(404).json({ message: 'Request not found' });
     }

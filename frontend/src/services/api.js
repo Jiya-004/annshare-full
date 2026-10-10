@@ -111,11 +111,13 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(requestData),
       }),
-    updateStatus: (id, status) =>
-      request(`/requests/${id}/status`, {
+    updateStatus: (id, status, extra = {}) => {
+      const payload = typeof status === 'object' && status !== null ? status : { status, ...extra };
+      return request(`/requests/${id}/status`, {
         method: 'PATCH',
-        body: JSON.stringify({ status }),
-      }),
+        body: JSON.stringify(payload),
+      });
+    },
     delete: (id) =>
       request(`/requests/${id}`, {
         method: 'DELETE',

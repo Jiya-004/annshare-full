@@ -18,7 +18,8 @@ import {
   FiAlertCircle,
   FiMessageSquare,
   FiShield,
-  FiTruck
+  FiTruck,
+  FiRefreshCw
 } from 'react-icons/fi';
 
 import StatusBadge from '../../components/StatusBadge';
@@ -27,7 +28,8 @@ import ConfirmModal from '../../components/modals/ConfirmModal';
 import {
   getRequests,
   updateRequestStatus,
-  subscribeToAdminService
+  subscribeToAdminService,
+  syncAllFromBackend
 } from '../../services/adminService';
 
 // Styled Components
@@ -190,18 +192,26 @@ const RequestManagement = () => {
   const [viewingRequest, setViewingRequest] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [targetStatus, setTargetStatus] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
+    syncAllFromBackend();
     const unsub = subscribeToAdminService(() => {
       const updated = getRequests();
       setRequests(updated);
       if (viewingRequest) {
-        const current = updated.find(r => r.id === viewingRequest.id);
+        const current = updated.find(r => r.id === viewingRequest.id || (r._id && r._id === (viewingRequest._id || viewingRequest.id)));
         if (current) setViewingRequest(current);
       }
     });
     return unsub;
   }, [viewingRequest]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await syncAllFromBackend();
+    setIsRefreshing(false);
+  };
 
   const filteredRequests = requests.filter(req => {
     const matchesSearch =
@@ -263,7 +273,15 @@ const RequestManagement = () => {
     const getTimelineStep = (status) => {
       const s = (status || '').toLowerCase();
       if (s.includes('completed')) return 4;
-      if (s.includes('confirmed') || s.includes('matched') || s.includes('transit')) return 3;
+      if (
+        s.includes('confirmed') ||
+        s.includes('matched') ||
+        s.includes('transit') ||
+        s.includes('accepted') ||
+        s.includes('unlocked') ||
+        s.includes('share contact') ||
+        s.includes('contact shared')
+      ) return 3;
       if (s.includes('approved')) return 2;
       return 1;
     };
@@ -288,14 +306,37 @@ const RequestManagement = () => {
           </div>
 
           <div className="d-flex align-items-center gap-2 flex-shrink-0">
+            <Button
+              variant="light"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              style={{
+                borderRadius: '20px',
+                height: '38px',
+                padding: '0 14px',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                border: '1px solid #E6ECE8',
+                color: '#185C4A',
+                background: '#ffffff',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <FiRefreshCw size={13} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
+              {isRefreshing ? 'Syncing...' : 'Sync Live'}
+            </Button>
+
             <StyledStatusSelect
               value={req.status}
               onChange={(e) => handleStatusSelectChange(e.target.value)}
             >
-              <option value="Pending Admin Approval">Pending Admin Approval</option>
-              <option value="Approved by Admin">Approved by Admin</option>
-              <option value="Confirmed">Confirmed / Matched</option>
-              <option value="Completed">Completed</option>
+              <option value="Pending Admin Approval">Pending Admin Approval (Step 1)</option>
+              <option value="Approved by Admin">Approved by Admin (Step 2)</option>
+              <option value="Confirmed">Confirmed / Matched (Step 3: Donor Accepted)</option>
+              <option value="Completed">Completed (Step 4: Transferred)</option>
               <option value="Rejected">Rejected by Admin</option>
               <option value="Declined">Declined by Donor</option>
               <option value="Cancelled">Cancelled</option>
@@ -562,16 +603,26 @@ const RequestManagement = () => {
                   size="sm"
                   style={{ borderRadius: '20px', fontWeight: 600, fontSize: '0.8rem' }}
                   onClick={() => handleActionClick('Approved by Admin', req)}
-                  disabled={reqStatusLower.includes('approved')}
+                  disabled={reqStatusLower.includes('approved') || currentStep >= 2}
                 >
                   <FiCheck className="me-1" /> Approve & Forward to Donor
                 </Button>
+                {currentStep >= 3 && currentStep < 4 && (
+                  <Button
+                    variant="success"
+                    size="sm"
+                    style={{ borderRadius: '20px', fontWeight: 600, fontSize: '0.8rem', background: '#185C4A', borderColor: '#185C4A' }}
+                    onClick={() => handleActionClick('Completed', req)}
+                  >
+                    <FiCheck className="me-1" /> Mark Transferred & Completed (Step 4)
+                  </Button>
+                )}
                 <Button
                   variant="outline-danger"
                   size="sm"
                   style={{ borderRadius: '20px', fontWeight: 600, fontSize: '0.8rem' }}
                   onClick={() => handleActionClick('Rejected', req)}
-                  disabled={reqStatusLower.includes('rejected')}
+                  disabled={reqStatusLower.includes('rejected') || currentStep >= 4}
                 >
                   <FiX className="me-1" /> Mark Rejected
                 </Button>
@@ -595,7 +646,7 @@ const RequestManagement = () => {
           title={`Confirm Request ${targetStatus}`}
           message={`Are you sure you want to mark Request #${selectedRequest?.id} as ${targetStatus}?`}
           confirmText={`Confirm ${targetStatus}`}
-          confirmVariant={targetStatus.includes('Approved') ? 'success' : 'danger'}
+          confirmVariant={targetStatus.includes('Approved') || targetStatus.includes('Completed') ? 'success' : 'danger'}
           onConfirm={handleConfirmStatusChange}
         />
       </Container>
@@ -607,9 +658,31 @@ const RequestManagement = () => {
   // -------------------------------------------------------------
   return (
     <Container fluid className="p-0">
-      <PageHeader>
-        <h2>Food Request Management</h2>
-        <p>Review and approve NGO food requests before forwarding to donors for contact exchange.</p>
+      <PageHeader className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+          <h2>Food Request Management</h2>
+          <p>Review and approve NGO food requests before forwarding to donors for contact exchange.</p>
+        </div>
+        <Button
+          variant="light"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          style={{
+            borderRadius: '20px',
+            fontSize: '0.84rem',
+            fontWeight: 600,
+            border: '1px solid #E6ECE8',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#185C4A',
+            background: '#ffffff',
+            padding: '7px 16px'
+          }}
+        >
+          <FiRefreshCw size={14} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
+          {isRefreshing ? 'Refreshing...' : 'Refresh Requests'}
+        </Button>
       </PageHeader>
 
       <MainCard>

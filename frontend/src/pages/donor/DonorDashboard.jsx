@@ -960,25 +960,44 @@ export const DonorDashboard = () => {
     };
   }, [loadDonorDonations, loadDonorRequests]);
 
-  const handleAcceptRequest = (req) => {
+  const handleAcceptRequest = async (req) => {
     const donorPhone = user?.phone || "+977 980-1234567";
     const donorLocation = user?.location || "Kathmandu";
-    updateRequestStatus(req.id, "Confirmed", {
+    const targetStatus = "Confirmed";
+
+    updateRequestStatus(req.id || req._id, targetStatus, {
       donorPhone,
       donorLocation,
     });
     if (req.listingId) {
       updateListingStatus(req.listingId, "matched", req.ngoName || req.receiverName || "Verified NGO Partner");
     }
+
+    try {
+      await api.requests.updateStatus(req._id || req.id, targetStatus, {
+        donorPhone,
+        donorLocation,
+      });
+    } catch (e) {
+      console.warn("Direct API request accept error:", e.message);
+    }
+
     setRequests(loadDonorRequests());
     setDonations(loadDonorDonations());
   };
 
-  const handleDeclineRequest = (req) => {
-    updateRequestStatus(req.id, "Declined");
+  const handleDeclineRequest = async (req) => {
+    updateRequestStatus(req.id || req._id, "Declined");
     if (req.listingId) {
       updateListingStatus(req.listingId, "available", null);
     }
+
+    try {
+      await api.requests.updateStatus(req._id || req.id, "Declined");
+    } catch (e) {
+      console.warn("Direct API request decline error:", e.message);
+    }
+
     setRequests(loadDonorRequests());
     setDonations(loadDonorDonations());
   };

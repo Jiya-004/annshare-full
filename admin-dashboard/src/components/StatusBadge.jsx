@@ -29,7 +29,10 @@ const getBadgeConfig = (status = '') => {
     lower.includes('transit') ||
     lower.includes('assigned') ||
     lower.includes('in progress') ||
-    lower.includes('requested')
+    lower.includes('requested') ||
+    lower.includes('confirmed') ||
+    lower.includes('matched') ||
+    lower.includes('accepted')
   ) {
     return {
       bg: '#EEF8F4',

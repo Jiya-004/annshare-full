@@ -122,8 +122,16 @@ export const HeroSection = styled.section`
   padding: 130px 0 52px;
   background: transparent;
 
+  @media (max-width: 992px) {
+    padding: 110px 0 44px;
+  }
+
   @media (max-width: 768px) {
-    padding: 10px 0 36px;
+    padding: 95px 0 36px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 90px 0 28px;
   }
 `;
 
@@ -142,6 +150,10 @@ export const HeroSplitGrid = styled.div`
 export const HeroTextCol = styled.div`
   max-width: 540px;
 
+  @media (max-width: 992px) {
+    max-width: 100%;
+  }
+
   h1 {
     font-family: var(--font-display, 'Poppins', sans-serif);
     font-size: clamp(1.6rem, 2.5vw, 2.15rem);
@@ -152,7 +164,11 @@ export const HeroTextCol = styled.div`
     margin: 0 0 14px;
 
     @media (max-width: 768px) {
-      font-size: 1.45rem;
+      font-size: 1.5rem;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 1.3rem;
     }
   }
 
@@ -161,18 +177,30 @@ export const HeroTextCol = styled.div`
     color: #556B64;
     line-height: 1.6;
     margin: 0 0 24px;
+
+    @media (max-width: 480px) {
+      font-size: 0.94rem;
+      margin: 0 0 18px;
+    }
   }
 
   .cta-group {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 16px;
     flex-wrap: wrap;
+
+    @media (max-width: 480px) {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
   }
 
   .btn-primary-hero {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     background-color: #2E7D5B;
     color: #FFFFFF;
@@ -186,6 +214,12 @@ export const HeroTextCol = styled.div`
     box-shadow: 0 4px 14px rgba(46, 125, 91, 0.25);
     transition: all 0.25s ease;
 
+    @media (max-width: 480px) {
+      width: 100%;
+      padding: 12px 20px;
+      font-size: 0.94rem;
+    }
+
     &:hover {
       background-color: #246549;
       transform: translateY(-2px);
@@ -196,6 +230,7 @@ export const HeroTextCol = styled.div`
   .btn-secondary-link {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     color: #173F34;
     font-size: 0.98rem;
@@ -206,6 +241,12 @@ export const HeroTextCol = styled.div`
     border: none;
     padding: 8px 0;
     transition: all 0.2s ease;
+
+    @media (max-width: 480px) {
+      width: 100%;
+      text-align: center;
+      font-size: 0.9rem;
+    }
 
     &:hover {
       color: #2E7D5B;
@@ -235,11 +276,11 @@ export const HeroImageCol = styled.div`
     box-shadow: 0 10px 30px rgba(23, 63, 52, 0.08);
 
     @media (max-width: 768px) {
-      height: 260px;
+      height: 250px;
     }
 
     @media (max-width: 480px) {
-      height: 210px;
+      height: 200px;
       border-radius: 14px;
     }
 
@@ -268,7 +309,8 @@ export const FloatingBadge = styled.div`
   @media (max-width: 480px) {
     left: 12px;
     bottom: -10px;
-    padding: 8px 12px;
+    padding: 6px 12px;
+    gap: 8px;
   }
 
   .stat-num {
@@ -277,6 +319,10 @@ export const FloatingBadge = styled.div`
     font-weight: 700;
     color: #173F34;
     line-height: 1;
+
+    @media (max-width: 480px) {
+      font-size: 1.15rem;
+    }
   }
 
   .stat-text {
@@ -284,6 +330,10 @@ export const FloatingBadge = styled.div`
     font-weight: 500;
     color: #69736E;
     line-height: 1.3;
+
+    @media (max-width: 480px) {
+      font-size: 0.72rem;
+    }
   }
 `;
 
@@ -293,6 +343,10 @@ export const WhoSection = styled.section`
   background-color: #FFFFFF;
   border-top: 1px solid #ECE9E0;
   border-bottom: 1px solid #ECE9E0;
+
+  @media (max-width: 768px) {
+    padding: 48px 0 56px;
+  }
 `;
 
 export const WhoGrid = styled.div`

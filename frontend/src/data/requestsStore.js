@@ -196,7 +196,9 @@ export function updateRequestStatus(id, status, extraData = {}) {
   saveRequests(updated);
 
   if (id) {
-    api.requests.updateStatus(id, { status, ...extraData }).catch(() => {});
+    api.requests.updateStatus(id, status, extraData).catch((err) => {
+      console.warn("Failed to persist request status to backend:", err.message);
+    });
   }
 
   return updated;
