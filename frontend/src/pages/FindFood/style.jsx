@@ -44,67 +44,164 @@ const pulseLive = keyframes`
 
 export const SearchHero = styled.div`
   background: #FFFFFF;
-  border-radius: 20px;
+  background-image: 
+    radial-gradient(circle at 85% 15%, rgba(46, 125, 91, 0.05), transparent 50%),
+    radial-gradient(circle at 15% 85%, rgba(217, 119, 6, 0.03), transparent 50%);
+  border-radius: 24px;
   border: 1px solid #E6ECE8;
-  box-shadow: 0 4px 18px rgba(23, 74, 58, 0.03);
-  padding: 30px 24px 26px;
+  box-shadow: 0 4px 20px rgba(23, 74, 58, 0.04);
+  padding: 34px 28px 24px;
   margin-top: 84px;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   position: relative;
   box-sizing: border-box;
   text-align: center;
 
   @media (max-width: 960px) {
-    padding: 24px 18px 20px;
+    padding: 26px 20px 20px;
     margin-top: 104px;
-    border-radius: 16px;
+    border-radius: 18px;
   }
 
   @media (max-width: 480px) {
     padding: 20px 14px 16px;
     margin-top: 98px;
-    border-radius: 14px;
+    border-radius: 16px;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #EAF5EF;
+    border: 1px solid rgba(46, 125, 91, 0.2);
+    color: #174A3A;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 5px 14px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+    letter-spacing: 0.01em;
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10B981;
+      animation: ${pulseLive} 2s infinite;
+    }
   }
 
   .hero-center-header {
-    max-width: 620px;
-    margin: 0 auto 18px;
+    max-width: 640px;
+    margin: 0 auto 20px;
 
     h1 {
       font-family: var(--font-display, 'Poppins', sans-serif);
-      font-size: 1.85rem;
+      font-size: 2.1rem;
       font-weight: 700;
       color: #174A3A;
-      line-height: 1.22;
+      line-height: 1.2;
       letter-spacing: -0.02em;
-      margin: 0 0 6px;
+      margin: 0 0 8px;
+
+      .highlight-text {
+        color: #2E7D5B;
+        position: relative;
+        display: inline-block;
+      }
 
       @media (max-width: 768px) {
-        font-size: 1.45rem;
+        font-size: 1.6rem;
       }
 
       @media (max-width: 480px) {
-        font-size: 1.28rem;
+        font-size: 1.35rem;
       }
     }
 
     .hero-subtitle {
-      font-size: 0.92rem;
+      font-size: 0.94rem;
       color: #556B64;
-      line-height: 1.45;
+      line-height: 1.5;
       margin: 0;
+      max-width: 520px;
+      margin: 0 auto;
 
       @media (max-width: 768px) {
-        font-size: 0.84rem;
+        font-size: 0.85rem;
       }
     }
   }
 
   .searchbar-wrapper {
     margin: 0 auto;
-    max-width: 680px;
+    max-width: 720px;
     position: relative;
     z-index: 2;
+  }
+
+  .quick-chips-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+
+    .chips-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #7A8E85;
+      margin-right: 2px;
+    }
+
+    .chip-btn {
+      background: #F8F5ED;
+      border: 1px solid rgba(23, 74, 58, 0.1);
+      color: #2D4A3E;
+      font-family: var(--font-sans, 'Inter', sans-serif);
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 5px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #FFFFFF;
+        border-color: #2E7D5B;
+        color: #174A3A;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(23, 74, 58, 0.08);
+      }
+
+      &.active {
+        background: #174A3A;
+        border-color: #174A3A;
+        color: #FFFFFF;
+        font-weight: 600;
+      }
+    }
+
+    @media (max-width: 640px) {
+      gap: 6px;
+      margin-top: 12px;
+
+      .chips-label {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 2px;
+      }
+
+      .chip-btn {
+        font-size: 0.75rem;
+        padding: 4px 10px;
+      }
+    }
   }
 `;
 

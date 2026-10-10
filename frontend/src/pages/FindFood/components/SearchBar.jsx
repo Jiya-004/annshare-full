@@ -9,31 +9,31 @@ import {
 const SearchBarCard = styled.div`
   background: #FFFFFF;
   border-radius: 999px;
-  box-shadow: 0 2px 14px rgba(23, 74, 58, 0.05);
-  border: 1px solid #DCE4E0;
+  box-shadow: 0 4px 20px rgba(23, 74, 58, 0.06), 0 1px 3px rgba(0, 0, 0, 0.02);
+  border: 1.5px solid #D5E0DB;
   display: flex;
   align-items: center;
-  padding: 5px 6px 5px 18px;
-  max-width: 680px;
+  padding: 6px 8px 6px 20px;
+  max-width: 720px;
   margin: 0 auto;
   position: relative;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 
   &:hover {
     border-color: #2E7D5B;
-    box-shadow: 0 4px 18px rgba(23, 74, 58, 0.08);
+    box-shadow: 0 8px 26px rgba(23, 74, 58, 0.09);
   }
 
   &:focus-within {
     border-color: #174A3A;
-    box-shadow: 0 6px 22px rgba(23, 74, 58, 0.1), 0 0 0 3px rgba(46, 125, 91, 0.1);
+    box-shadow: 0 8px 30px rgba(23, 74, 58, 0.12), 0 0 0 3px rgba(46, 125, 91, 0.12);
   }
 
   @media (max-width: 640px) {
-    border-radius: 14px;
+    border-radius: 16px;
     flex-direction: column;
-    padding: 10px;
-    gap: 8px;
+    padding: 12px;
+    gap: 10px;
     width: 100%;
     box-sizing: border-box;
   }
@@ -56,7 +56,7 @@ const SearchField = styled.div`
 
   .field-icon {
     color: #2E7D5B;
-    font-size: 1.15rem;
+    font-size: 1.2rem;
     flex-shrink: 0;
   }
 
@@ -64,7 +64,7 @@ const SearchField = styled.div`
     border: none;
     background: transparent;
     font-family: var(--font-sans, 'Inter', sans-serif);
-    font-size: 0.92rem;
+    font-size: 0.94rem;
     color: #174A3A;
     font-weight: 500;
     outline: none;
@@ -85,7 +85,7 @@ const SearchField = styled.div`
     padding: 2px 6px;
     display: flex;
     align-items: center;
-    font-size: 1rem;
+    font-size: 1.05rem;
     transition: color 0.15s ease;
 
     &:hover {
@@ -95,7 +95,7 @@ const SearchField = styled.div`
 
   @media (max-width: 640px) {
     width: 100%;
-    padding: 6px 10px;
+    padding: 8px 12px;
     border-radius: 10px;
     background: #F8F5ED;
   }
@@ -103,9 +103,9 @@ const SearchField = styled.div`
 
 const FieldDivider = styled.div`
   width: 1px;
-  height: 26px;
-  background: #E5EBE7;
-  margin: 0 6px;
+  height: 28px;
+  background: #E2EAE5;
+  margin: 0 8px;
 
   @media (max-width: 640px) {
     display: none;
@@ -117,22 +117,27 @@ const SearchButton = styled.button`
   color: #FFFFFF;
   border: none;
   border-radius: 999px;
-  padding: 11px 22px;
+  padding: 12px 26px;
   font-family: var(--font-sans, 'Inter', sans-serif);
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   cursor: pointer;
+  box-shadow: 0 4px 14px rgba(23, 74, 58, 0.2);
   transition: all 0.2s ease;
   white-space: nowrap;
   flex-shrink: 0;
 
+  svg {
+    font-size: 1rem;
+  }
+
   &:hover {
     background: #235E4B;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(23, 74, 58, 0.25);
+    box-shadow: 0 6px 18px rgba(23, 74, 58, 0.28);
   }
 
   &:active {
@@ -142,7 +147,7 @@ const SearchButton = styled.button`
   @media (max-width: 640px) {
     width: 100%;
     justify-content: center;
-    padding: 11px 16px;
+    padding: 12px 16px;
     border-radius: 10px;
     margin-top: 2px;
   }
@@ -171,7 +176,7 @@ export default function SearchBar({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Search food, bakery, or meal..."
+          placeholder="What food are you looking for?"
         />
         {searchQuery && (
           <button
@@ -195,13 +200,14 @@ export default function SearchBar({
           value={locationQuery}
           onChange={(e) => setLocationQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Location"
+          placeholder="Kathmandu, Nepal"
         />
       </SearchField>
 
       {/* 3. Search Action */}
       <SearchButton type="button" onClick={onSearch}>
-        Search
+        <IoSearchOutline />
+        <span>Search</span>
       </SearchButton>
     </SearchBarCard>
   );

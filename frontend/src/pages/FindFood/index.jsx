@@ -178,16 +178,23 @@ export default function FindFoodPage() {
   return (
     <FindFoodWrapper>
       <Container>
-        {/* MINIMAL DISCOVERY HERO */}
+        {/* ELEVATED MINIMAL DISCOVERY HERO */}
         <SearchHero>
+          <div className="hero-eyebrow">
+            <span className="pulse-dot" />
+            <span>Live Food Rescue · Kathmandu Valley</span>
+          </div>
+
           <div className="hero-center-header">
-            <h1>Find Surplus Food</h1>
+            <h1>
+              Find Surplus Food <span className="highlight-text">Near You</span>
+            </h1>
             <p className="hero-subtitle">
-              Browse available surplus meals, bakery items, and fresh groceries ready for free pickup.
+              Browse available meals, freshly baked goods, and farm groceries ready for free pickup today.
             </p>
           </div>
 
-          {/* MINIMAL SEARCH BAR */}
+          {/* SEARCH BAR */}
           <div className="searchbar-wrapper">
             <SearchBar
               locationQuery={locationQuery}
@@ -196,6 +203,39 @@ export default function FindFoodPage() {
               setSearchQuery={setSearchQuery}
               onSearch={triggerSearch}
             />
+          </div>
+
+          {/* QUICK CATEGORY SHORTCUTS */}
+          <div className="quick-chips-row">
+            <span className="chips-label">Popular:</span>
+            <button
+              type="button"
+              className={`chip-btn ${activeFilter === "Prepared Meals" ? "active" : ""}`}
+              onClick={() => handlePillSelect(activeFilter === "Prepared Meals" ? "all" : "Prepared Meals")}
+            >
+              🍲 Prepared Meals
+            </button>
+            <button
+              type="button"
+              className={`chip-btn ${activeFilter === "Bakery" ? "active" : ""}`}
+              onClick={() => handlePillSelect(activeFilter === "Bakery" ? "all" : "Bakery")}
+            >
+              🥐 Bakery
+            </button>
+            <button
+              type="button"
+              className={`chip-btn ${activeFilter === "Fruits & Vegetables" ? "active" : ""}`}
+              onClick={() => handlePillSelect(activeFilter === "Fruits & Vegetables" ? "all" : "Fruits & Vegetables")}
+            >
+              🥬 Fresh Produce
+            </button>
+            <button
+              type="button"
+              className={`chip-btn ${activeFilter === "today" ? "active" : ""}`}
+              onClick={() => handlePillSelect(activeFilter === "today" ? "all" : "today")}
+            >
+              ⚡ Available Today
+            </button>
           </div>
         </SearchHero>
 
