@@ -335,6 +335,7 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
   });
 
   useEffect(() => {
+    resetAllViews();
     if (isBlogsMode && (initialTab === 'Faq List' || initialTab === 'Faq Category')) {
       setActiveTab('Blog Posts');
     } else if (!isBlogsMode && (initialTab === 'Blog Posts' || initialTab === 'Blog Category')) {
@@ -342,7 +343,7 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
     } else {
       setActiveTab(initialTab);
     }
-  }, [initialTab, isBlogsMode]);
+  }, [initialTab, isBlogsMode, mode]);
 
   // Entities limit & Search
   const [entitiesPerPage, setEntitiesPerPage] = useState(10);
@@ -1377,14 +1378,14 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
           <>
             <NavPillButton
               $active={activeTab === 'Blog Posts'}
-              onClick={() => { setActiveTab('Blog Posts'); setSearchTerm(''); }}
+              onClick={() => { resetAllViews(); setActiveTab('Blog Posts'); setSearchTerm(''); }}
             >
               <FiBookOpen size={16} /> Blog Posts ({blogs.length})
             </NavPillButton>
 
             <NavPillButton
               $active={activeTab === 'Blog Category'}
-              onClick={() => { setActiveTab('Blog Category'); setSearchTerm(''); }}
+              onClick={() => { resetAllViews(); setActiveTab('Blog Category'); setSearchTerm(''); }}
             >
               <FiLayers size={16} /> Blog Category ({blogCats.length})
             </NavPillButton>
@@ -1393,14 +1394,14 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
           <>
             <NavPillButton
               $active={activeTab === 'Faq List'}
-              onClick={() => { setActiveTab('Faq List'); setSearchTerm(''); }}
+              onClick={() => { resetAllViews(); setActiveTab('Faq List'); setSearchTerm(''); }}
             >
               <FiHelpCircle size={16} /> Faq List ({faqs.length})
             </NavPillButton>
 
             <NavPillButton
               $active={activeTab === 'Faq Category'}
-              onClick={() => { setActiveTab('Faq Category'); setSearchTerm(''); }}
+              onClick={() => { resetAllViews(); setActiveTab('Faq Category'); setSearchTerm(''); }}
             >
               <FiLayers size={16} /> Faq Category ({faqCats.length})
             </NavPillButton>
