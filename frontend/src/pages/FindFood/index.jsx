@@ -178,47 +178,24 @@ export default function FindFoodPage() {
   return (
     <FindFoodWrapper>
       <Container>
-        {/* DISCOVERY HERO */}
+        {/* MINIMAL DISCOVERY HERO */}
         <SearchHero>
           <div className="hero-center-header">
-            <div className="hero-badge-group">
-              <span className="live-badge">
-                <span className="pulse-dot" />
-                Live Surplus Marketplace · Kathmandu Valley
-              </span>
-            </div>
-
-            <h1>Find Surplus Food Near You</h1>
+            <h1>Find Surplus Food</h1>
             <p className="hero-subtitle">
               Browse available surplus meals, bakery items, and fresh groceries ready for free pickup.
             </p>
           </div>
 
-          {/* INTEGRATED SEARCH BAR */}
+          {/* MINIMAL SEARCH BAR */}
           <div className="searchbar-wrapper">
             <SearchBar
               locationQuery={locationQuery}
               setLocationQuery={setLocationQuery}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
-              timeQuery={timeQuery}
-              setTimeQuery={setTimeQuery}
               onSearch={triggerSearch}
             />
-          </div>
-
-          <div className="hero-trust-row">
-            <span className="trust-item">
-              <IoShieldCheckmark /> 100% Verified Donors
-            </span>
-            <span className="trust-dot">•</span>
-            <span className="trust-item">
-              <IoSparkles /> Free Community Pickup
-            </span>
-            <span className="trust-dot">•</span>
-            <span className="trust-item">
-              Real-time Freshness Window
-            </span>
           </div>
         </SearchHero>
 
