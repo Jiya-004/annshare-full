@@ -27,6 +27,9 @@ const PublicRoute = () => {
       case 'Reports':
         return <Reports />;
       case 'Feedback / Complaints':
+      case 'Feedback':
+      case 'Contact':
+      case 'Inquiries':
         return <Feedback />;
       case 'Blog Manage':
         return <ContentManagement mode="blogs" initialTab="Blog Posts" />;

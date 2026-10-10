@@ -1,16 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Container, Card, Table, Button, Form, Row, Col } from 'react-bootstrap';
+import { Container, Card, Table, Button, Form, Row, Col, Dropdown } from 'react-bootstrap';
 import {
   FiEye,
   FiArrowLeft,
-  FiSearch
+  FiSearch,
+  FiRefreshCw,
+  FiTrash2,
+  FiCheckCircle,
+  FiClock,
+  FiMessageSquare
 } from 'react-icons/fi';
 
 import {
   getComplaints,
-  subscribeToAdminService
+  subscribeToAdminService,
+  syncAllFromBackend,
+  updateComplaint,
+  deleteFeedback
 } from '../../services/adminService';
+import StatusBadge from '../../components/StatusBadge';
 
 // Styled Components
 const PageHeader = styled.div`
@@ -79,6 +88,26 @@ const ViewButton = styled(Button)`
   }
 `;
 
+const DeleteIconButton = styled.button`
+  border-radius: 20px;
+  font-size: 0.8rem;
+  padding: 5px 10px;
+  border: 1px solid #FEE2E2;
+  background: #FEF2F2;
+  color: #B91C1C;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #FEE2E2;
+    border-color: #EF4444;
+    color: #991B1B;
+  }
+`;
+
 // Reference Image Exact Stacked List Container
 const DetailCardContainer = styled.div`
   background: #ffffff;
@@ -96,6 +125,9 @@ const DetailCardHeader = styled.div`
   font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: -0.2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 `;
 
 const DetailRow = styled.div`
@@ -119,13 +151,25 @@ const Feedback = () => {
   const [feedbackList, setFeedbackList] = useState(getComplaints());
   const [viewingFeedback, setViewingFeedback] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [adminReplyText, setAdminReplyText] = useState('');
+  const [saveSuccessNotice, setSaveSuccessNotice] = useState(false);
 
   useEffect(() => {
+    // Initial live fetch from backend
+    syncAllFromBackend();
+
     const unsub = subscribeToAdminService(() => {
       setFeedbackList(getComplaints());
     });
     return unsub;
   }, []);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await syncAllFromBackend();
+    setIsRefreshing(false);
+  };
 
   const filteredList = feedbackList.filter(item => {
     if (!searchTerm) return true;
@@ -144,7 +188,38 @@ const Feedback = () => {
 
   const handleOpenView = (item) => {
     setViewingFeedback(item);
+    setAdminReplyText(item.response || '');
+    setSaveSuccessNotice(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleUpdateStatus = (newStatus) => {
+    if (!viewingFeedback) return;
+    updateComplaint(viewingFeedback.id || viewingFeedback._id, adminReplyText, newStatus);
+    setViewingFeedback(prev => ({ ...prev, status: newStatus }));
+    setSaveSuccessNotice(true);
+    setTimeout(() => setSaveSuccessNotice(false), 2500);
+  };
+
+  const handleSaveResponse = () => {
+    if (!viewingFeedback) return;
+    updateComplaint(
+      viewingFeedback.id || viewingFeedback._id,
+      adminReplyText,
+      viewingFeedback.status || 'In Review'
+    );
+    setViewingFeedback(prev => ({ ...prev, response: adminReplyText, status: prev.status === 'Open' ? 'In Review' : prev.status }));
+    setSaveSuccessNotice(true);
+    setTimeout(() => setSaveSuccessNotice(false), 2500);
+  };
+
+  const handleDeleteItem = (id) => {
+    if (window.confirm('Are you sure you want to delete this contact submission?')) {
+      deleteFeedback(id);
+      if (viewingFeedback && (viewingFeedback.id === id || viewingFeedback._id === id)) {
+        setViewingFeedback(null);
+      }
+    }
   };
 
   // -------------------------------------------------------------
@@ -159,20 +234,49 @@ const Feedback = () => {
         {/* Top Header & Breadcrumb Bar */}
         <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
           <BackButton variant="light" onClick={() => setViewingFeedback(null)}>
-            <FiArrowLeft size={16} /> Back to Feedback List
+            <FiArrowLeft size={16} /> Back to Inquiries List
           </BackButton>
 
-          <div style={{ fontSize: '0.84rem', color: '#66736D', fontWeight: 500 }}>
-            Dashboard / Contact Request / <span style={{ color: '#12201B', fontWeight: 600 }}>User Details</span>
+          <div className="d-flex align-items-center gap-2">
+            <DeleteIconButton onClick={() => handleDeleteItem(fdb.id || fdb._id)}>
+              <FiTrash2 size={13} /> Delete Inquiry
+            </DeleteIconButton>
+            <div style={{ fontSize: '0.84rem', color: '#66736D', fontWeight: 500 }}>
+              Dashboard / Contact Request / <span style={{ color: '#12201B', fontWeight: 600 }}>User Details</span>
+            </div>
           </div>
         </div>
+
+        {saveSuccessNotice && (
+          <div
+            style={{
+              padding: '12px 18px',
+              background: '#EEF8F4',
+              color: '#185C4A',
+              border: '1px solid #C4E3D8',
+              borderRadius: '10px',
+              marginBottom: '16px',
+              fontSize: '0.88rem',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <FiCheckCircle size={16} /> Changes successfully saved to backend database.
+          </div>
+        )}
 
         {/* Exact Reference Image User Details Stacked Card */}
         <Row className="justify-content-center">
           <Col lg={11} md={12}>
             <DetailCardContainer>
               <DetailCardHeader>
-                User Details
+                <span>User Details</span>
+                <div className="d-flex align-items-center gap-2">
+                  <span style={{ fontSize: '0.82rem', fontWeight: 400, opacity: 0.9 }}>Status:</span>
+                  <StatusBadge status={fdb.status || 'Open'} />
+                </div>
               </DetailCardHeader>
 
               {/* 1. Full Name */}
@@ -196,7 +300,7 @@ const Feedback = () => {
               {/* 4. Organization (Optional) */}
               <DetailRow>
                 <DetailLabel>Organization (Optional) :</DetailLabel>
-                <span>{fdb.organization || 'Green Kitchen Restaurant'}</span>
+                <span>{fdb.organization || 'None specified'}</span>
               </DetailRow>
 
               {/* 5. What can we help you with? */}
@@ -220,6 +324,64 @@ const Feedback = () => {
                 <DetailLabel>Applied On :</DetailLabel>
                 <span>{fdb.date}</span>
               </DetailRow>
+
+              {/* 8. Admin Status Control */}
+              <DetailRow>
+                <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                  <div>
+                    <DetailLabel>Ticket Resolution Status :</DetailLabel>
+                    <span className="me-2"><StatusBadge status={fdb.status || 'Open'} /></span>
+                  </div>
+                  <div className="d-flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline-secondary"
+                      style={{ fontSize: '0.8rem', borderRadius: '16px' }}
+                      onClick={() => handleUpdateStatus('Open')}
+                    >
+                      Mark Open
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline-warning"
+                      style={{ fontSize: '0.8rem', borderRadius: '16px' }}
+                      onClick={() => handleUpdateStatus('In Review')}
+                    >
+                      In Review
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline-success"
+                      style={{ fontSize: '0.8rem', borderRadius: '16px' }}
+                      onClick={() => handleUpdateStatus('Resolved')}
+                    >
+                      Mark Resolved
+                    </Button>
+                  </div>
+                </div>
+              </DetailRow>
+
+              {/* 9. Response / Internal Notes */}
+              <DetailRow>
+                <DetailLabel className="d-block mb-2">Coordinator Response / Internal Notes :</DetailLabel>
+                <Form.Control
+                  as="textarea"
+                  rows={3}
+                  placeholder="Enter response or internal notes regarding this contact request..."
+                  value={adminReplyText}
+                  onChange={(e) => setAdminReplyText(e.target.value)}
+                  style={{ fontSize: '0.88rem', borderRadius: '8px', border: '1px solid #D1D5DB' }}
+                />
+                <div className="d-flex justify-content-end mt-2">
+                  <Button
+                    size="sm"
+                    style={{ background: '#185C4A', borderColor: '#185C4A', borderRadius: '16px', fontSize: '0.82rem', padding: '5px 16px' }}
+                    onClick={handleSaveResponse}
+                  >
+                    Save Notes & Update
+                  </Button>
+                </div>
+              </DetailRow>
             </DetailCardContainer>
           </Col>
         </Row>
@@ -232,9 +394,31 @@ const Feedback = () => {
   // -------------------------------------------------------------
   return (
     <Container fluid className="p-0">
-      <PageHeader>
-        <h2>Feedback & Support Complaints</h2>
-        <p>Review received user inquiries, food donation support requests, and messages.</p>
+      <PageHeader className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+          <h2>Contact Inquiries & Feedback</h2>
+          <p>Review received user inquiries, food donation support requests, and messages.</p>
+        </div>
+        <Button
+          variant="light"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          style={{
+            borderRadius: '20px',
+            fontSize: '0.84rem',
+            fontWeight: 600,
+            border: '1px solid #E6ECE8',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#185C4A',
+            background: '#ffffff',
+            padding: '7px 16px'
+          }}
+        >
+          <FiRefreshCw size={14} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
+          {isRefreshing ? 'Refreshing...' : 'Refresh Inquiries'}
+        </Button>
       </PageHeader>
 
       <MainCard>
@@ -265,36 +449,51 @@ const Feedback = () => {
                 <th style={{ background: 'transparent', borderBottom: '1px solid #E6ECE8' }}>Phone Number</th>
                 <th style={{ background: 'transparent', borderBottom: '1px solid #E6ECE8' }}>Organization</th>
                 <th style={{ background: 'transparent', borderBottom: '1px solid #E6ECE8' }}>Help Topic</th>
+                <th style={{ background: 'transparent', borderBottom: '1px solid #E6ECE8' }}>Date</th>
+                <th style={{ background: 'transparent', borderBottom: '1px solid #E6ECE8' }}>Status</th>
                 <th style={{ background: 'transparent', borderBottom: '1px solid #E6ECE8' }} className="text-end">Action</th>
               </tr>
             </thead>
             <tbody>
               {filteredList.length > 0 ? (
                 filteredList.map(fdb => (
-                  <tr key={fdb.id}>
+                  <tr key={fdb.id || fdb._id}>
                     <td>
-                      <strong style={{ color: '#185C4A' }}>#{fdb.id}</strong>
+                      <strong style={{ color: '#185C4A' }}>
+                        #{fdb.id?.length > 8 ? fdb.id.slice(-6).toUpperCase() : fdb.id}
+                      </strong>
                     </td>
                     <td>
                       <strong style={{ color: '#12201B' }}>{fdb.fullName || fdb.userName}</strong>
                     </td>
-                    <td style={{ color: '#66736D' }}>{fdb.email || 'sarah.j@greenkitchen.com'}</td>
-                    <td style={{ color: '#66736D' }}>{fdb.phone || '+977 9841234567'}</td>
-                    <td style={{ color: '#12201B', fontWeight: 500 }}>{fdb.organization || 'N/A'}</td>
+                    <td style={{ color: '#66736D' }}>{fdb.email || 'N/A'}</td>
+                    <td style={{ color: '#66736D' }}>{fdb.phone || 'N/A'}</td>
+                    <td style={{ color: '#12201B', fontWeight: 500 }}>{fdb.organization || 'None'}</td>
                     <td style={{ fontWeight: 600, color: '#185C4A' }}>
                       {fdb.topic || fdb.type || 'Food Donation'}
                     </td>
+                    <td style={{ color: '#66736D', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                      {fdb.date || 'Today'}
+                    </td>
+                    <td>
+                      <StatusBadge status={fdb.status || 'Open'} />
+                    </td>
                     <td className="text-end">
-                      <ViewButton onClick={() => handleOpenView(fdb)}>
-                        <FiEye size={14} /> View
-                      </ViewButton>
+                      <div className="d-inline-flex align-items-center gap-2">
+                        <ViewButton onClick={() => handleOpenView(fdb)}>
+                          <FiEye size={14} /> View
+                        </ViewButton>
+                        <DeleteIconButton title="Delete" onClick={() => handleDeleteItem(fdb.id || fdb._id)}>
+                          <FiTrash2 size={13} />
+                        </DeleteIconButton>
+                      </div>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="text-center py-4 text-muted">
-                    No feedback or complaint submissions found.
+                  <td colSpan={9} className="text-center py-4 text-muted">
+                    No contact or feedback submissions found.
                   </td>
                 </tr>
               )}

@@ -41,6 +41,7 @@ app.use('/api/donations', require('./routes/listingRoutes'));
 app.use('/api/requests', require('./routes/requestRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/feedback', require('./routes/feedbackRoutes'));
+app.use('/api/contact', require('./routes/feedbackRoutes'));
 app.use('/api/complaints', require('./routes/feedbackRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
 app.use('/api/faqs', require('./routes/faqRoutes'));

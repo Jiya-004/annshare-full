@@ -596,6 +596,17 @@ export const updateComplaint = (complaintId, responseText, newStatus) => {
   notifyListeners();
 };
 
+export const deleteFeedback = (feedbackId) => {
+  feedbackState = feedbackState.filter((c) => c.id !== feedbackId && c._id !== feedbackId);
+  fetch(`${API_BASE}/feedback/${feedbackId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  }).catch(() => {});
+  notifyListeners();
+};
+
+export const deleteComplaint = deleteFeedback;
+
 export const updateAdminProfile = (data) => {
   if (currentAdminSession) {
     currentAdminSession.user = { ...currentAdminSession.user, ...data };

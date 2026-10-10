@@ -55,6 +55,268 @@ const Container = styled.div`
   margin: 0 auto;
 `;
 
+const ToastContainer = styled.div`
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  background: #FFFFFF;
+  border-left: 5px solid #10B981;
+  border-radius: 14px;
+  padding: 14px 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(16, 185, 129, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 380px;
+  animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(40px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+  }
+
+  .toast-icon {
+    color: #10B981;
+    font-size: 1.6rem;
+    flex-shrink: 0;
+  }
+
+  .toast-body {
+    flex: 1;
+    min-width: 0;
+
+    h5 {
+      margin: 0 0 2px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #174A3A;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.8rem;
+      color: #556B64;
+      line-height: 1.35;
+    }
+  }
+
+  .toast-close {
+    background: transparent;
+    border: none;
+    color: #94A3B8;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+
+    &:hover {
+      color: #174A3A;
+    }
+  }
+`;
+
+const ModalBackdrop = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+`;
+
+const SuccessModalCard = styled.div`
+  background: #FFFFFF;
+  width: 100%;
+  max-width: 480px;
+  border-radius: 28px;
+  padding: 32px 28px 28px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(23, 74, 58, 0.08);
+  position: relative;
+  text-align: center;
+  animation: popUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  @keyframes popUp {
+    from {
+      opacity: 0;
+      transform: scale(0.92) translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .modal-close-btn {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: #F8F5ED;
+    color: #556B64;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #174A3A;
+      color: #FFFFFF;
+    }
+  }
+
+  .success-badge-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #ECFDF5;
+    border: 3px solid #A7F3D0;
+    color: #10B981;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.8rem;
+    margin: 0 auto 18px;
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.18);
+  }
+
+  h3 {
+    font-family: var(--font-display, 'Poppins', sans-serif);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #174A3A;
+    margin: 0 0 8px;
+  }
+
+  .modal-subtitle {
+    font-size: 0.88rem;
+    color: #556B64;
+    line-height: 1.5;
+    margin: 0 0 20px;
+  }
+
+  .summary-preview-box {
+    background: #F8F5ED;
+    border: 1px solid rgba(23, 74, 58, 0.1);
+    border-radius: 16px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    margin-bottom: 24px;
+
+    .summary-img {
+      width: 58px;
+      height: 58px;
+      border-radius: 12px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .summary-info {
+      flex: 1;
+      min-width: 0;
+
+      h4 {
+        margin: 0 0 4px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #174A3A;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.8rem;
+        color: #556B64;
+      }
+
+      .summary-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #B45309;
+        background: #FEF3C7;
+        padding: 2px 8px;
+        border-radius: 999px;
+        margin-top: 5px;
+
+        svg {
+          font-size: 0.82rem;
+        }
+      }
+    }
+  }
+
+  .modal-actions-row {
+    display: flex;
+    gap: 10px;
+
+    button {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-family: var(--font-sans, 'Inter', sans-serif);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary-view {
+      background: #174A3A;
+      color: #FFFFFF;
+      border: 1px solid #174A3A;
+      box-shadow: 0 4px 14px rgba(23, 74, 58, 0.2);
+
+      &:hover {
+        background: #2E7D5B;
+        border-color: #2E7D5B;
+        transform: translateY(-1px);
+      }
+    }
+
+    .btn-secondary-another {
+      background: #FFFFFF;
+      color: #174A3A;
+      border: 1.5px solid rgba(23, 74, 58, 0.2);
+
+      &:hover {
+        background: #F8F5ED;
+        border-color: #174A3A;
+      }
+    }
+  }
+`;
+
 const DashboardGrid = styled.div`
   display: grid;
   grid-template-columns: 270px 1fr;
@@ -746,6 +1008,8 @@ export const DonorDashboard = () => {
   });
 
   const [isSuccessMessage, setIsSuccessMessage] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [lastCreatedListing, setLastCreatedListing] = useState(null);
 
   const handleCreateDonation = (e) => {
     e.preventDefault();
@@ -785,6 +1049,7 @@ export const DonorDashboard = () => {
 
     addListing(newListing);
     setDonations(loadDonorDonations());
+    setLastCreatedListing(newListing);
     setNewFood({
       title: "",
       category: "Prepared Meals",
@@ -796,7 +1061,12 @@ export const DonorDashboard = () => {
     });
 
     setIsSuccessMessage(true);
-    setTimeout(() => setIsSuccessMessage(false), 4000);
+    setShowToast(true);
+
+    setTimeout(() => {
+      setIsSuccessMessage(false);
+      setShowToast(false);
+    }, 5000);
   };
 
   const donorName = user?.name || "Donor";
@@ -1725,6 +1995,20 @@ export const DonorDashboard = () => {
           </MainContent>
         </DashboardGrid>
       </Container>
+
+      {/* SUCCESS TOAST NOTIFICATION */}
+      {showToast && (
+        <ToastContainer>
+          <IoCheckmarkCircle className="toast-icon" />
+          <div className="toast-body">
+            <h5>Submitted Successfully! 🎉</h5>
+            <p>Your listing was created and sent for Admin approval.</p>
+          </div>
+          <button className="toast-close" onClick={() => setShowToast(false)}>
+            <IoClose />
+          </button>
+        </ToastContainer>
+      )}
     </DashboardWrapper>
   );
 };

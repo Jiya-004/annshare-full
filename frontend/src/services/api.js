@@ -139,6 +139,14 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(feedbackData),
       }),
+    getAll: () => request('/feedback'),
+  },
+  contact: {
+    send: (contactData) =>
+      request('/feedback', {
+        method: 'POST',
+        body: JSON.stringify(contactData),
+      }),
   },
 
   // Content Management: Blogs & FAQs

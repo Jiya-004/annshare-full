@@ -10,6 +10,8 @@ const {
 router.get('/', getFeedback);
 router.post('/', createFeedback);
 router.put('/:id/respond', respondFeedback);
+router.patch('/:id/status', respondFeedback);
+router.put('/:id', respondFeedback);
 router.delete('/:id', deleteFeedback);
 
 module.exports = router;

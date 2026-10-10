@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import api from "../../services/api";
 import {
   IoArrowForward,
   IoRestaurantOutline,
@@ -75,6 +77,7 @@ const CONTACT_FAQS = [
 
 export default function ContactUsPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Form State
   const [formData, setFormData] = useState({
@@ -88,6 +91,20 @@ export default function ContactUsPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  // Auto pre-fill if user is logged in
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        fullName: prev.fullName || user.name || "",
+        email: prev.email || user.email || "",
+        phone: prev.phone || user.phone || "",
+        organization: prev.organization || user.organization || user.orgName || "",
+      }));
+    }
+  }, [user]);
 
   // FAQ Accordion State
   const [openFaqId, setOpenFaqId] = useState(1);
@@ -105,25 +122,45 @@ export default function ContactUsPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitError("");
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      await api.contact.send({
+        fullName: formData.fullName.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        organization: formData.organization.trim(),
+        topic: formData.topic,
+        subject: formData.topic,
+        message: formData.message.trim(),
+        type: "Contact Inquiry",
+        userRole: user?.role || "Visitor",
+        status: "Open",
+        priority: "Medium",
+      });
+
       setIsSubmitted(true);
-    }, 650);
+    } catch (err) {
+      console.error("Failed to submit contact message:", err);
+      setSubmitError(err.message || "Failed to send your message. Please check your connection and try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleReset = () => {
     setFormData({
-      fullName: "",
-      email: "",
-      phone: "",
-      organization: "",
+      fullName: user?.name || "",
+      email: user?.email || "",
+      phone: user?.phone || "",
+      organization: user?.organization || user?.orgName || "",
       topic: "Food Donation",
       message: "",
     });
+    setSubmitError("");
     setIsSubmitted(false);
   };
 
@@ -297,6 +334,22 @@ export default function ContactUsPage() {
                 </FormSuccessMessage>
               ) : (
                 <form onSubmit={handleSubmit}>
+                  {submitError && (
+                    <div
+                      style={{
+                        padding: "12px 16px",
+                        background: "#FEF2F2",
+                        border: "1px solid #FCA5A5",
+                        color: "#991B1B",
+                        borderRadius: "10px",
+                        marginBottom: "18px",
+                        fontSize: "0.88rem",
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {submitError}
+                    </div>
+                  )}
                   <FormRow>
                     <FormGroup>
                       <label htmlFor="fullName">Full Name</label>
