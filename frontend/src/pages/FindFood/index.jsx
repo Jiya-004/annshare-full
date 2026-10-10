@@ -13,7 +13,7 @@ import {
   MobileMapToggleBtn,
 } from "./style";
 
-import { getListings } from "../../data/listingsStore";
+import { getListings, matchCategory } from "../../data/listingsStore";
 import SearchBar from "./components/SearchBar";
 import FilterBar from "./components/FilterBar";
 import FilterDrawer from "./components/FilterDrawer";
@@ -127,14 +127,14 @@ export default function FindFoodPage() {
             const distNum = parseFloat(item.distance) || 2.5;
             if (distNum > 5) return false;
           } else {
-            if (item.category !== activeFilter) return false;
+            if (!matchCategory(item.category, activeFilter)) return false;
           }
         }
 
         // 3. Drawer category filter
         if (
           drawerFilters.categories.length > 0 &&
-          !drawerFilters.categories.includes(item.category)
+          !drawerFilters.categories.some((cat) => matchCategory(item.category, cat))
         ) {
           return false;
         }
@@ -210,22 +210,22 @@ export default function FindFoodPage() {
             <span className="chips-label">Popular:</span>
             <button
               type="button"
-              className={`chip-btn ${activeFilter === "Prepared Meals" ? "active" : ""}`}
-              onClick={() => handlePillSelect(activeFilter === "Prepared Meals" ? "all" : "Prepared Meals")}
+              className={`chip-btn ${matchCategory(activeFilter, "Prepared Meals") ? "active" : ""}`}
+              onClick={() => handlePillSelect(matchCategory(activeFilter, "Prepared Meals") ? "all" : "Prepared Meals")}
             >
               🍲 Prepared Meals
             </button>
             <button
               type="button"
-              className={`chip-btn ${activeFilter === "Bakery" ? "active" : ""}`}
-              onClick={() => handlePillSelect(activeFilter === "Bakery" ? "all" : "Bakery")}
+              className={`chip-btn ${matchCategory(activeFilter, "Bakery & Bread") ? "active" : ""}`}
+              onClick={() => handlePillSelect(matchCategory(activeFilter, "Bakery & Bread") ? "all" : "Bakery & Bread")}
             >
-              🥐 Bakery
+              🥐 Bakery & Bread
             </button>
             <button
               type="button"
-              className={`chip-btn ${activeFilter === "Fruits & Vegetables" ? "active" : ""}`}
-              onClick={() => handlePillSelect(activeFilter === "Fruits & Vegetables" ? "all" : "Fruits & Vegetables")}
+              className={`chip-btn ${matchCategory(activeFilter, "Fruits & Veggies") ? "active" : ""}`}
+              onClick={() => handlePillSelect(matchCategory(activeFilter, "Fruits & Veggies") ? "all" : "Fruits & Veggies")}
             >
               🥬 Fresh Produce
             </button>

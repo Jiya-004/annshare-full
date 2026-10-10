@@ -147,7 +147,9 @@ export default function FoodDetailsPage() {
                   <div className="log-label">
                     {item.pickupDate} · {item.pickupTime}
                   </div>
-                  <div className="log-sub">Designated collection window</div>
+                  <div className="log-sub">
+                    {item.postedTime ? `Listed today at ${item.postedTime}` : "Designated collection window"}
+                  </div>
                 </div>
               </div>
 

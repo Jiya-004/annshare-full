@@ -9,6 +9,7 @@ import {
   IoRestaurantOutline,
   IoShieldCheckmarkOutline,
 } from "react-icons/io5";
+import { addListing, formatCurrentTime, normalizeCategory } from "../../data/listingsStore";
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -390,6 +391,34 @@ export const DonateFoodModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const now = new Date();
+    const currentFormattedTime = formatCurrentTime(now);
+    const cleanCat = category.replace(/^[^\w\s]+/, "").trim();
+    const mappedCat = normalizeCategory(cleanCat);
+    const newListing = {
+      title: `Surplus ${mappedCat}`,
+      category: mappedCat,
+      quantity: Number(quantity) || 20,
+      unit: "portions",
+      condition: "Freshly Prepared",
+      partner: `${donorType} Partner`,
+      partnerType: `${donorType} · Verified Donor`,
+      verified: true,
+      location: location || "Thamel, Kathmandu",
+      area: location ? location.split(",")[0].trim() : "Kathmandu",
+      distance: "1.2 km",
+      pickupDate: "Today",
+      pickupTime: `Today, ${currentFormattedTime} – ${formatCurrentTime(new Date(now.getTime() + 2.5 * 60 * 60 * 1000))}`,
+      postedTime: currentFormattedTime,
+      createdAt: now.toISOString(),
+      status: "available",
+      description: `Surplus portions ready for immediate collection by verified shelters and community kitchens.`,
+      safetyInfo: `Prepared at ${currentFormattedTime} today according to food safety protocols.`,
+      contactName: `${donorType} Kitchen Manager`,
+      contactPhone: "+977 980-1234567",
+    };
+
+    addListing(newListing);
     setIsSubmitted(true);
   };
 

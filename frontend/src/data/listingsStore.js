@@ -4,26 +4,91 @@ import api from "../services/api";
 const STORAGE_KEY = "annshare_listings";
 
 /**
+ * Standardize category strings across app so filters and cards always match.
+ */
+export function normalizeCategory(cat = "") {
+  if (!cat) return "Prepared Meals";
+  const c = String(cat).toLowerCase().trim();
+  if (c.includes("bakery") || c.includes("bread") || c.includes("pastr") || c.includes("croissant")) return "Bakery & Bread";
+  if (c.includes("fruit") || c.includes("veg") || c.includes("produce") || c.includes("salad") || c.includes("greens")) return "Fruits & Veggies";
+  if (c.includes("prepared") || c.includes("cooked") || c.includes("meal") || c.includes("bento") || c.includes("rice meals")) return "Prepared Meals";
+  if (c.includes("grain") || c.includes("rice &") || c.includes("lentil") || c.includes("beans")) return "Rice & Grains";
+  if (c.includes("dairy") || c.includes("milk") || c.includes("paneer") || c.includes("cheese") || c.includes("pantry")) return "Dairy & Pantry";
+  if (c.includes("packaged") || c.includes("grocer") || c.includes("canned")) return "Packaged Food";
+  if (c.includes("other")) return "Other Items";
+  return cat;
+}
+
+/**
+ * Flexible category comparison helper
+ */
+export function matchCategory(itemCat = "", filterCat = "") {
+  if (!filterCat || filterCat === "all") return true;
+  if (itemCat === filterCat) return true;
+  return normalizeCategory(itemCat).toLowerCase() === normalizeCategory(filterCat).toLowerCase();
+}
+
+/**
+ * Format timestamp into readable current time (e.g. 4:15 PM)
+ */
+export function formatCurrentTime(d = new Date()) {
+  const dateObj = typeof d === "string" || typeof d === "number" ? new Date(d) : d;
+  return dateObj.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+/**
+ * Current pickup window helper (+2.5 hours)
+ */
+export function getCurrentPickupWindow() {
+  const now = new Date();
+  const startTime = formatCurrentTime(now);
+  const endTime = formatCurrentTime(new Date(now.getTime() + 2.5 * 60 * 60 * 1000));
+  return `${startTime} – ${endTime}`;
+}
+
+/**
  * Retrieve all listings from localStorage / local state.
  * Seeds with LISTINGS_DATA if localStorage is empty.
  */
 export function getListings() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
+    let list = [];
     if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(LISTINGS_DATA));
-      // Trigger background sync with backend
+      list = [...LISTINGS_DATA];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
       syncListingsFromBackend();
-      return [...LISTINGS_DATA];
-    }
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(LISTINGS_DATA));
-      syncListingsFromBackend();
-      return [...LISTINGS_DATA];
+    } else {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        list = [...LISTINGS_DATA];
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+        syncListingsFromBackend();
+      } else {
+        list = parsed;
+      }
     }
 
-    return parsed;
+    // Normalize each listing so category and time always display cleanly
+    return list.map((item) => {
+      const normalizedCat = normalizeCategory(item.category);
+      const area = item.area || (item.location ? item.location.split(",")[0].trim() : "Kathmandu");
+      const postedTime =
+        item.postedTime ||
+        (item.createdAt ? formatCurrentTime(item.createdAt) : "2:30 PM");
+
+      return {
+        ...item,
+        category: normalizedCat,
+        area,
+        postedTime,
+        pickupTime: item.pickupTime || `Today, ${postedTime}`,
+      };
+    });
   } catch (err) {
     console.error("Failed to read listings from localStorage:", err);
     return [...LISTINGS_DATA];
@@ -49,39 +114,49 @@ export async function syncListingsFromBackend() {
   try {
     const backendListings = await api.listings.getAll();
     if (Array.isArray(backendListings) && backendListings.length > 0) {
-      const normalized = backendListings.map((b) => ({
-        id: b._id || b.id,
-        _id: b._id,
-        title: b.title || b.foodName,
-        category: b.category || "Prepared Meals",
-        quantity: b.quantity ? (typeof b.quantity === "number" ? b.quantity : parseInt(b.quantity, 10) || 10) : 10,
-        unit: b.portions ? b.portions.replace(/[0-9]/g, "").trim() || "portions" : "portions",
-        partner: b.donor || b.restaurantName || "Community Food Donor",
-        partnerType: "Verified Food Donor",
-        verified: true,
-        location: b.location || "Kathmandu, Nepal",
-        area: b.location ? b.location.split(",")[0].trim() : "Kathmandu",
-        distance: "1.5 km",
-        pickupDate: "Today",
-        pickupTime: b.pickupWindow || "5:00 PM – 7:30 PM",
-        image: b.image || "/food/food1.jpg",
-        images: b.images && b.images.length > 0 ? b.images : [b.image || "/food/food1.jpg"],
-        rating: 5.0,
-        reviewsCount: 12,
-        status: (b.status || "available").toLowerCase(),
-        badgeColor: "#2E7D5B",
-        description: b.description || "",
-        safetyInfo: b.safetyInfo || "Maintained according to food hygiene safety standards.",
-        expiresIn: b.expiryTime || "4 hours",
-        contactName: b.contactName || b.donor || "Partner",
-        contactPhone: b.contactPhone || "+977 9841234567",
-        donorId: b.donorId,
-        matchedWith: b.claimedBy || null,
-        createdAt: b.createdAt || new Date().toISOString(),
-      }));
+      const normalized = backendListings.map((b) => {
+        const cat = normalizeCategory(b.category);
+        const postedTime = b.postedDate || (b.createdAt ? formatCurrentTime(b.createdAt) : formatCurrentTime());
+        return {
+          id: b._id || b.id,
+          _id: b._id,
+          title: b.title || b.foodName,
+          category: cat,
+          quantity: b.quantity ? (typeof b.quantity === "number" ? b.quantity : parseInt(b.quantity, 10) || 10) : 10,
+          unit: b.portions ? b.portions.replace(/[0-9]/g, "").trim() || "portions" : "portions",
+          partner: b.donor || b.restaurantName || "Community Food Donor",
+          partnerType: "Verified Food Donor",
+          verified: true,
+          location: b.location || "Kathmandu, Nepal",
+          area: b.location ? b.location.split(",")[0].trim() : "Kathmandu",
+          distance: "1.5 km",
+          pickupDate: "Today",
+          pickupTime: b.pickupWindow || `Today · ${postedTime}`,
+          postedTime,
+          image: b.image || "/food/food1.jpg",
+          images: b.images && b.images.length > 0 ? b.images : [b.image || "/food/food1.jpg"],
+          rating: 5.0,
+          reviewsCount: 12,
+          status: (b.status || "available").toLowerCase(),
+          badgeColor: "#2E7D5B",
+          description: b.description || "",
+          safetyInfo: b.safetyInfo || `Prepared at ${postedTime}. Maintained according to food hygiene safety standards.`,
+          expiresIn: b.expiryTime || "4 hours",
+          contactName: b.contactName || b.donor || "Partner",
+          contactPhone: b.contactPhone || "+977 9841234567",
+          donorId: b.donorId,
+          matchedWith: b.claimedBy || null,
+          createdAt: b.createdAt || new Date().toISOString(),
+        };
+      });
 
-      // Combine with local mock listings if desired, or replace
-      saveListings(normalized);
+      // Preserve local custom donations so user submissions don't disappear on sync
+      const currentListings = getListings();
+      const localOnly = currentListings.filter(
+        (l) => l.id && String(l.id).startsWith("listing-") && !normalized.some((b) => b.id === l.id || b._id === l.id)
+      );
+
+      saveListings([...localOnly, ...normalized]);
     }
   } catch (err) {
     console.warn("Could not sync listings from live backend, using local store:", err.message);
@@ -99,21 +174,29 @@ if (typeof window !== "undefined") {
 export function addListing(listing) {
   const current = getListings();
   const newId = listing.id || `listing-${Date.now()}`;
+  const now = new Date();
+  const currentTimeStr = formatCurrentTime(now);
+  const normalizedCategory = normalizeCategory(listing.category || "Prepared Meals");
+  const area = listing.area || (listing.location ? listing.location.split(",")[0].trim() : "Kathmandu");
+  const pickupWindow = listing.pickupTime || `Today, ${currentTimeStr} – ${formatCurrentTime(new Date(now.getTime() + 2.5 * 60 * 60 * 1000))}`;
 
   const formattedListing = {
     id: newId,
     title: listing.title || listing.foodName || "Untitled Surplus Food",
-    category: listing.category || "Prepared Meals",
+    category: normalizedCategory,
     quantity: Number(listing.quantity) || 1,
     unit: listing.unit || "portions",
+    condition: listing.condition || "Freshly Prepared",
     partner: listing.partner || listing.donor || "Community Food Donor",
     partnerType: listing.partnerType || "Verified Food Donor",
     verified: listing.verified ?? true,
     location: listing.location || "Kathmandu, Nepal",
-    area: listing.area || (listing.location ? listing.location.split(",")[0].trim() : "Kathmandu"),
-    distance: listing.distance || "1.5 km",
+    area,
+    distance: listing.distance || "1.2 km",
     pickupDate: listing.pickupDate || "Today",
-    pickupTime: listing.pickupTime || "5:00 PM – 7:30 PM",
+    pickupTime: pickupWindow,
+    postedTime: listing.postedTime || currentTimeStr,
+    createdAt: listing.createdAt || now.toISOString(),
     image: listing.image || `/food/food${(current.length % 8) + 1}.jpg`,
     images: listing.images && listing.images.length > 0 ? listing.images : [listing.image || `/food/food${(current.length % 8) + 1}.jpg`],
     rating: listing.rating || 5.0,
@@ -122,13 +205,12 @@ export function addListing(listing) {
     badgeColor: "#C2410C",
     mapCoords: listing.mapCoords || { x: 45, y: 35 },
     description: listing.description || "",
-    safetyInfo: listing.safetyInfo || "Maintained according to food hygiene safety standards.",
+    safetyInfo: listing.safetyInfo || `Prepared fresh today at ${currentTimeStr}. Maintained according to food hygiene safety standards.`,
     expiresIn: listing.expiresIn || "4 hours",
     contactName: listing.contactName || "Donor Contact",
     contactPhone: listing.contactPhone || "+977 980-1234567",
     donorId: listing.donorId || null,
     matchedWith: listing.matchedWith || null,
-    createdAt: listing.createdAt || new Date().toISOString(),
   };
 
   const updated = [formattedListing, ...current];
@@ -148,7 +230,7 @@ export function addListing(listing) {
       location: formattedListing.location,
       address: formattedListing.location,
       contactPhone: formattedListing.contactPhone,
-      pickupWindow: `${formattedListing.pickupDate} · ${formattedListing.pickupTime}`,
+      pickupWindow: formattedListing.pickupTime,
       expiryTime: formattedListing.expiresIn,
       status: "Pending Approval",
       image: formattedListing.image,

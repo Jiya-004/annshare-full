@@ -26,7 +26,7 @@ import {
 } from "react-icons/io5";
 import { FaHandshake } from "react-icons/fa6";
 import AccountSettings from "../../components/dashboard/AccountSettings";
-import { getListings, addListing } from "../../data/listingsStore";
+import { getListings, addListing, formatCurrentTime, normalizeCategory } from "../../data/listingsStore";
 import api from "../../services/api";
 import ImageUploader from "../Donate/components/ImageUploader";
 
@@ -663,12 +663,19 @@ export const DonorDashboard = () => {
     };
   }, []);
 
+  const getInitialPickupSlot = () => {
+    const now = new Date();
+    const startTime = formatCurrentTime(now);
+    const endTime = formatCurrentTime(new Date(now.getTime() + 2.5 * 60 * 60 * 1000));
+    return `Today, ${startTime} – ${endTime}`;
+  };
+
   const [newFood, setNewFood] = useState({
     title: "",
     category: "Prepared Meals",
     quantity: "",
     unit: "portions",
-    pickupTime: "Today, 5:00 PM - 7:00 PM",
+    pickupTime: getInitialPickupSlot(),
     instructions: "",
     images: [],
   });
@@ -679,23 +686,32 @@ export const DonorDashboard = () => {
     e.preventDefault();
     if (!newFood.title.trim()) return;
 
+    const now = new Date();
+    const currentFormattedTime = formatCurrentTime(now);
     const fallbackImg = `/food/food${Math.floor(Math.random() * 8) + 1}.jpg`;
     const chosenImage = newFood.images && newFood.images.length > 0 ? newFood.images[0] : fallbackImg;
     const chosenImages = newFood.images && newFood.images.length > 0 ? newFood.images : [fallbackImg];
+    const pickupWindow = newFood.pickupTime || `Today, ${currentFormattedTime} – ${formatCurrentTime(new Date(now.getTime() + 2.5 * 60 * 60 * 1000))}`;
 
     const newListing = {
       title: newFood.title,
-      category: newFood.category,
+      category: normalizeCategory(newFood.category),
       quantity: Number(newFood.quantity) || 20,
       unit: newFood.unit || "portions",
+      condition: "Freshly Prepared",
       partner: user?.organization || user?.name || "Your Organization",
       location: user?.location || "Kathmandu Kitchen",
-      status: "Pending Approval",
+      area: user?.location ? user?.location.split(",")[0].trim() : "Kathmandu",
+      distance: "1.2 km",
+      status: "available",
       pickupDate: "Today",
-      pickupTime: newFood.pickupTime || "5:00 PM - 7:00 PM",
+      pickupTime: pickupWindow,
+      postedTime: currentFormattedTime,
+      createdAt: now.toISOString(),
       image: chosenImage,
       images: chosenImages,
       description: newFood.instructions || "Fresh surplus food ready for pickup.",
+      safetyInfo: `Prepared at ${currentFormattedTime} today under food hygiene safety standards.`,
       contactName: user?.name || "Donor",
       contactPhone: "+977 980-1234567",
       donorId: user?.id || `donor-${Date.now()}`,
@@ -709,7 +725,7 @@ export const DonorDashboard = () => {
       category: "Prepared Meals",
       quantity: "",
       unit: "portions",
-      pickupTime: "Today, 5:00 PM - 7:00 PM",
+      pickupTime: getInitialPickupSlot(),
       instructions: "",
       images: [],
     });

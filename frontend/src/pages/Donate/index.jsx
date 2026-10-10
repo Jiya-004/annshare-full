@@ -41,7 +41,7 @@ import {
   IoHeart,
 } from "react-icons/io5";
 
-import { addListing } from "../../data/listingsStore";
+import { addListing, formatCurrentTime, normalizeCategory } from "../../data/listingsStore";
 
 export default function DonatePage() {
   const navigate = useNavigate();
@@ -49,6 +49,16 @@ export default function DonatePage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
+
+  // Dynamic Current Time
+  const getCurrentTimes = () => {
+    const now = new Date();
+    const from = formatCurrentTime(now);
+    const to = formatCurrentTime(new Date(now.getTime() + 2.5 * 60 * 60 * 1000));
+    return { from, to };
+  };
+
+  const initialTimes = getCurrentTimes();
 
   // Controlled Form State
   const [formData, setFormData] = useState({
@@ -63,8 +73,8 @@ export default function DonatePage() {
     businessName: user?.organization || user?.name || "Green Leaf Café",
     location: user?.location || "Thamel, Kathmandu",
     pickupDate: "Today",
-    pickupFromTime: "5:00 PM",
-    pickupToTime: "7:30 PM",
+    pickupFromTime: initialTimes.from,
+    pickupToTime: initialTimes.to,
     contactName: user?.name || "Ramesh Shrestha",
     contactPhone: "+977 980-1234567",
     instructions: "Please collect directly from the back kitchen service entrance.",
@@ -91,12 +101,15 @@ export default function DonatePage() {
       onAuthorized: () => {
         setIsSubmitting(true);
         setTimeout(() => {
+          const now = new Date();
+          const currentFormattedTime = formatCurrentTime(now);
           const fallbackImg = `/food/food${Math.floor(Math.random() * 8) + 1}.jpg`;
           const newListing = {
             title: formData.foodName,
-            category: formData.category,
+            category: normalizeCategory(formData.category),
             quantity: Number(formData.quantity) || 1,
             unit: formData.unit || "portions",
+            condition: formData.condition || "Freshly Prepared",
             partner: user?.organization || formData.businessName || user?.name || "Your Organization",
             partnerType: user?.badge || "Verified Food Donor",
             verified: true,
@@ -104,11 +117,13 @@ export default function DonatePage() {
             area: formData.location ? formData.location.split(",")[0].trim() : "Kathmandu",
             distance: "1.2 km",
             pickupDate: formData.pickupDate || "Today",
-            pickupTime: `${formData.pickupFromTime} – ${formData.pickupToTime}`,
+            pickupTime: `${formData.pickupFromTime || currentFormattedTime} – ${formData.pickupToTime || formatCurrentTime(new Date(now.getTime() + 2.5 * 60 * 60 * 1000))}`,
+            postedTime: currentFormattedTime,
+            createdAt: now.toISOString(),
             image: formData.images?.[0] || fallbackImg,
             images: formData.images && formData.images.length > 0 ? formData.images : [fallbackImg],
             description: formData.description || "",
-            safetyInfo: formData.condition ? `Condition: ${formData.condition}. Prepared under food hygiene safety standards.` : "Maintained at safe temperatures.",
+            safetyInfo: formData.condition ? `Condition: ${formData.condition}. Prepared at ${currentFormattedTime} under food hygiene standards.` : `Prepared at ${currentFormattedTime}.`,
             contactName: user?.name || formData.contactName || "Donor",
             contactPhone: formData.contactPhone || "+977 980-1234567",
             status: "Pending Approval",
@@ -128,6 +143,7 @@ export default function DonatePage() {
   const handleReset = () => {
     setIsPublished(false);
     setCurrentStep(1);
+    const freshTimes = getCurrentTimes();
     setFormData({
       foodName: "Fresh Vegetable Rice Meals",
       category: "Prepared Meals",
@@ -140,8 +156,8 @@ export default function DonatePage() {
       businessName: user?.organization || user?.name || "Green Leaf Café",
       location: user?.location || "Thamel, Kathmandu",
       pickupDate: "Today",
-      pickupFromTime: "5:00 PM",
-      pickupToTime: "7:30 PM",
+      pickupFromTime: freshTimes.from,
+      pickupToTime: freshTimes.to,
       contactName: user?.name || "Ramesh Shrestha",
       contactPhone: "+977 980-1234567",
       instructions: "Please collect directly from the back kitchen service entrance.",

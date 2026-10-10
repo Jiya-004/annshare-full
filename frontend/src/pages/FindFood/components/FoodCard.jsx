@@ -259,6 +259,20 @@ const AirbnbCardWrapper = styled.div`
       white-space: nowrap;
       width: 100%;
       min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      .partner-name {
+        font-weight: 600;
+        color: #174A3A;
+      }
+
+      .condition-tag {
+        color: #2E7D5B;
+        font-weight: 600;
+        font-size: 0.76rem;
+      }
 
       @media (max-width: 768px) {
         font-size: 0.78rem;
@@ -275,10 +289,28 @@ const AirbnbCardWrapper = styled.div`
       white-space: nowrap;
       width: 100%;
       min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      .area-text {
+        font-weight: 600;
+        color: #384E46;
+      }
+
+      .time-badge {
+        color: #174A3A;
+        font-weight: 600;
+      }
 
       @media (max-width: 768px) {
         font-size: 0.75rem;
       }
+    }
+
+    .dot-sep {
+      color: #B0BEB8;
+      font-size: 0.75rem;
     }
 
     /* ROW 4: AIRBNB PRICE LINE (PORTIONS & FREE BADGE) */
@@ -441,6 +473,11 @@ export default function FoodCard({
               <IoTimeOutline />
               <span>Urgent Pickup</span>
             </>
+          ) : item.postedTime ? (
+            <>
+              <IoTimeOutline style={{ color: "#2E7D5B" }} />
+              <span>Listed {item.postedTime}</span>
+            </>
           ) : (
             <>
               <IoShieldCheckmark style={{ color: "#2E7D5B" }} />
@@ -473,11 +510,27 @@ export default function FoodCard({
         </div>
 
         <div className="row-donor">
-          {item.partner} · {item.category}
+          <span className="partner-name">{item.partner}</span>
+          <span className="dot-sep">·</span>
+          <span className="cat-name">{item.category}</span>
+          {item.condition && (
+            <>
+              <span className="dot-sep">·</span>
+              <span className="condition-tag">{item.condition}</span>
+            </>
+          )}
         </div>
 
         <div className="row-distance-time">
-          {item.distance} away · {item.pickupDate}, {item.pickupTime}
+          <span className="area-text">
+            {item.area || (item.location ? item.location.split(",")[0].trim() : "Kathmandu")}
+          </span>
+          <span className="dot-sep">·</span>
+          <span>{item.distance} away</span>
+          <span className="dot-sep">·</span>
+          <span className="time-badge">
+            {item.postedTime ? `Made at ${item.postedTime}` : item.pickupTime}
+          </span>
         </div>
 
         <div className="row-price-portions">
