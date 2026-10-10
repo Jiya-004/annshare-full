@@ -2,6 +2,24 @@ const Request = require('../models/Request');
 const Listing = require('../models/listing');
 const { sendNotification } = require('./notificationController');
 
+const formatNepaliDate = (date = new Date()) => {
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return date;
+    return d.toLocaleString('en-US', {
+      timeZone: 'Asia/Kathmandu',
+      month: 'short',
+      day: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  } catch (e) {
+    return date;
+  }
+};
+
 // GET all food requests
 const getRequests = async (req, res) => {
   try {
@@ -13,38 +31,41 @@ const getRequests = async (req, res) => {
 
     const requests = await Request.find(filter).sort({ createdAt: -1 });
 
-    const formatted = requests.map((r) => ({
-      _id: r._id,
-      id: r._id.toString(),
-      listingId: r.listingId,
-      donationId: r.donationId || r.listingId,
-      foodTitle: r.foodTitle || r.foodName,
-      foodName: r.foodName || r.foodTitle,
-      receiverName: r.receiverName || r.ngoName,
-      receiverId: r.receiverId || r.ngoId,
-      donorName: r.donorName,
-      donorId: r.donorId,
-      donorPhone: r.donorPhone,
-      donorEmail: r.donorEmail,
-      donorLocation: r.donorLocation || r.location,
-      ngoPhone: r.ngoPhone || r.contact,
-      ngoEmail: r.ngoEmail,
-      ngoLocation: r.ngoLocation,
-      requestedQuantity: r.requestedQuantity || r.portions,
-      portions: r.portions || r.requestedQuantity,
-      location: r.location,
-      pickupWindow: r.pickupWindow,
-      status: r.status,
-      requestedAt: r.requestedAt,
-      requestDate: r.requestDate,
-      reason: r.reason,
-      image: r.image,
-      contact: r.contact,
-      ngoId: r.ngoId || r.receiverId,
-      ngoName: r.ngoName || r.receiverName,
-      ngoOrg: r.ngoOrg,
-      createdAt: r.createdAt,
-    }));
+    const formatted = requests.map((r) => {
+      const nepaliDate = r.createdAt ? formatNepaliDate(r.createdAt) : (r.requestDate || formatNepaliDate());
+      return {
+        _id: r._id,
+        id: r._id.toString(),
+        listingId: r.listingId,
+        donationId: r.donationId || r.listingId,
+        foodTitle: r.foodTitle || r.foodName,
+        foodName: r.foodName || r.foodTitle,
+        receiverName: r.receiverName || r.ngoName,
+        receiverId: r.receiverId || r.ngoId,
+        donorName: r.donorName,
+        donorId: r.donorId,
+        donorPhone: r.donorPhone,
+        donorEmail: r.donorEmail,
+        donorLocation: r.donorLocation || r.location,
+        ngoPhone: r.ngoPhone || r.contact,
+        ngoEmail: r.ngoEmail,
+        ngoLocation: r.ngoLocation,
+        requestedQuantity: r.requestedQuantity || r.portions,
+        portions: r.portions || r.requestedQuantity,
+        location: r.location,
+        pickupWindow: r.pickupWindow,
+        status: r.status,
+        requestedAt: r.requestedAt,
+        requestDate: nepaliDate,
+        reason: r.reason,
+        image: r.image,
+        contact: r.contact,
+        ngoId: r.ngoId || r.receiverId,
+        ngoName: r.ngoName || r.receiverName,
+        ngoOrg: r.ngoOrg,
+        createdAt: r.createdAt,
+      };
+    });
 
     res.status(200).json(formatted);
   } catch (err) {
@@ -102,6 +123,10 @@ const createRequest = async (req, res) => {
       } catch (e) {
         // Continue if listing lookup fails
       }
+    }
+
+    if (!data.requestDate) {
+      data.requestDate = formatNepaliDate();
     }
 
     const newRequest = await Request.create(data);

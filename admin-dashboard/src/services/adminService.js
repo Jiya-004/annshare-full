@@ -31,6 +31,25 @@ export const formatImageUrl = (url) => {
   return url;
 };
 
+export const formatToNepaliTime = (dateInput) => {
+  if (!dateInput) return 'Today';
+  try {
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return dateInput;
+    return d.toLocaleString('en-US', {
+      timeZone: 'Asia/Kathmandu',
+      month: 'short',
+      day: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  } catch (e) {
+    return String(dateInput);
+  }
+};
+
 let listeners = [];
 
 // Local In-Memory State Cache
@@ -154,7 +173,7 @@ export const syncAllFromBackend = async () => {
           donorPhone: r.donorPhone || '+977 980-1234567',
           ngoPhone: r.ngoPhone || r.contact || '+977 984-1234567',
           requestedQuantity: r.requestedQuantity || r.portions || '1 batch',
-          requestDate: r.requestDate || r.requestedAt || 'Today',
+          requestDate: r.createdAt ? formatToNepaliTime(r.createdAt) : formatToNepaliTime(r.requestDate || r.requestedAt || 'Today'),
           status: r.status || 'Pending Admin Approval',
           reason: r.reason || 'Community food distribution',
         }));

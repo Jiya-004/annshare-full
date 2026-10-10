@@ -1201,7 +1201,7 @@ export const NGODashboard = () => {
                                 <span>•</span>
                                 <span><IoLocationOutline /> {req.location}</span>
                                 <span>•</span>
-                                <span>Requested {req.requestedAt}</span>
+                                <span>Requested {req.requestDate || req.requestedAt}</span>
                               </div>
                               <div style={{ fontSize: "0.84rem", color: "#2E7D5B", fontWeight: 600, marginTop: "4px" }}>
                                 Donor Facility: {req.donorName}

@@ -1,5 +1,17 @@
 const mongoose = require('mongoose');
 
+const formatNepaliDate = (date = new Date()) => {
+  return new Date(date).toLocaleString('en-US', {
+    timeZone: 'Asia/Kathmandu',
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
 const requestSchema = new mongoose.Schema(
   {
     listingId: { type: String },
@@ -21,14 +33,7 @@ const requestSchema = new mongoose.Schema(
     requestedAt: { type: String, default: 'Just now' },
     requestDate: {
       type: String,
-      default: () =>
-        new Date().toLocaleDateString('en-US', {
-          month: 'short',
-          day: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+      default: () => formatNepaliDate(),
     },
     reason: { type: String, default: 'Community distribution' },
     image: { type: String, default: '/food.png' },

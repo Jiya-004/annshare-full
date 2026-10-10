@@ -1,5 +1,23 @@
 import api from "../services/api";
 
+export const formatToNepaliTime = (dateInput = new Date()) => {
+  try {
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return String(dateInput);
+    return d.toLocaleString("en-US", {
+      timeZone: "Asia/Kathmandu",
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch (e) {
+    return String(dateInput);
+  }
+};
+
 const REQUESTS_STORAGE_KEY = "annshare_requests";
 
 const INITIAL_REQUESTS = [
@@ -98,7 +116,8 @@ export async function syncRequestsFromBackend() {
         location: r.location || "Kathmandu, Nepal",
         pickupWindow: r.pickupWindow || "Flexible Pickup",
         status: r.status || "Pending Admin Approval",
-        requestedAt: r.requestedAt || "Recently",
+        requestDate: r.requestDate || (r.createdAt ? formatToNepaliTime(r.createdAt) : formatToNepaliTime()),
+        requestedAt: r.requestDate || (r.createdAt ? formatToNepaliTime(r.createdAt) : "Recently"),
         image: r.image || "/food.png",
         contact: r.contact || "+977 9841234567",
         ngoId: r.ngoId || r.receiverId,
@@ -124,6 +143,7 @@ if (typeof window !== "undefined") {
 export function addRequest(request) {
   const current = getRequests();
   const newId = request.id || `req-${Date.now()}`;
+  const nepaliNow = formatToNepaliTime(request.createdAt || new Date());
 
   const formattedRequest = {
     id: newId,
@@ -141,7 +161,8 @@ export function addRequest(request) {
     location: request.location || "Kathmandu, Nepal",
     pickupWindow: request.pickupWindow || "Flexible Pickup",
     status: request.status || "Pending Admin Approval",
-    requestedAt: request.requestedAt || "Just now",
+    requestDate: request.requestDate || nepaliNow,
+    requestedAt: request.requestedAt && request.requestedAt !== "Just now" ? request.requestedAt : nepaliNow,
     image: request.image || "/food.png",
     contact: request.contact || "Contact through platform",
     ngoId: request.ngoId || null,
@@ -170,6 +191,8 @@ export function addRequest(request) {
       location: formattedRequest.location,
       pickupWindow: formattedRequest.pickupWindow,
       status: formattedRequest.status,
+      requestDate: formattedRequest.requestDate,
+      requestedAt: formattedRequest.requestedAt,
       image: formattedRequest.image,
       contact: formattedRequest.contact,
       ngoName: formattedRequest.ngoName,

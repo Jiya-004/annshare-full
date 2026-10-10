@@ -29,7 +29,8 @@ import {
   getRequests,
   updateRequestStatus,
   subscribeToAdminService,
-  syncAllFromBackend
+  syncAllFromBackend,
+  formatToNepaliTime
 } from '../../services/adminService';
 
 // Styled Components
@@ -399,7 +400,7 @@ const RequestManagement = () => {
                   <StatusBadge status={req.status} />
                 </div>
                 <div style={{ fontSize: '0.78rem', color: '#66736D' }} className="d-flex align-items-center gap-1">
-                  <FiCalendar size={14} /> Submitted: {req.requestDate}
+                  <FiCalendar size={14} /> Submitted: {formatToNepaliTime(req.requestDate)}
                 </div>
               </div>
 
@@ -762,7 +763,7 @@ const RequestManagement = () => {
                       <td style={{ color: '#12201B', fontWeight: 500 }}>{req.foodName}</td>
                       <td style={{ color: '#66736D' }}>{req.donorName}</td>
                       <td style={{ fontWeight: 600, color: '#12201B' }}>{req.requestedQuantity}</td>
-                      <td style={{ color: '#66736D', fontSize: '0.82rem' }}>{req.requestDate}</td>
+                      <td style={{ color: '#66736D', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>{formatToNepaliTime(req.requestDate)}</td>
                       <td>
                         <StatusBadge status={req.status} />
                       </td>
