@@ -227,7 +227,7 @@ const verifyNGO = async (req, res) => {
 // CHANGE PASSWORD
 const changePassword = async (req, res) => {
   try {
-    const { currentPassword, newPassword } = req.body;
+    const { currentPassword, newPassword, email, userId } = req.body;
     const cleanCurrent = (currentPassword || '').trim();
     const cleanNew = (newPassword || '').trim();
 
@@ -239,9 +239,19 @@ const changePassword = async (req, res) => {
       return res.status(400).json({ message: 'New password must be at least 6 characters long' });
     }
 
-    const user = await User.findById(req.user._id);
+    let user = null;
+    if (req.user && req.user._id) {
+      user = await User.findById(req.user._id);
+    }
+    if (!user && (userId || req.user?.id)) {
+      user = await User.findById(userId || req.user.id);
+    }
+    if (!user && email) {
+      user = await User.findOne({ email: String(email).trim().toLowerCase() });
+    }
+
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: 'User account not found' });
     }
 
     const isMatch = await user.matchPassword(cleanCurrent);
@@ -252,9 +262,31 @@ const changePassword = async (req, res) => {
     user.password = cleanNew;
     await user.save();
 
-    res.status(200).json({ message: 'Password updated successfully' });
+    const token = generateToken(user._id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Password updated successfully in database!',
+      token,
+      user: {
+        id: user._id.toString(),
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        orgName: user.orgName || user.organization,
+        organization: user.organization || user.orgName,
+        phone: user.phone,
+        location: user.location,
+        avatar: user.avatar,
+        avatarText: user.avatarText,
+        badge: user.badge,
+        verificationStatus: user.verificationStatus,
+        status: user.status,
+      },
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Failed to update password: ' + err.message });
   }
 };
 

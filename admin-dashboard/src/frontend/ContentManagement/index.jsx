@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Container, Card, Table, Button, Form, Row, Col, Badge, InputGroup } from 'react-bootstrap';
+import { Container, Card, Table, Button, Form, Row, Col, Badge, InputGroup, Toast, ToastContainer } from 'react-bootstrap';
 import {
   FiBookOpen,
   FiHelpCircle,
@@ -240,6 +240,16 @@ const DetailCard = styled(Card)`
   padding: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.015);
   margin-bottom: 20px;
+
+  h1, .article-title {
+    font-weight: 600 !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+    font-size: 1.85rem !important;
+    line-height: 1.35 !important;
+    color: #12201B !important;
+    margin-bottom: 16px !important;
+    letter-spacing: -0.3px !important;
+  }
 `;
 
 const BackButton = styled(Button)`
@@ -389,6 +399,7 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
   // Confirm Delete Modal State
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null); // { type: 'blog'|'faq'|'blogCat'|'faqCat', item }
+  const [toastMessage, setToastMessage] = useState(null);
 
   useEffect(() => {
     const unsub = subscribeToAdminService(() => {
@@ -465,12 +476,12 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
     }
   };
 
-  const handleSaveBlogForm = (e) => {
+  const handleSaveBlogForm = async (e) => {
     e.preventDefault();
     if (!blogTitle.trim()) return;
 
-    saveBlog({
-      ...(editingBlog ? { id: editingBlog.id } : {}),
+    await saveBlog({
+      ...(editingBlog ? { id: editingBlog.id, _id: editingBlog._id } : {}),
       title: blogTitle,
       slug: blogSlug || blogTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
       category: blogCategory,
@@ -485,8 +496,13 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
       status: blogStatus
     });
 
+    const isEdit = !!editingBlog;
     setEditingBlog(null);
     setIsAddingBlog(false);
+    setToastMessage({
+      type: 'success',
+      text: isEdit ? 'Blog article updated successfully!' : 'New blog article created and published!'
+    });
   };
 
   const handleOpenAddFaq = () => {
@@ -516,7 +532,7 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
     if (!faqQuestion.trim()) return;
 
     saveFaq({
-      ...(editingFaq ? { id: editingFaq.id } : {}),
+      ...(editingFaq ? { id: editingFaq.id, _id: editingFaq._id } : {}),
       question: faqQuestion,
       answer: faqAnswer,
       category: faqCategory,
@@ -555,14 +571,14 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
 
     if (categoryType === 'blog') {
       saveBlogCategory({
-        ...(editingCat ? { id: editingCat.id } : {}),
+        ...(editingCat ? { id: editingCat.id, _id: editingCat._id } : {}),
         name: catName,
         description: catDescription,
         status: catStatus
       });
     } else {
       saveFaqCategory({
-        ...(editingCat ? { id: editingCat.id } : {}),
+        ...(editingCat ? { id: editingCat.id, _id: editingCat._id } : {}),
         name: catName,
         description: catDescription,
         status: catStatus
@@ -578,34 +594,49 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
     setShowConfirmModal(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (deleteTarget) {
       if (deleteTarget.type === 'blog') {
-        deleteBlog(deleteTarget.item.id);
-        if (editingBlog?.id === deleteTarget.item.id) {
+        const targetId = deleteTarget.item._id || deleteTarget.item.id;
+        await deleteBlog(targetId);
+        if (editingBlog?.id === targetId || editingBlog?._id === targetId) {
           setEditingBlog(null);
           setIsAddingBlog(false);
         }
+        if (viewingBlog?.id === targetId || viewingBlog?._id === targetId) {
+          setViewingBlog(null);
+        }
       } else if (deleteTarget.type === 'faq') {
-        deleteFaq(deleteTarget.item.id);
-        if (editingFaq?.id === deleteTarget.item.id) {
+        const targetId = deleteTarget.item._id || deleteTarget.item.id;
+        deleteFaq(targetId);
+        if (editingFaq?.id === targetId || editingFaq?._id === targetId) {
           setEditingFaq(null);
           setIsAddingFaq(false);
         }
+        if (viewingFaq?.id === targetId || viewingFaq?._id === targetId) {
+          setViewingFaq(null);
+        }
       } else if (deleteTarget.type === 'blogCat') {
-        deleteBlogCategory(deleteTarget.item.id);
-        if (editingCat?.id === deleteTarget.item.id) {
+        const targetId = deleteTarget.item._id || deleteTarget.item.id;
+        deleteBlogCategory(targetId);
+        if (editingCat?.id === targetId || editingCat?._id === targetId) {
           setEditingCat(null);
           setIsAddingCat(false);
         }
       } else if (deleteTarget.type === 'faqCat') {
-        deleteFaqCategory(deleteTarget.item.id);
-        if (editingCat?.id === deleteTarget.item.id) {
+        const targetId = deleteTarget.item._id || deleteTarget.item.id;
+        deleteFaqCategory(targetId);
+        if (editingCat?.id === targetId || editingCat?._id === targetId) {
           setEditingCat(null);
           setIsAddingCat(false);
         }
       }
       setDeleteTarget(null);
+      setShowConfirmModal(false);
+      setToastMessage({
+        type: 'success',
+        text: 'Content deleted successfully.'
+      });
     }
   };
 
@@ -648,6 +679,14 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
             >
               <FiEdit2 size={14} className="me-1" /> Edit Article
             </Button>
+            <Button
+              variant="outline-danger"
+              size="sm"
+              style={{ borderRadius: '20px', height: '36px', padding: '0 16px', fontWeight: 600, fontSize: '0.82rem' }}
+              onClick={() => promptDelete('blog', viewingBlog)}
+            >
+              <FiTrash2 size={14} className="me-1" /> Delete
+            </Button>
           </div>
         </div>
 
@@ -664,7 +703,7 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
               )}
             </div>
 
-            <h1 style={{ fontWeight: 800, color: '#12201B', fontSize: '2rem', lineHeight: '1.3', marginBottom: '16px' }}>
+            <h1 className="article-title" style={{ fontWeight: 600, color: '#12201B', fontSize: '1.85rem', lineHeight: '1.35', marginBottom: '16px' }}>
               {viewingBlog.title}
             </h1>
 
@@ -769,7 +808,7 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
               <FiArrowLeft size={16} /> Back to Blog List
             </BackButton>
             <div>
-              <h2 style={{ fontWeight: 700, color: '#12201B', margin: 0, fontSize: '1.4rem' }}>
+              <h2 style={{ fontWeight: 600, color: '#12201B', margin: 0, fontSize: '1.4rem' }}>
                 {isAddingBlog ? 'Create New Blog Post' : `Edit Article — ${editingBlog?.title}`}
               </h2>
             </div>
@@ -1054,7 +1093,7 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
                       <span style={{ fontSize: '0.75rem', color: '#66736D' }}>{blogReadTime}</span>
                     </div>
 
-                    <h6 style={{ fontWeight: 700, color: '#12201B', fontSize: '0.98rem', lineHeight: '1.4', marginBottom: '8px' }}>
+                    <h6 style={{ fontWeight: 600, color: '#12201B', fontSize: '0.98rem', lineHeight: '1.4', marginBottom: '8px' }}>
                       {blogTitle || 'Blog Article Title Preview'}
                     </h6>
 
@@ -1471,7 +1510,7 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
                             style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #E5E7EB', flexShrink: 0 }}
                           />
                           <div>
-                            <div style={{ fontWeight: 700, color: '#111827', fontSize: '0.88rem', lineHeight: '1.3' }}>
+                            <div style={{ fontWeight: 600, color: '#111827', fontSize: '0.88rem', lineHeight: '1.3' }}>
                               {b.title}
                             </div>
                             <div style={{ fontSize: '0.76rem', color: '#6B7280', marginTop: '2px' }}>
@@ -1936,6 +1975,28 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
         confirmVariant="danger"
         onConfirm={handleConfirmDelete}
       />
+
+      {/* Toast Notification */}
+      <ToastContainer position="top-end" className="p-3" style={{ zIndex: 9999, position: 'fixed', top: '70px', right: '20px' }}>
+        {toastMessage && (
+          <Toast
+            onClose={() => setToastMessage(null)}
+            show={!!toastMessage}
+            delay={3200}
+            autohide
+            bg={toastMessage.type === 'danger' ? 'danger' : 'success'}
+          >
+            <Toast.Header>
+              <FiCheckCircle className="me-2 text-success" />
+              <strong className="me-auto">Blog Manage</strong>
+              <small>Just now</small>
+            </Toast.Header>
+            <Toast.Body className="text-white fw-medium">
+              {toastMessage.text}
+            </Toast.Body>
+          </Toast>
+        )}
+      </ToastContainer>
     </Container>
   );
 };

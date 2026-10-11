@@ -976,57 +976,105 @@ export const uploadImage = async (fileOrBase64, name = 'upload.jpg') => {
   }
 };
 
-export const saveBlog = (blogData) => {
-  if (blogData.id || blogData._id) {
-    const targetId = blogData.id || blogData._id;
-    blogsState = blogsState.map((b) => (b.id === targetId || b._id === targetId ? { ...b, ...blogData } : b));
-    fetch(`${API_BASE}/blogs/${targetId}`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(blogData),
-    }).catch(() => {});
+export const saveBlog = async (blogData) => {
+  const targetId = blogData._id || blogData.id;
+  if (targetId) {
+    // 1. Optimistic local update
+    blogsState = blogsState.map((b) =>
+      b.id === targetId || b._id === targetId ? { ...b, ...blogData } : b
+    );
+    notifyListeners();
+
+    // 2. Persist to backend
+    try {
+      const res = await fetch(`${API_BASE}/blogs/${targetId}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(blogData),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        const realId = updated.id || updated._id || targetId;
+        blogsState = blogsState.map((b) =>
+          b.id === targetId || b._id === targetId
+            ? { ...b, ...updated, id: realId, _id: updated._id }
+            : b
+        );
+        notifyListeners();
+        return updated;
+      }
+    } catch (e) {
+      console.warn("Failed to update blog on backend:", e);
+    }
   } else {
+    // 1. Create new blog with temporary local ID
+    const tempId = `BLG-${Date.now()}`;
     const newBlog = {
       ...blogData,
-      id: `BLG-${100 + blogsState.length + 1}`,
+      id: tempId,
       slug: blogData.slug || blogData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
       publishedDate: blogData.publishedDate || new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
       status: blogData.status || 'Published',
       isFeatured: blogData.isFeatured || false,
     };
     blogsState.unshift(newBlog);
-    fetch(`${API_BASE}/blogs`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(newBlog),
-    }).catch(() => {});
+    notifyListeners();
+
+    // 2. Persist to backend and swap temp ID with real DB ID
+    try {
+      const res = await fetch(`${API_BASE}/blogs`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(newBlog),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        const realId = created.id || created._id;
+        blogsState = blogsState.map((b) =>
+          b.id === tempId
+            ? { ...b, ...created, id: realId, _id: created._id }
+            : b
+        );
+        notifyListeners();
+        return created;
+      }
+    } catch (e) {
+      console.warn("Failed to create blog on backend:", e);
+    }
   }
-  notifyListeners();
 };
 
-export const deleteBlog = (blogId) => {
+export const deleteBlog = async (blogId) => {
   blogsState = blogsState.filter((b) => b.id !== blogId && b._id !== blogId);
-  fetch(`${API_BASE}/blogs/${blogId}`, {
-    method: 'DELETE',
-    headers: getAuthHeaders(),
-  }).catch(() => {});
   notifyListeners();
+
+  try {
+    await fetch(`${API_BASE}/blogs/${blogId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+  } catch (e) {
+    console.warn("Failed to delete blog on backend:", e);
+  }
 };
 
-export const toggleBlogStatus = (blogId) => {
+export const toggleBlogStatus = async (blogId) => {
   blogsState = blogsState.map((b) => {
     if (b.id === blogId || b._id === blogId) {
       return { ...b, status: b.status === 'Published' ? 'Draft' : 'Published' };
     }
     return b;
   });
-
-  fetch(`${API_BASE}/blogs/${blogId}/toggle`, {
-    method: 'PATCH',
-    headers: getAuthHeaders(),
-  }).catch(() => {});
-
   notifyListeners();
+
+  try {
+    await fetch(`${API_BASE}/blogs/${blogId}/toggle`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+    });
+  } catch (e) {
+    console.warn("Failed to toggle blog status on backend:", e);
+  }
 };
 
 export const saveFaq = (faqData) => {

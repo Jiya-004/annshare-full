@@ -69,6 +69,16 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(profileData),
       }),
+    changePassword: async (passwordPayload) => {
+      const data = await request('/auth/change-password', {
+        method: 'PUT',
+        body: JSON.stringify(passwordPayload),
+      });
+      if (data?.token) {
+        localStorage.setItem('annshare_token', data.token);
+      }
+      return data;
+    },
   },
 
   // Food Listings / Donations
