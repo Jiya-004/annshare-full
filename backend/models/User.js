@@ -19,6 +19,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     location: { type: String, default: 'Kathmandu, Nepal' },
+    wishlist: [{ type: String }],
     badge: { type: String, default: '' },
     avatar: { type: String, default: '' },
     avatarText: { type: String, default: 'U' },

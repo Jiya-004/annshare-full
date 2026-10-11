@@ -1220,7 +1220,7 @@ export const DonorDashboard = () => {
   const [lastCreatedListing, setLastCreatedListing] = useState(null);
   const [createDonationError, setCreateDonationError] = useState("");
 
-  const handleCreateDonation = (e) => {
+  const handleCreateDonation = async (e) => {
     e.preventDefault();
     setCreateDonationError("");
 
@@ -1268,26 +1268,32 @@ export const DonorDashboard = () => {
       matchedWith: null,
     };
 
-    addListing(newListing);
-    setDonations(loadDonorDonations());
-    setLastCreatedListing(newListing);
-    setNewFood({
-      title: "",
-      category: "Prepared Meals",
-      quantity: "",
-      unit: "portions",
-      pickupTime: getInitialPickupSlot(),
-      instructions: "",
-      images: [],
-    });
+    try {
+      await addListing(newListing);
+      setDonations(loadDonorDonations());
+      setLastCreatedListing(newListing);
+      setNewFood({
+        title: "",
+        category: "Prepared Meals",
+        quantity: "",
+        unit: "portions",
+        pickupTime: getInitialPickupSlot(),
+        instructions: "",
+        images: [],
+      });
 
-    setIsSuccessMessage(true);
-    setShowToast(true);
+      setIsSuccessMessage(true);
+      setShowToast(true);
 
-    setTimeout(() => {
+      setTimeout(() => {
+        setIsSuccessMessage(false);
+        setShowToast(false);
+      }, 5000);
+    } catch (err) {
+      setCreateDonationError(err.message || "Failed to publish donation. Please check your account status.");
       setIsSuccessMessage(false);
-      setShowToast(false);
-    }, 5000);
+      setShowToast(true);
+    }
   };
 
   const donorName = user?.name || "Donor";

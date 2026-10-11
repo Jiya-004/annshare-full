@@ -288,7 +288,7 @@ if (typeof window !== "undefined") {
 /**
  * Add a new listing to the store and backend.
  */
-export function addListing(listing) {
+export async function addListing(listing) {
   const current = getListings();
   const newId = listing.id || `listing-${Date.now()}`;
   const now = new Date();
@@ -334,55 +334,41 @@ export function addListing(listing) {
     matchedWith: listing.matchedWith || null,
   };
 
-  const updated = [formattedListing, ...current];
-  saveListings(updated);
+  // Send to backend first: will throw if token is missing, expired, or user is deleted/suspended
+  const created = await api.listings.create({
+    title: formattedListing.title,
+    foodName: formattedListing.title,
+    category: formattedListing.category,
+    quantity: `${formattedListing.quantity} ${formattedListing.unit}`,
+    portions: `${formattedListing.quantity} ${formattedListing.unit}`,
+    weight_kg: Number(formattedListing.quantity) * 0.3 || 5,
+    donor: formattedListing.partner,
+    restaurantName: formattedListing.partner,
+    location: formattedListing.location,
+    address: formattedListing.location,
+    contactPhone: formattedListing.contactPhone,
+    postedDate: formattedListing.postedDate,
+    pickupWindow: formattedListing.pickupTime,
+    expiryTime: formattedListing.expiresIn,
+    bestBefore: formattedListing.bestBefore,
+    condition: formattedListing.condition,
+    status: "Pending Approval",
+    image: formattedListing.image,
+    images: formattedListing.images,
+    description: formattedListing.description,
+    handlingInstructions: formattedListing.safetyInfo,
+  });
 
-  // Send to backend in background and update local record with returned MongoDB _id
-  api.listings
-    .create({
-      title: formattedListing.title,
-      foodName: formattedListing.title,
-      category: formattedListing.category,
-      quantity: `${formattedListing.quantity} ${formattedListing.unit}`,
-      portions: `${formattedListing.quantity} ${formattedListing.unit}`,
-      weight_kg: Number(formattedListing.quantity) * 0.3 || 5,
-      donor: formattedListing.partner,
-      restaurantName: formattedListing.partner,
-      location: formattedListing.location,
-      address: formattedListing.location,
-      contactPhone: formattedListing.contactPhone,
-      postedDate: formattedListing.postedDate,
-      pickupWindow: formattedListing.pickupTime,
-      expiryTime: formattedListing.expiresIn,
-      bestBefore: formattedListing.bestBefore,
-      condition: formattedListing.condition,
-      status: "Pending Approval",
-      image: formattedListing.image,
-      images: formattedListing.images,
-      description: formattedListing.description,
-      handlingInstructions: formattedListing.safetyInfo,
-    })
-    .then((created) => {
-      if (created && (created._id || created.id)) {
-        const cur = getListings();
-        const realId = String(created._id || created.id);
-        const replaced = cur.map((item) => {
-          if (String(item.id) === String(newId)) {
-            return {
-              ...item,
-              id: realId,
-              _id: realId,
-              status: (created.status || item.status || "Pending Approval").toLowerCase(),
-            };
-          }
-          return item;
-        });
-        saveListings(replaced);
-      }
-    })
-    .catch((e) => console.warn("Backend listing post error (fallback active):", e.message));
+  const realId = String(created?._id || created?.id || newId);
+  const finalListing = {
+    ...formattedListing,
+    id: realId,
+    _id: realId,
+    status: (created?.status || formattedListing.status || "Pending Approval").toLowerCase(),
+  };
 
-  return formattedListing;
+  saveListings([finalListing, ...current]);
+  return finalListing;
 }
 
 /**

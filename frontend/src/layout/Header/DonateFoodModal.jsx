@@ -389,7 +389,7 @@ export const DonateFoodModal = ({ isOpen, onClose }) => {
     "Food Donor",
   ];
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const now = new Date();
     const currentFormattedTime = formatCurrentTime(now);
@@ -418,8 +418,12 @@ export const DonateFoodModal = ({ isOpen, onClose }) => {
       contactPhone: "+977 980-1234567",
     };
 
-    addListing(newListing);
-    setIsSubmitted(true);
+    try {
+      await addListing(newListing);
+      setIsSubmitted(true);
+    } catch (err) {
+      alert(err.message || "Failed to publish donation. Please check your account status.");
+    }
   };
 
   const handleClose = () => {

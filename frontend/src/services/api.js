@@ -85,6 +85,17 @@ export const api = {
         body: JSON.stringify({ email, newPassword, role }),
       });
     },
+    getWishlist: () => request('/auth/wishlist'),
+    toggleWishlist: (listingId) =>
+      request('/auth/wishlist/toggle', {
+        method: 'POST',
+        body: JSON.stringify({ listingId }),
+      }),
+    syncWishlist: (wishlist) =>
+      request('/auth/wishlist/sync', {
+        method: 'PUT',
+        body: JSON.stringify({ wishlist }),
+      }),
   },
 
   // Food Listings / Donations

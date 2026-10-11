@@ -127,6 +127,13 @@ const loginUser = async (req, res) => {
         }
       }
 
+      if (user.status === 'Suspended') {
+        return res.status(403).json({
+          message: 'Your account has been suspended by the administrator. Please contact support.',
+          isSuspended: true,
+        });
+      }
+
       res.status(200).json({
         _id: user._id,
         id: user._id,
@@ -158,7 +165,11 @@ const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(401).json({ message: 'Your account has been deleted by an administrator. Session terminated.', isDeleted: true });
+    }
+    const userStatus = (user.status || '').toLowerCase();
+    if (userStatus === 'suspended' || userStatus === 'inactive') {
+      return res.status(403).json({ message: 'Your account has been suspended by an administrator. Access is revoked.', isSuspended: true });
     }
     res.status(200).json(user);
   } catch (err) {
@@ -269,13 +280,30 @@ const getAllUsers = async (req, res) => {
 const updateUserStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, verificationStatus } = req.body;
-    const user = await User.findById(id);
+    const { status, verificationStatus, email } = req.body;
+    const mongoose = require('mongoose');
+    let user = null;
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      user = await User.findById(id);
+    }
+    if (!user && (email || id)) {
+      user = await User.findOne({
+        $or: [
+          { email: String(email || id).trim().toLowerCase() },
+          { name: String(id).trim() },
+        ],
+      });
+    }
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (status) user.status = status;
+    if (status) {
+      const clean = String(status).trim();
+      user.status = clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
+    }
     if (verificationStatus) user.verificationStatus = verificationStatus;
 
     await user.save();
@@ -448,10 +476,102 @@ const forgotPassword = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-    await User.findByIdAndDelete(id);
-    res.status(200).json({ message: 'User deleted successfully' });
+    const email = req.query.email || req.body?.email;
+    let target = null;
+    let deleted = null;
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      target = await User.findById(id);
+    }
+    if (!target && (email || id)) {
+      target = await User.findOne({
+        $or: [
+          { email: String(email || id).trim().toLowerCase() },
+          { name: String(id).trim() },
+        ],
+      });
+    }
+
+    if (!target) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (target.role === 'admin' || target.email === 'admin@annshare.org') {
+      return res.status(400).json({ message: 'System Admin account cannot be deleted.' });
+    }
+
+    deleted = await User.findByIdAndDelete(target._id);
+    res.status(200).json({ message: 'User deleted successfully', deleted });
   } catch (err) {
     res.status(400).json({ message: err.message });
+  }
+};
+
+// WISHLIST: GET current user wishlist
+const getWishlist = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('wishlist');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json({ wishlist: user.wishlist || [] });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// WISHLIST: TOGGLE or SYNC current user wishlist
+const toggleWishlist = async (req, res) => {
+  try {
+    const { listingId } = req.body;
+    if (!listingId) {
+      return res.status(400).json({ message: 'Listing ID is required' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const currentWishlist = (user.wishlist || []).map(String);
+    const idStr = String(listingId);
+    let updatedWishlist;
+
+    if (currentWishlist.includes(idStr)) {
+      updatedWishlist = currentWishlist.filter((id) => id !== idStr);
+    } else {
+      updatedWishlist = [...currentWishlist, idStr];
+    }
+
+    await User.findByIdAndUpdate(user._id, { $set: { wishlist: updatedWishlist } });
+
+    res.status(200).json({
+      success: true,
+      wishlist: updatedWishlist,
+      isSaved: updatedWishlist.includes(idStr),
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// WISHLIST: SYNC entire array from client
+const syncWishlist = async (req, res) => {
+  try {
+    const { wishlist } = req.body;
+    if (!Array.isArray(wishlist)) {
+      return res.status(400).json({ message: 'Wishlist must be an array' });
+    }
+
+    const cleanWishlist = Array.from(new Set(wishlist.map(String)));
+    await User.findByIdAndUpdate(req.user._id, { $set: { wishlist: cleanWishlist } });
+
+    res.status(200).json({
+      success: true,
+      wishlist: cleanWishlist,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
@@ -462,6 +582,9 @@ module.exports = {
   updateProfile,
   changePassword,
   forgotPassword,
+  getWishlist,
+  toggleWishlist,
+  syncWishlist,
   getAllUsers,
   updateUserStatus,
   verifyNGO,

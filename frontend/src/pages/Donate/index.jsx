@@ -137,9 +137,10 @@ export default function DonatePage() {
     requireAuth({
       role: "donor",
       intent: "donate_food",
-      onAuthorized: () => {
+      onAuthorized: async () => {
         setIsSubmitting(true);
-        setTimeout(() => {
+        setFormError("");
+        try {
           const now = new Date();
           const currentFormattedTime = formatCurrentTime(now);
           const fallbackImg = `/food/food${Math.floor(Math.random() * 8) + 1}.jpg`;
@@ -182,11 +183,14 @@ export default function DonatePage() {
             instructions: formData.instructions || "",
           };
 
-          addListing(newListing);
+          await addListing(newListing);
           setIsSubmitting(false);
           setIsPublished(true);
           window.scrollTo({ top: 0, behavior: "smooth" });
-        }, 800);
+        } catch (err) {
+          setIsSubmitting(false);
+          setFormError(err.message || "Failed to publish donation. Please check your account status.");
+        }
       },
     });
   };

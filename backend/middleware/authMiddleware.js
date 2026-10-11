@@ -10,11 +10,28 @@ const protect = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = await User.findById(decoded.id).select('-password');
-      if (req.user) {
-        return next();
+      if (!req.user) {
+        return res.status(401).json({
+          message: 'Your account has been deleted by an administrator. Session terminated.',
+          isDeleted: true,
+        });
       }
+
+      const userStatus = (req.user.status || '').toLowerCase();
+      if (userStatus === 'suspended' || userStatus === 'inactive') {
+        return res.status(403).json({
+          message: 'Your account has been suspended by an administrator. Access is revoked.',
+          isSuspended: true,
+        });
+      }
+
+      return next();
     } catch (err) {
       // Token invalid or expired
+      return res.status(401).json({
+        message: 'Session invalid or expired. Please sign in again.',
+        tokenExpired: true,
+      });
     }
   }
 

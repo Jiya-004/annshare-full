@@ -6,17 +6,19 @@ import {
   IoPeopleOutline,
   IoFastFoodOutline,
   IoArrowForward,
+  IoLocationOutline,
+  IoTimeOutline,
 } from "react-icons/io5";
 
 const DropdownWrapper = styled.div`
   position: absolute;
   top: calc(100% + 12px);
   right: 0;
-  width: 360px;
+  width: 440px;
   background: #FFFFFF;
-  border-radius: 20px;
+  border-radius: 22px;
   border: 1px solid rgba(23, 74, 58, 0.12);
-  box-shadow: 0 16px 40px rgba(23, 74, 58, 0.16);
+  box-shadow: 0 20px 48px rgba(23, 74, 58, 0.18), 0 4px 16px rgba(0, 0, 0, 0.04);
   display: ${({ $isOpen }) => ($isOpen ? "flex" : "none")};
   flex-direction: column;
   overflow: hidden;
@@ -34,9 +36,9 @@ const DropdownWrapper = styled.div`
     }
   }
 
-  @media (max-width: 480px) {
-    width: calc(100vw - 32px);
-    right: -70px;
+  @media (max-width: 520px) {
+    width: calc(100vw - 28px);
+    right: -60px;
   }
 `;
 
@@ -55,22 +57,22 @@ const HeaderRow = styled.div`
 
     .icon {
       color: #E11D48;
-      font-size: 1.15rem;
+      font-size: 1.2rem;
     }
 
     h4 {
       margin: 0;
-      font-size: 0.95rem;
+      font-size: 0.98rem;
       font-weight: 700;
       color: #174A3A;
     }
 
     .count-pill {
-      font-size: 0.72rem;
+      font-size: 0.74rem;
       font-weight: 700;
       background: rgba(225, 29, 72, 0.1);
       color: #E11D48;
-      padding: 2px 8px;
+      padding: 2px 10px;
       border-radius: 999px;
     }
   }
@@ -80,17 +82,17 @@ const TabBar = styled.div`
   display: flex;
   border-bottom: 1px solid rgba(23, 74, 58, 0.08);
   background: #FFFFFF;
-  padding: 4px 12px 0;
-  gap: 4px;
+  padding: 6px 14px 0;
+  gap: 8px;
 `;
 
 const TabButton = styled.button`
   flex: 1;
-  padding: 8px 4px;
-  font-size: 0.78rem;
+  padding: 8px 6px;
+  font-size: 0.8rem;
   font-weight: ${({ $isActive }) => ($isActive ? "700" : "500")};
   color: ${({ $isActive }) => ($isActive ? "#174A3A" : "#6B7D77")};
-  border-bottom: 2px solid ${({ $isActive }) => ($isActive ? "#174A3A" : "transparent")};
+  border-bottom: 2.5px solid ${({ $isActive }) => ($isActive ? "#174A3A" : "transparent")};
   background: none;
   border-top: none;
   border-left: none;
@@ -105,66 +107,91 @@ const TabButton = styled.button`
 `;
 
 const ListContainer = styled.div`
-  max-height: 320px;
+  max-height: 360px;
   overflow-y: auto;
-  padding: 8px 0;
+  padding: 6px 0;
 `;
 
 const SavedItemCard = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 20px;
+  gap: 14px;
+  padding: 12px 18px;
   cursor: pointer;
-  transition: background 0.18s ease;
+  transition: all 0.18s ease;
+  border-bottom: 1px solid rgba(23, 74, 58, 0.04);
 
   &:hover {
-    background: #F8F5ED;
+    background: #F9F7F1;
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .item-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid rgba(23, 74, 58, 0.08);
   }
 
   .item-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
     background: rgba(46, 125, 91, 0.1);
     color: #2E7D5B;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
+    font-size: 1.35rem;
     flex-shrink: 0;
   }
 
   .item-details {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
 
     .name {
       display: block;
-      font-size: 0.88rem;
+      font-size: 0.92rem;
       font-weight: 700;
       color: #174A3A;
-      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .sub {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 4px;
       font-size: 0.76rem;
       color: #6B7D77;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .time-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #2E7D5B;
+      background: rgba(46, 125, 91, 0.08);
+      padding: 2px 8px;
+      border-radius: 6px;
+      width: fit-content;
       margin-top: 2px;
     }
-  }
-
-  .status-badge {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: #2E7D5B;
-    background: rgba(46, 125, 91, 0.1);
-    padding: 3px 8px;
-    border-radius: 999px;
-    white-space: nowrap;
   }
 `;
 
@@ -209,40 +236,18 @@ export const SavedDropdown = ({ isOpen, onClose }) => {
   const donations = savedListings.map((item) => ({
     id: item.id,
     title: item.title,
-    donor: `${item.partner || "Donor"} · ${item.location || "Kathmandu"}`,
-    time: item.pickupTime ? `Pickup ${item.pickupTime}` : "Available today",
-    type: item.category || "meal",
+    partner: item.partner || "Food Partner",
+    location: item.location || "Kathmandu, Nepal",
+    donor: `${item.partner || "Food Partner"} · ${item.location ? item.location.split(',')[0].trim() : "Kathmandu"}`,
+    time: item.pickupTime ? `Pickup: ${item.pickupTime}` : (item.expiresIn ? `Expires in ${item.expiresIn}` : "Available Today"),
+    type: item.category || "Prepared Meals",
+    image: item.image || (Array.isArray(item.images) && item.images[0]) || null,
   }));
 
-  const organizations = [
-    {
-      id: 1,
-      title: "Bal Mandir Children Center",
-      location: "Naxal, Kathmandu",
-      verified: "Verified NGO",
-    },
-    {
-      id: 2,
-      title: "Kathmandu Valley Food Relief",
-      location: "Patan, Lalitpur",
-      verified: "Relief Partner",
-    },
-  ];
+  const organizations = [];
+  const restaurants = [];
 
-  const restaurants = [
-    {
-      id: 1,
-      title: "Green Kitchen Organic",
-      location: "Thamel · 320 Meals Donated",
-      status: "Top Donor",
-    },
-    {
-      id: 2,
-      title: "The Bakery Cafe",
-      location: "Pulchowk · 180 Meals Donated",
-      status: "Active",
-    },
-  ];
+  const totalCount = donations.length;
 
   return (
     <DropdownWrapper $isOpen={isOpen}>
@@ -251,7 +256,7 @@ export const SavedDropdown = ({ isOpen, onClose }) => {
           <IoHeartOutline className="icon" />
           <h4>Saved Bookmarks</h4>
           <span className="count-pill">
-            {donations.length + organizations.length + restaurants.length} items
+            {totalCount} {totalCount === 1 ? "item" : "items"}
           </span>
         </div>
       </HeaderRow>
@@ -263,25 +268,17 @@ export const SavedDropdown = ({ isOpen, onClose }) => {
         >
           Donations ({donations.length})
         </TabButton>
-        <TabButton
-          $isActive={activeTab === "orgs"}
-          onClick={() => setActiveTab("orgs")}
-        >
-          NGOs ({organizations.length})
-        </TabButton>
-        <TabButton
-          $isActive={activeTab === "places"}
-          onClick={() => setActiveTab("places")}
-        >
-          Donors ({restaurants.length})
-        </TabButton>
       </TabBar>
 
       <ListContainer>
         {activeTab === "donations" && (
           donations.length === 0 ? (
-            <div style={{ padding: "24px 16px", textAlign: "center", color: "#71827B", fontSize: "0.85rem" }}>
-              No saved donations yet. Click the heart icon on any food listing to bookmark it here!
+            <div style={{ padding: "32px 20px", textAlign: "center", color: "#71827B", fontSize: "0.85rem" }}>
+              <IoHeartOutline style={{ fontSize: "2rem", color: "#C4D0CC", marginBottom: "8px" }} />
+              <div>No saved food listings yet.</div>
+              <div style={{ fontSize: "0.78rem", color: "#9AA7A1", marginTop: "4px" }}>
+                Click the heart icon on any surplus food to save it to your account!
+              </div>
             </div>
           ) : (
             donations.map((d) => (
@@ -292,46 +289,28 @@ export const SavedDropdown = ({ isOpen, onClose }) => {
                   navigate(`/food/${d.id}`);
                 }}
               >
-                <div className="item-avatar">
-                  <IoFastFoodOutline />
-                </div>
+                {d.image ? (
+                  <img src={d.image} alt={d.title} className="item-thumb" />
+                ) : (
+                  <div className="item-avatar">
+                    <IoFastFoodOutline />
+                  </div>
+                )}
                 <div className="item-details">
-                  <span className="name">{d.title}</span>
-                  <span className="sub">{d.donor}</span>
+                  <span className="name" title={d.title}>{d.title}</span>
+                  <span className="sub">
+                    <IoLocationOutline style={{ flexShrink: 0 }} />
+                    {d.donor}
+                  </span>
+                  <span className="time-tag">
+                    <IoTimeOutline style={{ flexShrink: 0 }} />
+                    {d.time}
+                  </span>
                 </div>
-                <span className="status-badge">{d.time}</span>
               </SavedItemCard>
             ))
           )
         )}
-
-        {activeTab === "orgs" &&
-          organizations.map((org) => (
-            <SavedItemCard key={org.id} onClick={onClose}>
-              <div className="item-avatar">
-                <IoPeopleOutline />
-              </div>
-              <div className="item-details">
-                <span className="name">{org.title}</span>
-                <span className="sub">{org.location}</span>
-              </div>
-              <span className="status-badge">{org.verified}</span>
-            </SavedItemCard>
-          ))}
-
-        {activeTab === "places" &&
-          restaurants.map((r) => (
-            <SavedItemCard key={r.id} onClick={onClose}>
-              <div className="item-avatar">
-                <IoRestaurantOutline />
-              </div>
-              <div className="item-details">
-                <span className="name">{r.title}</span>
-                <span className="sub">{r.location}</span>
-              </div>
-              <span className="status-badge">{r.status}</span>
-            </SavedItemCard>
-          ))}
       </ListContainer>
 
       <FooterLink
