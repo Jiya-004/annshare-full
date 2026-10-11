@@ -344,6 +344,8 @@ const changePassword = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: 'Failed to update password: ' + err.message });
   }
+};
+
 // FORGOT / RESET PASSWORD (unauthenticated reset via email)
 const forgotPassword = async (req, res) => {
   try {
