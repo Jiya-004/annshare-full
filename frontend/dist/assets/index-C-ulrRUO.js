@@ -20289,8 +20289,7 @@ Please change the parent <Route path="${e}"> to <Route path="${e===`/`?`*`:`${e}
   }
 `,TC=Y.div`
   max-width: 1280px;
-
-   margin-top: 117px;
+  margin: 0 auto;
 `,EC=Y.div`
   display: grid;
   grid-template-columns: 270px 1fr;
