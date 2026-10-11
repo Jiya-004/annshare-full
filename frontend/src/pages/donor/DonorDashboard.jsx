@@ -1282,21 +1282,26 @@ export const DonorDashboard = () => {
   const [notificationsLoading, setNotificationsLoading] = useState(false);
 
   const fetchDonorNotifications = React.useCallback(async () => {
+    if (!user) {
+      setNotificationsList([]);
+      return;
+    }
+    const currentUserId = user?.id || user?._id || "";
     try {
       setNotificationsLoading(true);
-      const data = await api.notifications.getAll({ role: "donor", userId: user?.id || "" });
+      const data = await api.notifications.getAll({ role: "donor", userId: currentUserId });
       if (Array.isArray(data) && data.length > 0) {
-        // Defensive filter: Only show notifications relevant to donor (not admin moderation or other roles)
+        // Defensive filter: Only show notifications strictly belonging to this donor
         const relevant = data.filter((n) => {
           if (n.role === "admin" || n.role === "ngo") return false;
           if (n.title && n.title.includes("Review required")) return false;
           if (n.desc && n.desc.includes("Review required")) return false;
-          if (n.userId && user?.id && n.userId !== user.id) return false;
+          if (n.userId && currentUserId && String(n.userId) !== String(currentUserId)) return false;
           return true;
         });
         setNotificationsList(relevant);
       } else {
-        // Build dynamic contextual fallback notifications
+        // Build dynamic contextual fallback notifications ONLY for this donor
         const list = [];
         if (adminApprovedRequests.length > 0) {
           adminApprovedRequests.forEach((req, idx) => {
@@ -1324,19 +1329,6 @@ export const DonorDashboard = () => {
             });
           });
         }
-        if (donations.length > 0) {
-          donations.slice(0, 4).forEach((don, idx) => {
-            list.push({
-              id: `don-${don.id || idx}`,
-              title: don.status === "available" ? "Donation Approved & Live" : "Donation Listed",
-              desc: `"${don.title}" (${don.quantity}) is ${don.status === "available" ? "active and visible to verified community shelters." : "currently under admin review."}`,
-              time: don.postedTime || "Today",
-              read: true,
-              linkTab: "my-donations",
-              category: "listing",
-            });
-          });
-        }
         setNotificationsList(list);
       }
     } catch (err) {
@@ -1344,7 +1336,7 @@ export const DonorDashboard = () => {
     } finally {
       setNotificationsLoading(false);
     }
-  }, [user, adminApprovedRequests, confirmedRequests, donations]);
+  }, [user, adminApprovedRequests, confirmedRequests]);
 
   useEffect(() => {
     fetchDonorNotifications();
@@ -1359,18 +1351,24 @@ export const DonorDashboard = () => {
         await api.notifications.markRead(notif._id);
       }
     } catch {}
-    if (notif.linkTab) {
-      const target = notif.linkTab.toLowerCase();
-      if (target.includes("request")) handleTabChange("requests");
-      else if (target.includes("donation") || target.includes("listing")) handleTabChange("my-donations");
-      else handleTabChange(target);
+
+    const target = (notif.linkTab || "").toLowerCase();
+    const title = (notif.title || "").toLowerCase();
+    const cat = (notif.category || "").toLowerCase();
+
+    if (target.includes("request") || cat === "match" || cat === "request" || title.includes("request") || title.includes("pickup") || title.includes("contact")) {
+      handleTabChange("requests");
+    } else if (target.includes("donation") || target.includes("listing") || cat === "listing") {
+      handleTabChange("my-donations");
+    } else if (target.includes("history")) {
+      handleTabChange("history");
     }
   };
 
   const handleMarkAllNotificationsRead = async () => {
     setNotificationsList((prev) => prev.map((n) => ({ ...n, read: true })));
     try {
-      await api.notifications.markAllRead({ role: "donor", userId: user?.id || "" });
+      await api.notifications.markAllRead({ role: "donor", userId: user?.id || user?._id || "" });
     } catch {}
   };
 
@@ -2412,8 +2410,14 @@ export const DonorDashboard = () => {
                   ) : (
                     notificationsList.map((item) => {
                       const isUnread = !item.read;
-                      const isMatch = item.category === "match" || (item.title && item.title.includes("Request"));
-                      const isListing = item.category === "listing" || (item.title && item.title.includes("Donation"));
+                      const tab = (item.linkTab || "").toLowerCase();
+                      const title = (item.title || "").toLowerCase();
+                      const cat = (item.category || "").toLowerCase();
+
+                      const isMatch = cat === "match" || title.includes("request") || title.includes("matched") || title.includes("confirmed");
+                      const isListing = cat === "listing" || title.includes("donation");
+                      const hasAction = isMatch || isListing || tab.includes("request") || tab.includes("donation") || tab.includes("history");
+                      const buttonLabel = isMatch ? "Review Request →" : isListing ? "My Donations →" : "View Details →";
 
                       return (
                         <DonationCard
@@ -2422,7 +2426,7 @@ export const DonorDashboard = () => {
                             background: isUnread ? "#FAFDFB" : "#FFFFFF",
                             borderColor: isUnread ? "#86EFAC" : "rgba(23, 74, 58, 0.08)",
                             boxShadow: isUnread ? "0 4px 14px rgba(46, 125, 91, 0.08)" : undefined,
-                            cursor: "pointer",
+                            cursor: hasAction ? "pointer" : "default",
                           }}
                           onClick={() => handleMarkNotificationRead(item)}
                         >
@@ -2471,23 +2475,25 @@ export const DonorDashboard = () => {
                             </div>
                           </div>
 
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <QuickDonateBtn
-                              type="button"
-                              style={{
-                                width: "auto",
-                                padding: "8px 14px",
-                                fontSize: "0.82rem",
-                                background: isMatch ? "#D97706" : "#174A3A",
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMarkNotificationRead(item);
-                              }}
-                            >
-                              <span>{isMatch ? "Review Request →" : "View Details →"}</span>
-                            </QuickDonateBtn>
-                          </div>
+                          {hasAction && (
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <QuickDonateBtn
+                                type="button"
+                                style={{
+                                  width: "auto",
+                                  padding: "8px 14px",
+                                  fontSize: "0.82rem",
+                                  background: isMatch ? "#D97706" : "#174A3A",
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMarkNotificationRead(item);
+                                }}
+                              >
+                                <span>{buttonLabel}</span>
+                              </QuickDonateBtn>
+                            </div>
+                          )}
                         </DonationCard>
                       );
                     })
