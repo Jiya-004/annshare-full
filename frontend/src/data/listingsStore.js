@@ -3,6 +3,21 @@ import api from "../services/api";
 
 const STORAGE_KEY = "annshare_listings";
 
+const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const API_BASE = import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:8000/api' : 'https://annshare-backend.onrender.com/api');
+const BACKEND_HOST = API_BASE.replace(/\/api\/?$/, '');
+
+export const formatImageUrl = (url) => {
+  if (!url) return '/food.png';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+  if (url.startsWith('/uploads/')) {
+    return `${BACKEND_HOST}${url}`;
+  }
+  return url;
+};
+
 /**
  * Standardize category strings across app so filters and cards always match.
  */
@@ -115,8 +130,8 @@ export function getListings() {
         (item.createdAt ? formatCurrentTime(item.createdAt) : "2:30 PM");
 
       const defaultImg = PRESET_FALLBACK_IMAGES[idx % PRESET_FALLBACK_IMAGES.length];
-      const finalImg = item.image || defaultImg;
-      const finalImages = Array.isArray(item.images) && item.images.length > 0 ? item.images : [finalImg];
+      const finalImg = formatImageUrl(item.image || defaultImg);
+      const finalImages = Array.isArray(item.images) && item.images.length > 0 ? item.images.map(img => formatImageUrl(img)) : [finalImg];
 
       return {
         ...item,
@@ -183,8 +198,10 @@ export async function syncListingsFromBackend() {
         const cat = normalizeCategory(b.category);
         const postedTime = b.postedDate || (b.createdAt ? formatCurrentTime(b.createdAt) : formatCurrentTime());
         const defaultImg = PRESET_FALLBACK_IMAGES[idx % PRESET_FALLBACK_IMAGES.length];
-        const itemImage = b.image || (Array.isArray(b.images) && b.images[0]) || defaultImg;
-        const itemImages = Array.isArray(b.images) && b.images.length > 0 ? b.images : [itemImage];
+        const rawItemImage = b.image || (Array.isArray(b.images) && b.images[0]) || defaultImg;
+        const rawItemImages = Array.isArray(b.images) && b.images.length > 0 ? b.images : [rawItemImage];
+        const itemImage = formatImageUrl(rawItemImage);
+        const itemImages = rawItemImages.map((img) => formatImageUrl(img));
 
         return {
           id: b._id || b.id,

@@ -496,6 +496,11 @@ export default function FoodCard({
           src={images[activeImgIndex]}
           alt={item.title}
           loading="lazy"
+          onError={(e) => {
+            if (e.target.src !== '/food.png') {
+              e.target.src = '/food.png';
+            }
+          }}
         />
 
         {/* PREV & NEXT ARROWS */}

@@ -963,6 +963,8 @@ export const NGODashboard = () => {
     handleTabChange("requests");
   };
 
+  const [receivedSuccessModal, setReceivedSuccessModal] = useState({ isOpen: false, item: null });
+
   const handleMarkReceivedAndSafe = (reqItem) => {
     if (!reqItem) return;
     const targetId = reqItem.id || reqItem._id;
@@ -972,7 +974,7 @@ export const NGODashboard = () => {
       updateListingStatus(listingId, "Completed");
     }
     setRequests(loadNgoRequests());
-    alert("Food item marked as Received & Safe! The status has been updated to Completed.");
+    setReceivedSuccessModal({ isOpen: true, item: reqItem });
   };
 
   const ngoName = user?.name || "NGO Partner";
@@ -1753,7 +1755,10 @@ export const NGODashboard = () => {
                         if (target) {
                           handleMarkReceivedAndSafe(target);
                         } else {
-                          alert("Food marked as Received & Safe!");
+                          setReceivedSuccessModal({
+                            isOpen: true,
+                            item: { foodTitle: "Pickup Route #PK-492", portions: "Batch Portions", donorName: "Chef Ramesh" }
+                          });
                         }
                       }}
                     >
@@ -1949,6 +1954,57 @@ export const NGODashboard = () => {
           </MainContent>
         </DashboardGrid>
       </Container>
+
+      {receivedSuccessModal.isOpen && (
+        <ModalOverlay onClick={() => setReceivedSuccessModal({ isOpen: false, item: null })}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="close-icon-btn"
+              onClick={() => setReceivedSuccessModal({ isOpen: false, item: null })}
+              aria-label="Close dialog"
+            >
+              <IoClose />
+            </button>
+
+            <div className="icon-badge">
+              <IoShieldCheckmark size={38} />
+            </div>
+
+            <h3>Food Received & Safe!</h3>
+            <p className="modal-desc">
+              Food item marked as <strong>Received & Safe</strong>. The order status has been updated to <strong>Completed</strong> and synced with Admin Management.
+            </p>
+
+            {receivedSuccessModal.item && (
+              <div className="details-box">
+                <img
+                  src={receivedSuccessModal.item.image || "/food.png"}
+                  alt=""
+                  className="item-thumb"
+                  onError={(e) => {
+                    e.currentTarget.src = "/food.png";
+                  }}
+                />
+                <div className="item-meta">
+                  <h5>{receivedSuccessModal.item.foodTitle || receivedSuccessModal.item.title || "Food Batch"}</h5>
+                  <p>
+                    {receivedSuccessModal.item.portions || "Standard Portions"} · Donor: <strong style={{ color: "#2E7D5B" }}>{receivedSuccessModal.item.donorName || "Food Donor"}</strong>
+                  </p>
+                </div>
+                <span className="status-tag">✓ Completed</span>
+              </div>
+            )}
+
+            <QuickActionBtn
+              type="button"
+              onClick={() => setReceivedSuccessModal({ isOpen: false, item: null })}
+            >
+              <IoCheckmarkCircle size={18} /> Got it, continue
+            </QuickActionBtn>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </DashboardWrapper>
   );
 };

@@ -92,7 +92,15 @@ export default function FoodDetailsPage() {
           {/* LEFT: MAIN IMAGE & DETAIL BREAKDOWN */}
           <GalleryCard>
             <div className="main-image">
-              <img src={item.image} alt={item.title} />
+              <img
+                src={item.image}
+                alt={item.title}
+                onError={(e) => {
+                  if (e.target.src !== '/food.png') {
+                    e.target.src = '/food.png';
+                  }
+                }}
+              />
               <div className="badge-status">
                 <span className="dot" />
                 <span>
