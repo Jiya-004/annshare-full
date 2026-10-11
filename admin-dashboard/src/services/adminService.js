@@ -20,13 +20,105 @@ const isLocal = typeof window !== 'undefined' && (window.location.hostname === '
 const API_BASE = import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:8000/api' : 'https://annshare-backend.onrender.com/api');
 const BACKEND_HOST = API_BASE.replace(/\/api\/?$/, '');
 
-export const formatImageUrl = (url) => {
-  if (!url) return '/food.png';
+// Preset distinct food images per category to avoid identical fallback thumbnails
+export const CATEGORY_FALLBACK_IMAGES = {
+  'Prepared Meals': [
+    '/food/food1.jpg',
+    '/food/food3.jpg',
+    '/food/food8.jpg',
+    'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=600&q=80',
+  ],
+  'Bakery & Bread': [
+    '/food/food2.jpg',
+    'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1589367920969-ab8e050bbb04?auto=format&fit=crop&w=600&q=80',
+  ],
+  'Fruits & Veggies': [
+    '/food/food4.jpg',
+    'https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1518843875459-f738682238a6?auto=format&fit=crop&w=600&q=80',
+  ],
+  'Dairy & Pantry': [
+    '/food/food7.jpg',
+    'https://images.unsplash.com/photo-1528750997573-59b89d56f4f7?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1628088062854-d1870b4553da?auto=format&fit=crop&w=600&q=80',
+  ],
+  'Packaged Food': [
+    '/food/food5.jpg',
+    'https://images.unsplash.com/photo-1584473457406-6240486418e9?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1607349913338-fca6f7429606?auto=format&fit=crop&w=600&q=80',
+  ],
+  'Rice & Grains': [
+    '/food/food3.jpg',
+    '/food/food6.jpg',
+    'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?auto=format&fit=crop&w=600&q=80',
+  ],
+  'Groceries': [
+    '/food/food5.jpg',
+    '/food/food6.jpg',
+    'https://images.unsplash.com/photo-1584473457406-6240486418e9?auto=format&fit=crop&w=600&q=80',
+  ],
+};
+
+export const DEFAULT_FOOD_IMAGES = [
+  '/food/food1.jpg',
+  '/food/food2.jpg',
+  '/food/food3.jpg',
+  '/food/food4.jpg',
+  '/food/food5.jpg',
+  '/food/food6.jpg',
+  '/food/food7.jpg',
+  '/food/food8.jpg',
+];
+
+export const getListingFallbackImage = (itemOrCategory, index = 0) => {
+  const category = typeof itemOrCategory === 'object' && itemOrCategory !== null
+    ? (itemOrCategory.category || '')
+    : (typeof itemOrCategory === 'string' ? itemOrCategory : '');
+
+  const idOrTitle = typeof itemOrCategory === 'object' && itemOrCategory !== null
+    ? (itemOrCategory.id || itemOrCategory._id || itemOrCategory.title || itemOrCategory.foodName || '')
+    : '';
+
+  let seed = index || 0;
+  if (idOrTitle && typeof idOrTitle === 'string') {
+    for (let i = 0; i < idOrTitle.length; i++) {
+      seed = ((seed << 5) - seed + idOrTitle.charCodeAt(i)) | 0;
+    }
+  }
+  const absSeed = Math.abs(seed);
+
+  const catLower = (category || '').toLowerCase();
+  const matchedKey = Object.keys(CATEGORY_FALLBACK_IMAGES).find(k =>
+    catLower.includes(k.toLowerCase()) || k.toLowerCase().includes(catLower)
+  );
+
+  if (matchedKey && CATEGORY_FALLBACK_IMAGES[matchedKey]?.length > 0) {
+    const list = CATEGORY_FALLBACK_IMAGES[matchedKey];
+    return list[absSeed % list.length];
+  }
+
+  return DEFAULT_FOOD_IMAGES[absSeed % DEFAULT_FOOD_IMAGES.length];
+};
+
+export const formatImageUrl = (url, fallbackCategory = '', index = 0) => {
+  if (!url) return getListingFallbackImage(fallbackCategory, index);
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
     return url;
   }
   if (url.startsWith('/uploads/')) {
     return `${BACKEND_HOST}${url}`;
+  }
+  if (url.startsWith('uploads/')) {
+    return `${BACKEND_HOST}/${url}`;
+  }
+  if (url.startsWith('/food/') || url.startsWith('food/')) {
+    return url.startsWith('/') ? url : `/${url}`;
   }
   return url;
 };
@@ -227,7 +319,7 @@ export const syncListingsFromBackend = async () => {
     if (listingsRes && listingsRes.ok) {
       const listingsData = await listingsRes.json();
       if (Array.isArray(listingsData)) {
-        listingsState = listingsData.map((d) => ({
+        listingsState = listingsData.map((d, idx) => ({
           id: d.id || d._id,
           _id: d._id,
           title: d.title || d.foodName,
@@ -243,7 +335,7 @@ export const syncListingsFromBackend = async () => {
           expires_at: d.expires_at || '',
           status: d.status || 'Available',
           claimedBy: d.claimedBy || null,
-          image: formatImageUrl(d.image || (d.images && d.images[0]) || '/food.png'),
+          image: formatImageUrl(d.image || (d.images && d.images[0]), d.category, idx),
         }));
         notifyListeners();
         return listingsState;

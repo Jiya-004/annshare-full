@@ -21,16 +21,17 @@ const MainWrapper = styled.div`
   display: flex;
   flex-direction: column;
   margin-top: 64px;
-  margin-left: ${props => (props.$sidebarCollapsed ? '80px' : '260px')};
+  margin-left: ${props => (props.$desktopCollapsed ? '80px' : '260px')};
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   min-width: 0;
-  width: ${props => (props.$sidebarCollapsed ? 'calc(100% - 80px)' : 'calc(100% - 260px)')};
+  width: ${props => (props.$desktopCollapsed ? 'calc(100% - 80px)' : 'calc(100% - 260px)')};
   max-width: 100%;
   overflow-x: hidden;
 
   @media (max-width: 992px) {
-    margin-left: 0;
-    width: 100%;
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
   }
 `;
 
@@ -43,7 +44,7 @@ const ContentBody = styled.main`
   box-sizing: border-box;
 
   @media (max-width: 768px) {
-    padding: 18px 12px 36px 12px;
+    padding: 16px 10px 36px 10px;
   }
 `;
 
@@ -87,31 +88,25 @@ const ScrollTopButton = styled.button`
 `;
 
 const DashboardLayout = ({ children, activeNav = 'Dashboard', setActiveNav }) => {
-  // Mobile check helper: on screens <= 992px, start sidebar CLOSED
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth <= 992;
-    }
-    return false;
-  });
+  // Mobile drawer: strictly FALSE by default so it never starts open on phone
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  // Desktop sidebar collapse: false by default
+  const [desktopCollapsed, setDesktopCollapsed] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  // Close sidebar on mobile whenever user navigates to a new tab & scroll to top
+  // Close mobile drawer whenever user navigates & scroll to top
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (typeof window !== 'undefined' && window.innerWidth <= 992) {
-      setSidebarCollapsed(true);
-    }
+    setMobileDrawerOpen(false);
   }, [activeNav]);
 
-  // Handle window resizing cleanly
+  // When resizing to desktop screen, close mobile drawer
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth <= 992) {
-        setSidebarCollapsed(true);
-      } else {
-        setSidebarCollapsed(false);
+      if (window.innerWidth > 992) {
+        setMobileDrawerOpen(false);
       }
     };
     window.addEventListener('resize', handleResize);
@@ -137,7 +132,15 @@ const DashboardLayout = ({ children, activeNav = 'Dashboard', setActiveNav }) =>
   };
 
   const toggleSidebar = () => {
-    setSidebarCollapsed(prev => !prev);
+    if (typeof window !== 'undefined' && window.innerWidth <= 992) {
+      setMobileDrawerOpen(prev => !prev);
+    } else {
+      setDesktopCollapsed(prev => !prev);
+    }
+  };
+
+  const closeMobileDrawer = () => {
+    setMobileDrawerOpen(false);
   };
 
   return (
@@ -149,12 +152,14 @@ const DashboardLayout = ({ children, activeNav = 'Dashboard', setActiveNav }) =>
         setActiveNav={setActiveNav}
       />
       <Sidebar
-        collapsed={sidebarCollapsed}
+        desktopCollapsed={desktopCollapsed}
+        mobileOpen={mobileDrawerOpen}
         toggleSidebar={toggleSidebar}
+        closeMobile={closeMobileDrawer}
         activeNav={activeNav}
         setActiveNav={setActiveNav}
       />
-      <MainWrapper $sidebarCollapsed={sidebarCollapsed}>
+      <MainWrapper $desktopCollapsed={desktopCollapsed}>
         <ContentBody>
           {typeof children === 'function' ? children({ searchTerm }) : children}
         </ContentBody>

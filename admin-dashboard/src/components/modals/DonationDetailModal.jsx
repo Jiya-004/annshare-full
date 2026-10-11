@@ -2,6 +2,7 @@ import React from 'react';
 import { Modal, Button, Row, Col, Badge } from 'react-bootstrap';
 import { FiPackage, FiMapPin, FiClock, FiUser, FiCalendar, FiCheckCircle, FiTrash2 } from 'react-icons/fi';
 import StatusBadge from '../StatusBadge';
+import { formatImageUrl, getListingFallbackImage } from '../../services/adminService';
 
 const DonationDetailModal = ({ show, onHide, donation, onDelete }) => {
   if (!donation) return null;
@@ -19,8 +20,12 @@ const DonationDetailModal = ({ show, onHide, donation, onDelete }) => {
         <Row className="g-4 mb-4">
           <Col md={5}>
             <img
-              src={donation.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80'}
-              alt={donation.foodName}
+              src={formatImageUrl(donation.image, donation.category)}
+              alt={donation.foodName || donation.title}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = getListingFallbackImage(donation);
+              }}
               style={{ width: '100%', height: '220px', objectFit: 'cover', borderRadius: '12px', border: '1px solid #E5E7EB' }}
             />
           </Col>

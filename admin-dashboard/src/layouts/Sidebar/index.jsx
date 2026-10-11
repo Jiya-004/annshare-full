@@ -21,7 +21,14 @@ import {
   NavItem
 } from './styles';
 
-const Sidebar = ({ collapsed, toggleSidebar, activeNav = 'Dashboard', setActiveNav }) => {
+const Sidebar = ({
+  desktopCollapsed = false,
+  mobileOpen = false,
+  toggleSidebar,
+  closeMobile,
+  activeNav = 'Dashboard',
+  setActiveNav
+}) => {
   const mainMenu = [
     { name: 'Dashboard', icon: FiGrid },
     { name: 'Users', icon: FiUsers },
@@ -48,15 +55,23 @@ const Sidebar = ({ collapsed, toggleSidebar, activeNav = 'Dashboard', setActiveN
     if (setActiveNav) {
       setActiveNav(name);
     }
-    if (window.innerWidth <= 992 && toggleSidebar && !collapsed) {
+    if (closeMobile) {
+      closeMobile();
+    }
+  };
+
+  const handleClose = () => {
+    if (closeMobile) {
+      closeMobile();
+    } else if (toggleSidebar) {
       toggleSidebar();
     }
   };
 
   return (
     <>
-      <SidebarOverlay $collapsed={collapsed} onClick={toggleSidebar} />
-      <SidebarContainer $collapsed={collapsed}>
+      <SidebarOverlay $mobileOpen={mobileOpen} onClick={handleClose} />
+      <SidebarContainer $desktopCollapsed={desktopCollapsed} $mobileOpen={mobileOpen}>
         <MobileSidebarHeader>
           <div className="mobile-brand">
             <img src="/logo/logo.png" alt="ANNShare" />
@@ -65,7 +80,7 @@ const Sidebar = ({ collapsed, toggleSidebar, activeNav = 'Dashboard', setActiveN
           <button
             type="button"
             className="close-btn"
-            onClick={toggleSidebar}
+            onClick={handleClose}
             title="Close Sidebar"
             aria-label="Close Sidebar"
           >
@@ -73,14 +88,14 @@ const Sidebar = ({ collapsed, toggleSidebar, activeNav = 'Dashboard', setActiveN
           </button>
         </MobileSidebarHeader>
         <NavBody>
-          <SectionHeader $collapsed={collapsed}>MAIN MENU</SectionHeader>
+          <SectionHeader $desktopCollapsed={desktopCollapsed}>MAIN MENU</SectionHeader>
           {mainMenu.map(item => {
             const Icon = item.icon;
             return (
               <NavItem
                 key={item.name}
                 $active={activeNav === item.name}
-                $collapsed={collapsed}
+                $desktopCollapsed={desktopCollapsed}
                 onClick={() => handleNavClick(item.name)}
               >
                 <Icon className="nav-icon" />
@@ -89,14 +104,14 @@ const Sidebar = ({ collapsed, toggleSidebar, activeNav = 'Dashboard', setActiveN
             );
           })}
 
-          <SectionHeader $collapsed={collapsed}>ANALYTICS & FEEDBACK</SectionHeader>
+          <SectionHeader $desktopCollapsed={desktopCollapsed}>ANALYTICS & FEEDBACK</SectionHeader>
           {analyticsMenu.map(item => {
             const Icon = item.icon;
             return (
               <NavItem
                 key={item.name}
                 $active={activeNav === item.name}
-                $collapsed={collapsed}
+                $desktopCollapsed={desktopCollapsed}
                 onClick={() => handleNavClick(item.name)}
               >
                 <Icon className="nav-icon" />
@@ -105,14 +120,14 @@ const Sidebar = ({ collapsed, toggleSidebar, activeNav = 'Dashboard', setActiveN
             );
           })}
 
-          <SectionHeader $collapsed={collapsed}>CONTENT MANAGE</SectionHeader>
+          <SectionHeader $desktopCollapsed={desktopCollapsed}>CONTENT MANAGE</SectionHeader>
           {contentMenu.map(item => {
             const Icon = item.icon;
             return (
               <NavItem
                 key={item.name}
                 $active={activeNav === item.name || (item.name === 'Blog Manage' && activeNav === 'Content Management')}
-                $collapsed={collapsed}
+                $desktopCollapsed={desktopCollapsed}
                 onClick={() => handleNavClick(item.name)}
               >
                 <Icon className="nav-icon" />
@@ -121,14 +136,14 @@ const Sidebar = ({ collapsed, toggleSidebar, activeNav = 'Dashboard', setActiveN
             );
           })}
 
-          <SectionHeader $collapsed={collapsed}>SYSTEM</SectionHeader>
+          <SectionHeader $desktopCollapsed={desktopCollapsed}>SYSTEM</SectionHeader>
           {systemMenu.map(item => {
             const Icon = item.icon;
             return (
               <NavItem
                 key={item.name}
                 $active={activeNav === item.name}
-                $collapsed={collapsed}
+                $desktopCollapsed={desktopCollapsed}
                 onClick={() => handleNavClick(item.name)}
               >
                 <Icon className="nav-icon" />

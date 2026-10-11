@@ -32,7 +32,9 @@ import {
   updateRequestStatus,
   subscribeToAdminService,
   syncListingsFromBackend,
-  formatToNepaliTime
+  formatToNepaliTime,
+  formatImageUrl,
+  getListingFallbackImage
 } from '../../services/adminService';
 
 // Styled Components for Dropdown and Page Layout
@@ -476,11 +478,11 @@ const DonationManagement = () => {
             <DetailCard>
               <div style={{ position: 'relative', marginBottom: '20px' }}>
                 <img
-                  src={don.image || '/food.png'}
+                  src={formatImageUrl(don.image, don.category)}
                   alt={don.title || don.foodName}
                   onError={(e) => {
                     e.currentTarget.onerror = null;
-                    e.currentTarget.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80';
+                    e.currentTarget.src = getListingFallbackImage(don);
                   }}
                   style={{
                     width: '100%',
@@ -882,7 +884,7 @@ const DonationManagement = () => {
                   </td>
                 </tr>
               ) : filteredDonations.length > 0 ? (
-                filteredDonations.map(don => {
+                filteredDonations.map((don, idx) => {
                   const cleanQuantity = don.quantity ? don.quantity.replace(/\s*\([^)]*\)/g, '') : '';
                   const isPending = (don.status || '').toLowerCase().includes('pending');
                   const displayId = (don.id || don._id || '').length > 8 ? `DON-${(don.id || don._id).slice(-5).toUpperCase()}` : (don.id || 'DON-000');
@@ -892,11 +894,11 @@ const DonationManagement = () => {
                       <td>
                         <div className="d-flex align-items-center gap-2">
                           <img
-                            src={don.image || '/food.png'}
+                            src={formatImageUrl(don.image, don.category, idx)}
                             alt={don.title || don.foodName}
                             onError={(e) => {
                               e.currentTarget.onerror = null;
-                              e.currentTarget.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=100&q=80';
+                              e.currentTarget.src = getListingFallbackImage(don, idx);
                             }}
                             style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #E6ECE8' }}
                           />

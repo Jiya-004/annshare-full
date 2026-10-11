@@ -3,7 +3,7 @@ import styled from 'styled-components';
 export const SidebarOverlay = styled.div`
   display: none;
   @media (max-width: 992px) {
-    display: ${props => (props.$collapsed ? 'none' : 'block')};
+    display: block;
     position: fixed;
     top: 0;
     left: 0;
@@ -12,12 +12,21 @@ export const SidebarOverlay = styled.div`
     background: rgba(18, 32, 27, 0.5);
     backdrop-filter: blur(3px);
     z-index: 1040;
-    transition: opacity 0.25s ease;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+
+    ${props => props.$mobileOpen && `
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    `}
   }
 `;
 
 export const SidebarContainer = styled.aside`
-  width: ${props => (props.$collapsed ? '80px' : '260px')};
+  width: ${props => (props.$desktopCollapsed ? '80px' : '260px')};
   height: calc(100vh - 64px);
   background: #ffffff;
   border-right: 1px solid #E6ECE8;
@@ -25,7 +34,7 @@ export const SidebarContainer = styled.aside`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: fixed;
   top: 64px;
   left: 0;
@@ -35,12 +44,23 @@ export const SidebarContainer = styled.aside`
   @media (max-width: 992px) {
     top: 0;
     bottom: 0;
+    left: 0;
     height: 100vh;
     width: 280px;
     max-width: 85vw;
     z-index: 1050;
-    transform: ${props => (props.$collapsed ? 'translateX(-100%)' : 'translateX(0)')};
-    box-shadow: ${props => (props.$collapsed ? 'none' : '4px 0 28px rgba(18, 32, 27, 0.22)')};
+    transform: translateX(-100%);
+    visibility: hidden;
+    pointer-events: none;
+    box-shadow: none;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s ease, box-shadow 0.3s ease;
+
+    ${props => props.$mobileOpen && `
+      transform: translateX(0);
+      visibility: visible;
+      pointer-events: auto;
+      box-shadow: 4px 0 28px rgba(18, 32, 27, 0.22);
+    `}
   }
 `;
 
@@ -147,7 +167,11 @@ export const SectionHeader = styled.div`
   color: #66736D;
   margin: 16px 12px 8px 12px;
   text-transform: uppercase;
-  display: ${props => (props.$collapsed ? 'none' : 'block')};
+  display: ${props => (props.$desktopCollapsed ? 'none' : 'block')};
+
+  @media (max-width: 992px) {
+    display: block !important;
+  }
 `;
 
 export const NavItem = styled.a`
@@ -164,7 +188,7 @@ export const NavItem = styled.a`
   transition: all 0.15s ease;
   margin-bottom: 4px;
   cursor: pointer;
-  justify-content: ${props => (props.$collapsed ? 'center' : 'flex-start')};
+  justify-content: ${props => (props.$desktopCollapsed ? 'center' : 'flex-start')};
   box-shadow: ${props => (props.$active ? '0 4px 10px rgba(24, 92, 74, 0.2)' : 'none')};
 
   &:hover {
@@ -179,15 +203,26 @@ export const NavItem = styled.a`
   }
 
   .nav-text {
-    display: ${props => (props.$collapsed ? 'none' : 'inline')};
+    display: ${props => (props.$desktopCollapsed ? 'none' : 'inline')};
     white-space: nowrap;
+  }
+
+  @media (max-width: 992px) {
+    justify-content: flex-start !important;
+    .nav-text {
+      display: inline !important;
+    }
   }
 `;
 
 export const SidebarFooter = styled.div`
   padding: 16px;
   border-top: 1px solid #E6ECE8;
-  display: ${props => (props.$collapsed ? 'none' : 'block')};
+  display: ${props => (props.$desktopCollapsed ? 'none' : 'block')};
+
+  @media (max-width: 992px) {
+    display: block !important;
+  }
 `;
 
 export const SidebarPromoCard = styled.div`
