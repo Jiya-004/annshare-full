@@ -83,6 +83,10 @@ const Header = () => {
   } = useAuth();
 
   const { wishlist } = useWishlist();
+  const allListings = getListings();
+  const savedCount = allListings.filter((item) =>
+    wishlist.some((savedId) => String(savedId) === String(item.id))
+  ).length;
 
   // Scroll state for dynamic morphing (reduced height & shadow on scroll)
   const [isScrolled, setIsScrolled] = useState(false);
@@ -521,7 +525,7 @@ const Header = () => {
               >
                 <IoHeartOutline className="heart-icon" />
                 <span>Saved</span>
-                {wishlist.length > 0 && <span className="saved-badge">{wishlist.length}</span>}
+                {savedCount > 0 && <span className="saved-badge">{savedCount}</span>}
               </SavedPillButton>
 
               {/* Saved Dropdown */}
@@ -1070,7 +1074,7 @@ const Header = () => {
               navigate("/wishlist");
             }}
           >
-            <IoHeartOutline /> Saved Wishlist ({wishlist.length})
+            <IoHeartOutline /> Saved Wishlist ({savedCount})
           </a>
 
           {isAuthenticated && (

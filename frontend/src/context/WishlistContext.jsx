@@ -11,12 +11,12 @@ export const WishlistProvider = ({ children }) => {
 
   const [wishlist, setWishlist] = useState(() => {
     try {
-      // First check user-specific key, then fall back to generic key
-      const specific = userId ? localStorage.getItem(`annshare_wishlist_${userId}`) : null;
-      if (specific) return JSON.parse(specific);
-
-      const saved = localStorage.getItem("annshare_wishlist");
-      return saved ? JSON.parse(saved) : [];
+      if (userId) {
+        const specific = localStorage.getItem(`annshare_wishlist_${userId}`);
+        return specific ? JSON.parse(specific) : [];
+      }
+      const guest = localStorage.getItem("annshare_wishlist_guest");
+      return guest ? JSON.parse(guest) : [];
     } catch {
       return [];
     }
@@ -24,34 +24,35 @@ export const WishlistProvider = ({ children }) => {
 
   const isInitialSyncDone = useRef(false);
 
-  // When user logs in or switches, fetch real wishlist from backend MongoDB
+  // When user logs in or switches, load from MongoDB database
   useEffect(() => {
     if (isAuthenticated && userId) {
+      // First update state from user's cache immediately if available
+      try {
+        const cached = localStorage.getItem(`annshare_wishlist_${userId}`);
+        if (cached) {
+          setWishlist(JSON.parse(cached));
+        } else {
+          setWishlist([]);
+        }
+      } catch (e) {
+        setWishlist([]);
+      }
+
+      // Fetch official wishlist for this user from MongoDB
       api.auth
         .getWishlist()
         .then((res) => {
           if (res?.wishlist && Array.isArray(res.wishlist)) {
-            // Merge with local items if user saved something before logging in
-            setWishlist((prev) => {
-              const combined = Array.from(new Set([...prev, ...res.wishlist.map(String)]));
-              try {
-                localStorage.setItem(`annshare_wishlist_${userId}`, JSON.stringify(combined));
-              } catch (e) {}
-
-              // If client had local items that backend didn't have, sync to backend
-              if (combined.length > res.wishlist.length) {
-                api.auth.syncWishlist(combined).catch(() => {});
-              }
-              return combined;
-            });
+            const serverList = res.wishlist.map(String);
+            setWishlist(serverList);
+            try {
+              localStorage.setItem(`annshare_wishlist_${userId}`, JSON.stringify(serverList));
+            } catch (e) {}
           }
         })
         .catch(() => {
-          // If offline or request fails, load from user-specific localStorage
-          try {
-            const saved = localStorage.getItem(`annshare_wishlist_${userId}`);
-            if (saved) setWishlist(JSON.parse(saved));
-          } catch (e) {}
+          // If offline or request fails, keep cached items
         })
         .finally(() => {
           isInitialSyncDone.current = true;
@@ -72,7 +73,6 @@ export const WishlistProvider = ({ children }) => {
   useEffect(() => {
     try {
       localStorage.setItem(storageKey, JSON.stringify(wishlist));
-      localStorage.setItem("annshare_wishlist", JSON.stringify(wishlist));
     } catch (e) {
       console.error("Failed to save wishlist to localStorage", e);
     }
