@@ -146,3 +146,21 @@ export function findAccount(identifier, password) {
 
   return match || null;
 }
+
+/**
+ * Reset/Update account password in localStorage accounts store
+ */
+export function updateAccountPassword(identifier, newPassword) {
+  const accounts = getAccounts();
+  const cleanIdLower = (identifier || "").trim().toLowerCase();
+  const idx = accounts.findIndex(
+    (acc) => (acc.identifier || "").trim().toLowerCase() === cleanIdLower
+  );
+
+  if (idx !== -1) {
+    accounts[idx].password = newPassword;
+    saveAccounts(accounts);
+    return accounts[idx];
+  }
+  return null;
+}

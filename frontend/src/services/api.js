@@ -79,6 +79,12 @@ export const api = {
       }
       return data;
     },
+    forgotPassword: async ({ email, newPassword, role }) => {
+      return request('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email, newPassword, role }),
+      });
+    },
   },
 
   // Food Listings / Donations

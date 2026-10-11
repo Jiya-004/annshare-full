@@ -344,6 +344,55 @@ const changePassword = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: 'Failed to update password: ' + err.message });
   }
+// FORGOT / RESET PASSWORD (unauthenticated reset via email)
+const forgotPassword = async (req, res) => {
+  try {
+    const { email, newPassword, role } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanNew = (newPassword || '').trim();
+
+    if (!cleanEmail) {
+      return res.status(400).json({ message: 'Email address is required' });
+    }
+    if (!cleanNew) {
+      return res.status(400).json({ message: 'New password is required' });
+    }
+    if (cleanNew.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters long' });
+    }
+
+    const query = { email: cleanEmail };
+    if (role && (role === 'donor' || role === 'ngo')) {
+      query.role = role;
+    }
+
+    let user = await User.findOne(query);
+
+    // If role specific search didn't match, search by email alone
+    if (!user) {
+      user = await User.findOne({ email: cleanEmail });
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: 'No registered account found with this email' });
+    }
+
+    user.password = cleanNew;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successfully! You can now log in with your new password.',
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to reset password: ' + err.message });
+  }
 };
 
 // ADMIN: DELETE user
@@ -363,6 +412,7 @@ module.exports = {
   getMe,
   updateProfile,
   changePassword,
+  forgotPassword,
   getAllUsers,
   updateUserStatus,
   verifyNGO,

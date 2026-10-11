@@ -11,9 +11,10 @@ import {
   IoCheckmarkCircle,
 } from "react-icons/io5";
 import { useAuth } from "../../context/AuthContext";
-import { registerAccount, findAccount } from "../../data/accountsStore";
+import { registerAccount, findAccount, updateAccountPassword } from "../../data/accountsStore";
 import RoleSelector from "./RoleSelector";
 import { isValidEmail, isValidPhone } from "../../utils/validation";
+import api from "../../services/api";
 
 /* Animations */
 const fadeIn = keyframes`
@@ -450,6 +451,49 @@ const GoogleButton = styled.button`
   }
 `;
 
+const ForgotPasswordRow = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+  margin-bottom: 4px;
+
+  button {
+    background: transparent;
+    border: none;
+    color: #2E7D5B;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: #174A3A;
+      text-decoration: underline;
+    }
+  }
+`;
+
+const SuccessBanner = styled.div`
+  background: #E8F5E9;
+  border: 1px solid #C8E6C9;
+  color: #2E7D32;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 10px 12px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+
+  @media (max-width: 768px) {
+    font-size: 0.76rem;
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+`;
+
 const ToggleModeRow = styled.div`
   text-align: center;
   margin-top: 18px;
@@ -492,12 +536,16 @@ export const LoginModal = () => {
   } = useAuth();
 
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const emailInputRef = useRef(null);
@@ -506,10 +554,12 @@ export const LoginModal = () => {
   useEffect(() => {
     if (isAuthModalOpen) {
       setIsSignUp(authModalMode === "signup");
+      setIsForgotPassword(false);
       if (emailInputRef.current) {
         setTimeout(() => emailInputRef.current?.focus(), 100);
       }
       setErrorMessage("");
+      setSuccessMessage("");
     }
   }, [isAuthModalOpen, authModalMode]);
 
@@ -532,6 +582,75 @@ export const LoginModal = () => {
   const handleRoleSelect = (role) => {
     setSelectedRole(role);
     setErrorMessage("");
+    setSuccessMessage("");
+  };
+
+  const handleForgotPasswordSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    if (!email.trim()) {
+      setErrorMessage("Please enter your registered email address.");
+      return;
+    }
+
+    if (!isValidEmail(email.trim())) {
+      setErrorMessage("Please enter a valid email address.");
+      return;
+    }
+
+    if (!newPassword.trim()) {
+      setErrorMessage("Please enter your new password.");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setErrorMessage("Password must be at least 6 characters long.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setErrorMessage("Passwords do not match. Please verify.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // 1. Try real backend reset
+      await api.auth.forgotPassword({
+        email: email.trim(),
+        newPassword: newPassword.trim(),
+        role: selectedRole,
+      });
+
+      // Also sync local storage accounts store if present
+      updateAccountPassword(email.trim(), newPassword.trim());
+
+      setSuccessMessage("Password reset successfully! You can now sign in with your new password.");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => {
+        setIsForgotPassword(false);
+        setPassword(newPassword.trim());
+      }, 1400);
+    } catch (err) {
+      // 2. Fallback to local accountsStore for offline/local demo users
+      const localUpdated = updateAccountPassword(email.trim(), newPassword.trim());
+      if (localUpdated) {
+        setSuccessMessage("Password reset successfully! You can now sign in with your new password.");
+        setNewPassword("");
+        setConfirmPassword("");
+        setTimeout(() => {
+          setIsForgotPassword(false);
+          setPassword(newPassword.trim());
+        }, 1400);
+      } else {
+        setErrorMessage(err.message || "Failed to reset password. Please check your email or contact support.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -727,7 +846,7 @@ export const LoginModal = () => {
         {/* Intent Tracker Notice */}
         {renderIntentNotice()}
 
-        {/* Error message */}
+        {/* Error & Success Messages */}
         {errorMessage && (
           <ErrorBanner style={{ marginBottom: "14px" }}>
             <IoAlertCircleOutline style={{ fontSize: "1.1rem" }} />
@@ -735,161 +854,275 @@ export const LoginModal = () => {
           </ErrorBanner>
         )}
 
-        {/* Main Authentication Form */}
-        <Form onSubmit={handleSubmit}>
-          {isSignUp && (
-            <FormGroup>
-              <label htmlFor="auth-name">
-                {selectedRole === "donor" ? "Your Name / Kitchen Name" : "Organization / Shelter Name"}
-              </label>
+        {successMessage && (
+          <SuccessBanner>
+            <IoCheckmarkCircle style={{ fontSize: "1.15rem" }} />
+            <span>{successMessage}</span>
+          </SuccessBanner>
+        )}
+
+        {/* FORGOT PASSWORD FORM */}
+        {isForgotPassword ? (
+          <Form onSubmit={handleForgotPasswordSubmit}>
+            <div style={{ textAlign: "center", marginBottom: "6px" }}>
+              <h3 style={{ fontSize: "1.15rem", fontWeight: 700, color: "#174A3A", margin: "0 0 4px" }}>
+                Reset Your Password
+              </h3>
+              <p style={{ fontSize: "0.82rem", color: "#66736D", margin: 0 }}>
+                Enter your {selectedRole === "donor" ? "Donor" : "NGO"} registered email and create a new password.
+              </p>
+            </div>
+
+            <FormGroup $hasError={Boolean(errorMessage && !email.trim())}>
+              <label htmlFor="auth-email">Registered Email</label>
               <div className="input-wrap">
                 <input
-                  id="auth-name"
-                  type="text"
+                  id="auth-email"
+                  ref={emailInputRef}
+                  type="email"
                   placeholder={
                     selectedRole === "donor"
-                      ? "e.g. Green Leaf Café"
-                      : "e.g. Hope Foundation Nepal"
+                      ? "donor@restaurant.com"
+                      : "partner@organization.org"
                   }
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
                 />
               </div>
             </FormGroup>
-          )}
 
-          <FormGroup $hasError={Boolean(errorMessage && !email.trim())}>
-            <label htmlFor="auth-email">Email</label>
-            <div className="input-wrap">
-              <input
-                id="auth-email"
-                ref={emailInputRef}
-                type="email"
-                placeholder={
-                  selectedRole === "donor"
-                    ? "donor@restaurant.com"
-                    : "partner@organization.org"
-                }
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-              />
-            </div>
-          </FormGroup>
-
-          {isSignUp && (
-            <FormGroup $hasError={Boolean(errorMessage && errorMessage.toLowerCase().includes("phone"))}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "6px" }}>
-                <label htmlFor="auth-phone" style={{ margin: 0 }}>Phone Number (Mobile)</label>
-                {phone.length > 0 && (
-                  <span style={{
-                    fontSize: "0.72rem",
-                    fontWeight: 600,
-                    color: isValidPhone(phone) ? "#185C4A" : (phone.length === 10 ? "#b94a48" : "#66736D")
-                  }}>
-                    {phone.length}/10 digits
-                  </span>
-                )}
-              </div>
+            <FormGroup $hasToggle $hasError={Boolean(errorMessage && !newPassword.trim())}>
+              <label htmlFor="auth-new-password">New Password</label>
               <div className="input-wrap">
                 <input
-                  id="auth-phone"
-                  type="tel"
-                  maxLength={10}
-                  placeholder="e.g. 98XXXXXXXX or 97XXXXXXXX"
-                  value={phone}
-                  onChange={(e) => {
-                    const cleaned = e.target.value.replace(/\D/g, "").slice(0, 10);
-                    setPhone(cleaned);
-                    if (errorMessage && errorMessage.toLowerCase().includes("phone")) {
-                      setErrorMessage("");
-                    }
-                  }}
-                  autoComplete="tel"
-                  required
+                  id="auth-new-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="At least 6 characters"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  className="eye-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <IoEyeOffOutline /> : <IoEyeOutline />}
+                </button>
+              </div>
+            </FormGroup>
+
+            <FormGroup $hasToggle $hasError={Boolean(errorMessage && confirmPassword !== newPassword)}>
+              <label htmlFor="auth-confirm-password">Confirm New Password</label>
+              <div className="input-wrap">
+                <input
+                  id="auth-confirm-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Repeat new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
                 />
               </div>
-              {phone.length > 0 && phone.length < 10 && (
-                <div style={{ fontSize: "0.74rem", color: "#66736D", marginTop: "4px" }}>
-                  Please enter 10 digits starting with 98 or 97
-                </div>
-              )}
-              {phone.length === 10 && !isValidPhone(phone) && (
-                <div style={{ fontSize: "0.74rem", color: "#b94a48", marginTop: "4px" }}>
-                  Must start with 98 or 97.
-                </div>
-              )}
-              {isValidPhone(phone) && (
-                <div style={{ fontSize: "0.74rem", color: "#185C4A", marginTop: "4px", fontWeight: 500 }}>
-                  ✓ Valid Nepali mobile number
-                </div>
-              )}
             </FormGroup>
-          )}
 
-          <FormGroup
-            $hasToggle
-            $hasError={Boolean(errorMessage && !password.trim())}
-          >
-            <label htmlFor="auth-password">Password</label>
-            <div className="input-wrap">
-              <input
-                id="auth-password"
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete={isSignUp ? "new-password" : "current-password"}
-              />
+            <PrimaryButton type="submit" disabled={isLoading}>
+              {isLoading ? <span>Resetting Password...</span> : <span>Reset Password & Continue</span>}
+            </PrimaryButton>
+
+            <ToggleModeRow style={{ marginTop: "12px" }}>
+              <span>Remembered your password?</span>
               <button
                 type="button"
-                className="eye-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                onClick={() => {
+                  setIsForgotPassword(false);
+                  setErrorMessage("");
+                  setSuccessMessage("");
+                }}
               >
-                {showPassword ? <IoEyeOffOutline /> : <IoEyeOutline />}
+                Back to Sign In
               </button>
-            </div>
-          </FormGroup>
+            </ToggleModeRow>
+          </Form>
+        ) : (
+          /* REGULAR LOGIN / REGISTER FORM */
+          <>
+            <Form onSubmit={handleSubmit}>
+              {isSignUp && (
+                <FormGroup>
+                  <label htmlFor="auth-name">
+                    {selectedRole === "donor" ? "Your Name / Kitchen Name" : "Organization / Shelter Name"}
+                  </label>
+                  <div className="input-wrap">
+                    <input
+                      id="auth-name"
+                      type="text"
+                      placeholder={
+                        selectedRole === "donor"
+                          ? "e.g. Green Leaf Café"
+                          : "e.g. Hope Foundation Nepal"
+                      }
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                    />
+                  </div>
+                </FormGroup>
+              )}
 
-          <PrimaryButton type="submit" disabled={isLoading}>
-            {isLoading ? (
-              <span>Connecting...</span>
-            ) : (
-              <>
-                <span>
-                  {isSignUp
-                    ? `Create ${selectedRole === "donor" ? "Donor" : "NGO"} Account`
-                    : "Continue"}
-                </span>
-                <IoArrowForward />
-              </>
-            )}
-          </PrimaryButton>
-        </Form>
+              {isSignUp && (
+                <FormGroup $hasError={Boolean(errorMessage && errorMessage.toLowerCase().includes("phone"))}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "6px" }}>
+                    <label htmlFor="auth-phone" style={{ margin: 0 }}>Phone Number (Mobile)</label>
+                    {phone.length > 0 && (
+                      <span style={{
+                        fontSize: "0.72rem",
+                        fontWeight: 600,
+                        color: isValidPhone(phone) ? "#185C4A" : (phone.length === 10 ? "#b94a48" : "#66736D")
+                      }}>
+                        {phone.length}/10 digits
+                      </span>
+                    )}
+                  </div>
+                  <div className="input-wrap">
+                    <input
+                      id="auth-phone"
+                      type="tel"
+                      maxLength={10}
+                      placeholder="e.g. 98XXXXXXXX or 97XXXXXXXX"
+                      value={phone}
+                      onChange={(e) => {
+                        const cleaned = e.target.value.replace(/\D/g, "").slice(0, 10);
+                        setPhone(cleaned);
+                        if (errorMessage && errorMessage.toLowerCase().includes("phone")) {
+                          setErrorMessage("");
+                        }
+                      }}
+                      autoComplete="tel"
+                      required
+                    />
+                  </div>
+                  {phone.length > 0 && phone.length < 10 && (
+                    <div style={{ fontSize: "0.74rem", color: "#66736D", marginTop: "4px" }}>
+                      Please enter 10 digits starting with 98 or 97
+                    </div>
+                  )}
+                  {phone.length === 10 && !isValidPhone(phone) && (
+                    <div style={{ fontSize: "0.74rem", color: "#b94a48", marginTop: "4px" }}>
+                      Must start with 98 or 97.
+                    </div>
+                  )}
+                  {isValidPhone(phone) && (
+                    <div style={{ fontSize: "0.74rem", color: "#185C4A", marginTop: "4px", fontWeight: 500 }}>
+                      ✓ Valid Nepali mobile number
+                    </div>
+                  )}
+                </FormGroup>
+              )}
 
-        {/* Google OAuth Option */}
-        <Divider>or</Divider>
-        <GoogleButton type="button" onClick={handleGoogleLogin} disabled={isLoading}>
-          <IoLogoGoogle className="google-icon" />
-          <span>Continue with Google as {selectedRole === "donor" ? "Donor" : "NGO"}</span>
-        </GoogleButton>
+              <FormGroup $hasError={Boolean(errorMessage && !email.trim())}>
+                <label htmlFor="auth-email">Email</label>
+                <div className="input-wrap">
+                  <input
+                    id="auth-email"
+                    ref={emailInputRef}
+                    type="email"
+                    placeholder={
+                      selectedRole === "donor"
+                        ? "donor@restaurant.com"
+                        : "partner@organization.org"
+                    }
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                  />
+                </div>
+              </FormGroup>
 
-        {/* Toggle between Sign In and Create Account */}
-        <ToggleModeRow>
-          <span>
-            {isSignUp ? "Already have an account?" : "Don't have an account?"}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              setIsSignUp(!isSignUp);
-              setErrorMessage("");
-            }}
-          >
-            {isSignUp ? "Sign In" : "Create Account"}
-          </button>
-        </ToggleModeRow>
+              <FormGroup
+                $hasToggle
+                $hasError={Boolean(errorMessage && !password.trim())}
+              >
+                <label htmlFor="auth-password">Password</label>
+                <div className="input-wrap">
+                  <input
+                    id="auth-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete={isSignUp ? "new-password" : "current-password"}
+                  />
+                  <button
+                    type="button"
+                    className="eye-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <IoEyeOffOutline /> : <IoEyeOutline />}
+                  </button>
+                </div>
+              </FormGroup>
+
+              {/* Forgot Password Link on Sign In Mode */}
+              {!isSignUp && (
+                <ForgotPasswordRow>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsForgotPassword(true);
+                      setErrorMessage("");
+                      setSuccessMessage("");
+                    }}
+                  >
+                    Forgot password?
+                  </button>
+                </ForgotPasswordRow>
+              )}
+
+              <PrimaryButton type="submit" disabled={isLoading}>
+                {isLoading ? (
+                  <span>Connecting...</span>
+                ) : (
+                  <>
+                    <span>
+                      {isSignUp
+                        ? `Create ${selectedRole === "donor" ? "Donor" : "NGO"} Account`
+                        : "Continue"}
+                    </span>
+                    <IoArrowForward />
+                  </>
+                )}
+              </PrimaryButton>
+            </Form>
+
+            {/* Google OAuth Option */}
+            <Divider>or</Divider>
+            <GoogleButton type="button" onClick={handleGoogleLogin} disabled={isLoading}>
+              <IoLogoGoogle className="google-icon" />
+              <span>Continue with Google as {selectedRole === "donor" ? "Donor" : "NGO"}</span>
+            </GoogleButton>
+
+            {/* Toggle between Sign In and Create Account */}
+            <ToggleModeRow>
+              <span>
+                {isSignUp ? "Already have an account?" : "Don't have an account?"}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setIsForgotPassword(false);
+                  setErrorMessage("");
+                  setSuccessMessage("");
+                }}
+              >
+                {isSignUp ? "Sign In" : "Create Account"}
+              </button>
+            </ToggleModeRow>
+          </>
+        )}
       </ModalCard>
     </Overlay>
   );

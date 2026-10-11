@@ -6,6 +6,7 @@ const {
   getMe,
   updateProfile,
   changePassword,
+  forgotPassword,
   getAllUsers,
   updateUserStatus,
   verifyNGO,
@@ -16,6 +17,7 @@ const { adminOnly } = require('../middleware/roleMiddleware');
 
 router.post('/register', registerUser);
 router.post('/login', loginUser);
+router.post('/forgot-password', forgotPassword);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
 router.put('/change-password', protect, changePassword);
