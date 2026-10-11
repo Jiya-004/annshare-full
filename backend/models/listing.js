@@ -32,7 +32,7 @@ const listingSchema = new mongoose.Schema(
       default: () => formatNepaliDate(),
     },
     expiryTime: { type: String, default: 'Today at 8:00 PM' },
-    expires_at: { type: String },
+    bestBefore: { type: String, default: '' },
     pickupWindow: { type: String, default: 'Today · 4:00 PM – 7:30 PM' },
     status: {
       type: String,

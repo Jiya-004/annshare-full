@@ -69,6 +69,7 @@ export default function DonatePage() {
     unit: "portions",
     description: "",
     condition: "Freshly Prepared",
+    bestBefore: "",
     images: [],
     businessName: user?.organization || user?.orgName || user?.name || "",
     location: user?.location || "",
@@ -155,6 +156,7 @@ export default function DonatePage() {
             quantity: Number(formData.quantity) || 1,
             unit: formData.unit || "portions",
             condition: formData.condition || "Freshly Prepared",
+            bestBefore: formData.bestBefore || "",
             partner: donorOrg,
             partnerType: user?.badge || "Verified Food Donor",
             verified: true,
@@ -168,7 +170,9 @@ export default function DonatePage() {
             image: formData.images?.[0] || fallbackImg,
             images: formData.images && formData.images.length > 0 ? formData.images : [fallbackImg],
             description: formData.description || "",
-            safetyInfo: formData.condition ? `Condition: ${formData.condition}. Prepared at ${currentFormattedTime} under food hygiene standards.` : `Prepared at ${currentFormattedTime}.`,
+            safetyInfo: formData.condition
+              ? `Condition: ${formData.condition}${formData.bestBefore && formData.condition === "Near Best Before" ? ` — Best before: ${formData.bestBefore}` : ""}. Prepared at ${currentFormattedTime} under food hygiene standards.`
+              : `Prepared at ${currentFormattedTime}.`,
             contactName: donorContact,
             contactPhone: formattedPhone,
             status: "Pending Approval",
@@ -198,6 +202,7 @@ export default function DonatePage() {
       unit: "portions",
       description: "",
       condition: "Freshly Prepared",
+      bestBefore: "",
       images: [],
       businessName: user?.organization || user?.name || "",
       location: user?.location || "",
@@ -406,7 +411,10 @@ export default function DonatePage() {
                               key={c.id}
                               type="button"
                               $selected={isSelected}
-                              onClick={() => updateField("condition", c.label)}
+                              onClick={() => {
+                                updateField("condition", c.label);
+                                if (c.id !== "near_best") updateField("bestBefore", "");
+                              }}
                             >
                               <span>{c.label}</span>
                               <span className="condition-check">
@@ -416,6 +424,54 @@ export default function DonatePage() {
                           );
                         })}
                       </ConditionGrid>
+
+                      {/* Best Before picker — shows only when "Near Best Before" is selected */}
+                      {formData.condition === "Near Best Before" && (
+                        <div style={{
+                          marginTop: "12px",
+                          background: "#FFF8F0",
+                          border: "1.5px solid rgba(230, 81, 0, 0.25)",
+                          borderRadius: "12px",
+                          padding: "14px 16px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "10px",
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <IoTimeOutline style={{ color: "#E65100", fontSize: "1.1rem" }} />
+                            <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "#E65100" }}>
+                              How long until best before?
+                            </span>
+                          </div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                            {["1 hour", "2 hours", "3 hours", "6 hours", "12 hours", "1 day", "2 days", "3 days"].map((opt) => (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => updateField("bestBefore", opt)}
+                                style={{
+                                  padding: "6px 14px",
+                                  borderRadius: "999px",
+                                  border: `1.5px solid ${formData.bestBefore === opt ? "#E65100" : "rgba(230,81,0,0.25)"}`,
+                                  background: formData.bestBefore === opt ? "#E65100" : "transparent",
+                                  color: formData.bestBefore === opt ? "#FFFFFF" : "#E65100",
+                                  fontWeight: 600,
+                                  fontSize: "0.8rem",
+                                  cursor: "pointer",
+                                  transition: "all 0.15s ease",
+                                }}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                          {formData.bestBefore && (
+                            <p style={{ margin: 0, fontSize: "0.8rem", color: "#71827B" }}>
+                              ✓ Best before: <strong>{formData.bestBefore}</strong> from now
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </FormGroup>
 
                     {/* Food Description */}
