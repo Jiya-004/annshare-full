@@ -421,22 +421,7 @@ const Header = () => {
 
               <PillDivider />
 
-              {/* Pill 3: Explore */}
-              <PillNavItem
-                type="button"
-                $isActive={activeNavPill === "explore"}
-                onClick={handleExploreClick}
-                title="Browse available food donations and partner organizations"
-              >
-                <span className="pill-icon">
-                  <IoSearchOutline />
-                </span>
-                <span className="pill-label">Explore</span>
-              </PillNavItem>
-
-              <PillDivider />
-
-              {/* Pill 4: How It Works */}
+              {/* Pill 3: How It Works */}
               <PillNavItem
                 type="button"
                 $isActive={activeNavPill === "how-it-works" || isHowItWorksPage}
@@ -915,14 +900,6 @@ const Header = () => {
             onClick={handleNeedFoodClick}
           >
             <IoPeopleOutline /> I Need Food
-          </MobilePill>
-
-          <MobilePill
-            type="button"
-            $isActive={activeNavPill === "explore"}
-            onClick={handleExploreClick}
-          >
-            <IoSearchOutline /> Explore
           </MobilePill>
 
           <MobilePill
