@@ -18,10 +18,24 @@ export const isGmail = (email) => {
 };
 
 /**
- * Validates phone numbers (supports Nepal 98/97, 01 landlines, and international numbers)
+ * Strictly extracts digits from phone input, stripping country code 977 and any letters/words
+ */
+export const extractPhoneDigits = (raw) => {
+  if (!raw) return "";
+  let digits = String(raw).replace(/\D/g, "");
+  if (digits.startsWith("977") && digits.length > 3) {
+    digits = digits.slice(3);
+  }
+  return digits.slice(0, 10);
+};
+
+/**
+ * Validates phone numbers (strictly 10 digits for Nepali mobile, no letters allowed)
  */
 export const isValidPhone = (phone) => {
   if (!phone || typeof phone !== "string") return false;
+  // Reject any string containing letters or words
+  if (/[a-zA-Z]/.test(phone)) return false;
   const cleaned = phone.replace(/[\s\-\(\)]/g, "");
   const phoneRegex = /^(?:\+?977|0)?(98\d{8}|97\d{8}|01\d{7})$|^\+?[1-9]\d{7,14}$/;
   return phoneRegex.test(cleaned);

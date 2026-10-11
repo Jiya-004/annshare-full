@@ -72,8 +72,15 @@ let notificationsState = [
 
 let dashboardStatsState = { ...mockSummaryReport };
 let currentAdminSession = JSON.parse(localStorage.getItem('annshare_admin_session') || 'null');
-if (currentAdminSession?.user && (currentAdminSession.user.phone === '+977 9841234567' || currentAdminSession.user.phone === '+977 9841000001')) {
-  currentAdminSession.user.phone = '';
+if (currentAdminSession?.user) {
+  if (currentAdminSession.user.phone === '+977 9841234567' || currentAdminSession.user.phone === '+977 9841000001') {
+    currentAdminSession.user.phone = '';
+  } else if (currentAdminSession.user.phone && /[a-zA-Z]/.test(currentAdminSession.user.phone)) {
+    let digits = currentAdminSession.user.phone.replace(/\D/g, '');
+    if (digits.startsWith('977')) digits = digits.slice(3);
+    digits = digits.slice(0, 10);
+    currentAdminSession.user.phone = digits ? `+977 ${digits}` : '';
+  }
   try {
     localStorage.setItem('annshare_admin_session', JSON.stringify(currentAdminSession));
   } catch (e) {}

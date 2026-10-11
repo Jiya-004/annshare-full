@@ -101,6 +101,18 @@ const StyledInputGroupText = styled(InputGroup.Text)`
   color: #66736D;
 `;
 
+const StyledCountryCodeText = styled(InputGroup.Text)`
+  background: #EEF8F4;
+  border: 1px solid #E6ECE8;
+  border-left: 1px solid #E6ECE8;
+  border-right: none;
+  border-radius: 0 !important;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #185C4A;
+  padding: 0 12px;
+`;
+
 const StyledFormInput = styled(Form.Control)`
   border: 1px solid #E6ECE8;
   border-left: none;
@@ -162,9 +174,19 @@ const SaveButton = styled(Button)`
   }
 `;
 
+// Helper to strictly extract at most 10 numeric digits, stripping letters/words and country code 977
+const extractPhoneDigits = (raw) => {
+  if (!raw) return '';
+  let digits = String(raw).replace(/\D/g, ''); // Strips all letters, words, spaces, symbols
+  if (digits.startsWith('977') && digits.length > 3) {
+    digits = digits.slice(3);
+  }
+  return digits.slice(0, 10); // Strictly max 10 digits
+};
+
 const cleanInitialPhone = (rawPhone) => {
   if (!rawPhone || rawPhone === '+977 9841234567' || rawPhone === '+977 9841000001') return '';
-  return rawPhone;
+  return extractPhoneDigits(rawPhone);
 };
 
 const Settings = () => {
@@ -175,6 +197,7 @@ const Settings = () => {
   const [name, setName] = useState(profile.name || 'Admin');
   const [email, setEmail] = useState(profile.email || 'admin@annshare.org');
   const [phone, setPhone] = useState(cleanInitialPhone(profile.phone));
+  const [phoneError, setPhoneError] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // Security states & Eye Toggles
@@ -213,12 +236,22 @@ const Settings = () => {
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
+    setPhoneError('');
+
+    // Strict 10-digit validation if phone is provided
+    if (phone && phone.length !== 10) {
+      setPhoneError('Phone number must be exactly 10 digits (e.g. 98XXXXXXXX). Letters are not allowed.');
+      triggerToast('Phone number must be exactly 10 digits or left blank.');
+      return;
+    }
+
     setIsSavingProfile(true);
     try {
+      const formattedPhone = phone ? `+977 ${phone}` : '';
       await updateAdminProfile({
         name,
         email,
-        phone: phone.trim(),
+        phone: formattedPhone,
         avatarText: name ? name.split(' ').map(n => n[0]).join('').toUpperCase() : 'A'
       });
       triggerToast('Admin profile details saved to database successfully!');
@@ -396,20 +429,56 @@ const Settings = () => {
                       <Form.Label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#12201B', margin: 0 }}>
                         Phone Contact
                       </Form.Label>
-                      <span style={{ fontSize: '0.74rem', color: '#66736D' }}>(Optional)</span>
+                      <span style={{ fontSize: '0.74rem', color: '#66736D' }}>(Optional · 10 Digits)</span>
                     </div>
                     <InputGroup>
                       <StyledInputGroupText><FiPhone size={16} /></StyledInputGroupText>
+                      <StyledCountryCodeText>+977</StyledCountryCodeText>
                       <StyledFormInput
-                        type="text"
+                        type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={10}
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="+977 98XXXXXXXX"
+                        onChange={(e) => {
+                          // Prevent letters, words, or non-digits immediately
+                          const digits = extractPhoneDigits(e.target.value);
+                          setPhone(digits);
+                          if (phoneError) setPhoneError('');
+                        }}
+                        placeholder="98XXXXXXXX"
                       />
                     </InputGroup>
-                    <Form.Text style={{ fontSize: '0.74rem', color: '#66736D' }}>
-                      Admins do not need to share personal numbers with donors or NGOs. You may leave this blank or provide an official hotline.
-                    </Form.Text>
+                    <div className="d-flex justify-content-between align-items-center mt-1">
+                      <Form.Text
+                        style={{
+                          fontSize: '0.74rem',
+                          color: phoneError ? '#DC2626' : (phone && phone.length !== 10) ? '#D97706' : '#66736D',
+                          fontWeight: phoneError ? 600 : 400,
+                        }}
+                      >
+                        {phoneError
+                          ? phoneError
+                          : phone.length === 0
+                          ? 'Admins do not need to share personal numbers with donors or NGOs. You may leave this blank or provide an official 10-digit hotline.'
+                          : phone.length < 10
+                          ? `Must be exactly 10 digits (${phone.length}/10 entered). Letters are not allowed.`
+                          : `✓ Valid 10-digit mobile number (+977 ${phone})`}
+                      </Form.Text>
+                      {phone.length > 0 && (
+                        <span
+                          style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            color: phone.length === 10 ? '#166534' : '#D97706',
+                            marginLeft: '8px',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {phone.length}/10 digits
+                        </span>
+                      )}
+                    </div>
                   </Form.Group>
 
                   <Form.Group className="mb-4">

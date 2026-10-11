@@ -119,6 +119,11 @@ export default function ContactUsPage() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    if (name === "phone") {
+      const sanitized = value.replace(/[^\d+ -]/g, "");
+      setFormData((prev) => ({ ...prev, [name]: sanitized }));
+      return;
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 

@@ -802,10 +802,14 @@ export default function AccountSettings({ role = "donor" }) {
                 <div className="input-wrapper">
                   <span className="field-icon"><IoCallOutline /></span>
                   <input
-                    type="text"
+                    type="tel"
+                    inputMode="numeric"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+977 98..."
+                    onChange={(e) => {
+                      const cleaned = e.target.value.replace(/[^\d+ -]/g, "");
+                      setPhone(cleaned);
+                    }}
+                    placeholder="+977 980-0000000"
                   />
                 </div>
               </FormGroup>
