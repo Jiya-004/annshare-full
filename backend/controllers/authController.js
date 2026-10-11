@@ -1,19 +1,52 @@
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
+const { isValidPhone, normalizePhone, isValidEmail } = require('../utils/validators');
 
 // REGISTER a new user
 const registerUser = async (req, res) => {
   try {
     const { name, email, password, role, organization, orgName, phone, location, docs } = req.body;
     const cleanEmail = (email || '').trim().toLowerCase();
+    const rawPhone = (phone || '').trim();
 
     if (!cleanEmail || !password) {
       return res.status(400).json({ message: 'Please provide email and password' });
     }
 
+    if (!isValidEmail(cleanEmail)) {
+      return res.status(400).json({ message: 'Please provide a valid email address' });
+    }
+
+    if (!rawPhone) {
+      return res.status(400).json({ message: 'Please provide a phone number' });
+    }
+
+    if (!isValidPhone(rawPhone)) {
+      return res.status(400).json({
+        message: 'Invalid phone number. Must be a valid 10-digit mobile number starting with 98 or 97.',
+      });
+    }
+
+    const cleanPhone = normalizePhone(rawPhone);
+
     const userExists = await User.findOne({ email: cleanEmail });
     if (userExists) {
       return res.status(400).json({ message: 'User with this email already exists' });
+    }
+
+    // Check if phone number is already registered to another user (individual user uniqueness)
+    const phoneExists = await User.findOne({
+      $or: [
+        { phone: cleanPhone },
+        { phone: rawPhone },
+        { phone: `+977 ${cleanPhone}` },
+        { phone: `+977${cleanPhone}` },
+      ],
+    });
+    if (phoneExists) {
+      return res.status(400).json({
+        message: 'This phone number is already registered to another account. Each user must have a unique phone number.',
+      });
     }
 
     const normalizedRole = role === 'ngos' || role === 'ngo' ? 'ngo' : role === 'admin' ? 'admin' : 'donor';
@@ -26,7 +59,7 @@ const registerUser = async (req, res) => {
       role: normalizedRole,
       organization: finalOrg,
       orgName: finalOrg,
-      phone: phone || '',
+      phone: cleanPhone,
       location: location || 'Kathmandu, Nepal',
       badge: normalizedRole === 'donor' ? 'Verified Food Donor' : normalizedRole === 'ngo' ? 'Verified Community NGO' : 'System Admin',
       avatarText: (name && name[0] ? name[0] : 'U').toUpperCase(),
@@ -119,7 +152,30 @@ const updateProfile = async (req, res) => {
       user.organization = organization || orgName || '';
       user.orgName = organization || orgName || '';
     }
-    if (phone !== undefined) user.phone = phone;
+    if (phone !== undefined && phone !== null && phone !== '') {
+      const rawPhone = String(phone).trim();
+      if (!isValidPhone(rawPhone)) {
+        return res.status(400).json({
+          message: 'Invalid phone number. Must be a valid 10-digit mobile number starting with 98 or 97.',
+        });
+      }
+      const cleanPhone = normalizePhone(rawPhone);
+      const phoneTaken = await User.findOne({
+        _id: { $ne: user._id },
+        $or: [
+          { phone: cleanPhone },
+          { phone: rawPhone },
+          { phone: `+977 ${cleanPhone}` },
+          { phone: `+977${cleanPhone}` },
+        ],
+      });
+      if (phoneTaken) {
+        return res.status(400).json({
+          message: 'This phone number is already registered to another account. Each user must have a unique phone number.',
+        });
+      }
+      user.phone = cleanPhone;
+    }
     if (location !== undefined) user.location = location;
     if (avatar !== undefined) user.avatar = avatar;
 

@@ -10,6 +10,7 @@ const DEFAULT_ACCOUNTS = [
     organization: "Himalayan Kitchen & Café",
     identifier: "ramesh@himalayankitchen.com",
     email: "ramesh@himalayankitchen.com",
+    phone: "9841234567",
     password: "password123",
     role: "donor",
     avatar: "R",
@@ -23,6 +24,7 @@ const DEFAULT_ACCOUNTS = [
     organization: "Hope Foundation",
     identifier: "coordination@hopefoundation.org",
     email: "coordination@hopefoundation.org",
+    phone: "9851012345",
     password: "password123",
     role: "ngo",
     avatar: "H",
@@ -67,13 +69,15 @@ function saveAccounts(accounts) {
 
 /**
  * Register a new user account.
- * Checks localStorage key "annshare_accounts" for an existing account with the same identifier.
+ * Checks localStorage key "annshare_accounts" for an existing account with the same identifier or phone.
  * Throws an error if duplicate is found.
  */
-export function registerAccount({ name, organization, identifier, password, role }) {
+export function registerAccount({ name, organization, identifier, phone, password, role }) {
   const accounts = getAccounts();
   const cleanIdentifier = (identifier || "").trim();
   const cleanIdLower = cleanIdentifier.toLowerCase();
+  const rawPhone = (phone || "").trim();
+  const cleanPhone = rawPhone.replace(/\D/g, "").slice(-10);
 
   const existing = accounts.find(
     (acc) => (acc.identifier || "").trim().toLowerCase() === cleanIdLower
@@ -81,6 +85,18 @@ export function registerAccount({ name, organization, identifier, password, role
 
   if (existing) {
     throw new Error("An account with this email already exists.");
+  }
+
+  if (cleanPhone) {
+    const phoneExisting = accounts.find((acc) => {
+      const existingDigits = (acc.phone || "").replace(/\D/g, "").slice(-10);
+      return existingDigits === cleanPhone;
+    });
+    if (phoneExisting) {
+      throw new Error(
+        "This phone number is already registered to another account. Each user must have a unique phone number."
+      );
+    }
   }
 
   const normalizedRole = role === "ngos" || role === "ngo" ? "ngo" : "donor";
@@ -93,6 +109,7 @@ export function registerAccount({ name, organization, identifier, password, role
     organization: orgName,
     identifier: cleanIdentifier,
     email: cleanIdentifier,
+    phone: cleanPhone || rawPhone,
     password: password || "",
     role: normalizedRole,
     avatar: userName[0]?.toUpperCase() || "U",

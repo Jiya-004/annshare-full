@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Container, Card, Table, Button, Form, Nav, Dropdown, Row, Col, ListGroup, Toast, ToastContainer } from 'react-bootstrap';
+import { Container, Card, Table, Button, Form, Nav, Dropdown, Row, Col, ListGroup, Toast, ToastContainer, Modal } from 'react-bootstrap';
 import {
   FiUsers,
   FiSearch,
@@ -19,7 +19,8 @@ import {
   FiFileText,
   FiXCircle,
   FiDownload,
-  FiAlertTriangle
+  FiAlertTriangle,
+  FiUserPlus
 } from 'react-icons/fi';
 
 import StatusBadge from '../../components/StatusBadge';
@@ -29,6 +30,7 @@ import {
   getUsers,
   updateUserStatus,
   deleteUser,
+  createUser,
   subscribeToAdminService
 } from '../../services/adminService';
 
@@ -247,6 +249,96 @@ const UserManagement = () => {
   // Confirm Action Modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', action: null });
+
+  // Create User Modal state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isSubmittingUser, setIsSubmittingUser] = useState(false);
+  const [createError, setCreateError] = useState('');
+  const [newUserForm, setNewUserForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    role: 'Donor',
+    password: '',
+    organization: '',
+    location: ''
+  });
+
+  const handleOpenCreateModal = () => {
+    setNewUserForm({
+      name: '',
+      email: '',
+      phone: '',
+      role: 'Donor',
+      password: '',
+      organization: '',
+      location: ''
+    });
+    setCreateError('');
+    setShowCreateModal(true);
+  };
+
+  const handleCreateUserSubmit = async (e) => {
+    e.preventDefault();
+    setCreateError('');
+
+    const trimmedName = newUserForm.name.trim();
+    const trimmedEmail = newUserForm.email.trim();
+    const trimmedPhone = newUserForm.phone.trim();
+    const trimmedPass = newUserForm.password.trim();
+
+    if (!trimmedName) {
+      setCreateError('Name is required');
+      return;
+    }
+    if (!trimmedEmail) {
+      setCreateError('Email is required');
+      return;
+    }
+    if (!trimmedPhone) {
+      setCreateError('Phone number is required');
+      return;
+    }
+
+    const cleanPhone = trimmedPhone.replace(/[\s-]/g, '').replace(/^\+977/, '');
+    if (!/^(98|97)\d{8}$/.test(cleanPhone)) {
+      setCreateError('Please enter a valid 10-digit mobile number starting with 98 or 97.');
+      return;
+    }
+
+    if (users.some(u => {
+      const uPhone = (u.phone || '').replace(/[\s-]/g, '').replace(/^\+977/, '');
+      return uPhone === cleanPhone;
+    })) {
+      setCreateError('A user with this phone number already exists.');
+      return;
+    }
+
+    if (!trimmedPass || trimmedPass.length < 6) {
+      setCreateError('Password must be at least 6 characters.');
+      return;
+    }
+
+    try {
+      setIsSubmittingUser(true);
+      await createUser({
+        name: trimmedName,
+        email: trimmedEmail,
+        phone: cleanPhone,
+        password: trimmedPass,
+        role: newUserForm.role,
+        organization: newUserForm.organization.trim(),
+        location: newUserForm.location.trim()
+      });
+      setShowCreateModal(false);
+      setToastMessage(`User ${trimmedName} created successfully!`);
+      setShowToast(true);
+    } catch (err) {
+      setCreateError(err.message || 'Failed to create user');
+    } finally {
+      setIsSubmittingUser(false);
+    }
+  };
 
   useEffect(() => {
     const unsub = subscribeToAdminService(() => {
@@ -875,10 +967,28 @@ const UserManagement = () => {
       </ToastContainer>
 
       {/* Page Header */}
-      <PageHeader>
-        <h2>User & Partner Management</h2>
-        <p>Manage Donors, NGOs, and Verification Pipelines.</p>
-      </PageHeader>
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <PageHeader className="mb-0">
+          <h2>User & Partner Management</h2>
+          <p>Manage Donors, NGOs, and Verification Pipelines.</p>
+        </PageHeader>
+        <Button
+          onClick={handleOpenCreateModal}
+          style={{
+            backgroundColor: '#173F35',
+            borderColor: '#173F35',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            borderRadius: '10px',
+            fontWeight: '600',
+            padding: '10px 18px',
+            boxShadow: '0 2px 8px rgba(23,63,53,0.2)'
+          }}
+        >
+          <FiUserPlus size={18} /> Add New User
+        </Button>
+      </div>
 
       {/* Main Table Card */}
       <MainCard>
@@ -972,9 +1082,12 @@ const UserManagement = () => {
                       })()}
                     </td>
                     <td>
-                      <div style={{ color: '#12201B' }}>{user.email}</div>
-                      {user.phone && user.phone !== '+977 9841234567' && (
-                        <div style={{ fontSize: '0.74rem', color: '#66736D' }}>{user.phone}</div>
+                      <div style={{ color: '#12201B', fontWeight: 500 }}>{user.email}</div>
+                      {user.phone && (
+                        <div style={{ fontSize: '0.76rem', color: '#66736D', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                          <FiPhone size={12} style={{ color: '#185C4A', flexShrink: 0 }} />
+                          <span>{user.phone}</span>
+                        </div>
                       )}
                     </td>
                     <td style={{ color: '#66736D' }}>{user.location}</td>
@@ -1030,6 +1143,118 @@ const UserManagement = () => {
           </StyledTable>
         </div>
       </MainCard>
+
+      {/* Add New User Modal */}
+      <Modal show={showCreateModal} onHide={() => !isSubmittingUser && setShowCreateModal(false)} centered>
+        <Modal.Header closeButton={!isSubmittingUser} style={{ borderBottom: '1px solid #E6ECE8', background: '#F7F8F6' }}>
+          <Modal.Title style={{ fontSize: '1.15rem', fontWeight: 600, color: '#12201B', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FiUserPlus style={{ color: '#173F35' }} /> Add New User
+          </Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={handleCreateUserSubmit}>
+          <Modal.Body style={{ padding: '24px' }}>
+            {createError && (
+              <div className="alert alert-danger py-2 px-3 mb-3" style={{ fontSize: '0.85rem' }}>
+                <FiAlertTriangle className="me-2" />
+                {createError}
+              </div>
+            )}
+            <Form.Group className="mb-3">
+              <Form.Label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#12201B' }}>Full Name *</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="e.g. Ramesh Shrestha"
+                value={newUserForm.name}
+                onChange={(e) => setNewUserForm({ ...newUserForm, name: e.target.value })}
+                required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#12201B' }}>Email Address *</Form.Label>
+              <Form.Control
+                type="email"
+                placeholder="user@example.com"
+                value={newUserForm.email}
+                onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
+                required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#12201B' }}>
+                Phone Number (Nepal Mobile) *
+              </Form.Label>
+              <Form.Control
+                type="tel"
+                placeholder="98XXXXXXXX or 97XXXXXXXX"
+                value={newUserForm.phone}
+                onChange={(e) => setNewUserForm({ ...newUserForm, phone: e.target.value })}
+                required
+              />
+              <Form.Text className="text-muted" style={{ fontSize: '0.75rem' }}>
+                Must be a valid 10-digit number (98/97). Each user must have a unique phone number.
+              </Form.Text>
+            </Form.Group>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#12201B' }}>Role *</Form.Label>
+                  <Form.Select
+                    value={newUserForm.role}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
+                  >
+                    <option value="Donor">Donor</option>
+                    <option value="Receiver">Receiver / NGO</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#12201B' }}>Location / City</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="Kathmandu, Nepal"
+                    value={newUserForm.location}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, location: e.target.value })}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+            {newUserForm.role === 'Receiver' && (
+              <Form.Group className="mb-3">
+                <Form.Label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#12201B' }}>Organization Name</Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="e.g. Kathmandu Care Foundation"
+                  value={newUserForm.organization}
+                  onChange={(e) => setNewUserForm({ ...newUserForm, organization: e.target.value })}
+                />
+              </Form.Group>
+            )}
+            <Form.Group className="mb-2">
+              <Form.Label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#12201B' }}>Password *</Form.Label>
+              <Form.Control
+                type="password"
+                placeholder="Minimum 6 characters"
+                value={newUserForm.password}
+                onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
+                required
+              />
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer style={{ borderTop: '1px solid #E6ECE8', background: '#F7F8F6' }}>
+            <Button variant="outline-secondary" onClick={() => setShowCreateModal(false)} disabled={isSubmittingUser}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmittingUser}
+              style={{ backgroundColor: '#173F35', borderColor: '#173F35' }}
+            >
+              {isSubmittingUser ? 'Creating...' : 'Create User'}
+            </Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
 
       {/* Confirm Action Modal */}
       <ConfirmModal

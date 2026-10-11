@@ -10,15 +10,29 @@ const isValidEmail = (email) => {
 };
 
 /**
- * Validates phone numbers (supports Nepal 98/97 mobile, landline, and international formats)
+ * Extracts clean 10 phone digits, stripping country code 977 and non-digits
+ */
+const extractPhoneDigits = (raw) => {
+  if (!raw) return '';
+  let digits = String(raw).replace(/\D/g, '');
+  if (digits.startsWith('977') && digits.length > 3) {
+    digits = digits.slice(3);
+  }
+  return digits.slice(0, 10);
+};
+
+/**
+ * Validates phone numbers (must be exactly 10-digit mobile starting with 98 or 97, no letters)
  */
 const isValidPhone = (phone) => {
   if (!phone || typeof phone !== 'string') return false;
-  const cleaned = phone.replace(/[\s\-\(\)]/g, '');
-  // Nepal: 98XXXXXXXX, 97XXXXXXXX, +97798XXXXXXXX, +97797XXXXXXXX, 01XXXXXXX
-  // International: +XXXXXXXXXXXX (7-15 digits)
-  const phoneRegex = /^(?:\+?977|0)?(98\d{8}|97\d{8}|01\d{7})$|^\+?[1-9]\d{7,14}$/;
-  return phoneRegex.test(cleaned);
+  if (/[a-zA-Z]/.test(phone)) return false;
+  const digits = extractPhoneDigits(phone);
+  return digits.length === 10 && (digits.startsWith('98') || digits.startsWith('97'));
+};
+
+const normalizePhone = (phone) => {
+  return extractPhoneDigits(phone);
 };
 
 /**
@@ -33,4 +47,6 @@ module.exports = {
   isValidEmail,
   isValidPhone,
   isValidPassword,
+  extractPhoneDigits,
+  normalizePhone,
 };

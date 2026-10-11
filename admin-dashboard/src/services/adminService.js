@@ -299,7 +299,7 @@ export const syncUsersFromBackend = async () => {
           _id: u._id,
           name: u.name,
           email: u.email,
-          phone: (u.phone && u.phone !== '+977 9841234567') ? u.phone : (u.phone || ''),
+          phone: u.phone || '',
           role: u.role,
           orgName: u.orgName || u.organization || u.name,
           location: u.location || 'Kathmandu',
@@ -681,6 +681,67 @@ export const deleteUser = (userId) => {
     headers: getAuthHeaders(),
   }).catch(() => {});
   notifyListeners();
+};
+
+export const createUser = async (userData) => {
+  const { name, email, phone, role, password, organization, location } = userData;
+  const cleanPhone = (phone || '').replace(/\D/g, '').slice(-10);
+
+  // Check email and phone uniqueness in local state
+  if (usersState.some((u) => (u.email || '').toLowerCase() === (email || '').toLowerCase())) {
+    throw new Error('User with this email already exists.');
+  }
+  if (cleanPhone && usersState.some((u) => (u.phone || '').replace(/\D/g, '').slice(-10) === cleanPhone)) {
+    throw new Error('This phone number is already registered to another account. Each user must have a unique phone number.');
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        email,
+        phone: cleanPhone || phone,
+        role: role || 'donor',
+        password: password || 'password123',
+        organization: organization || name,
+        location: location || 'Kathmandu, Nepal',
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || 'Failed to create user');
+    }
+    await syncUsersFromBackend();
+    return data;
+  } catch (err) {
+    if (err.message && (err.message.includes('already exists') || err.message.includes('already registered'))) {
+      throw err;
+    }
+    const newUser = {
+      id: `USR-${Date.now().toString().slice(-4)}`,
+      name,
+      email,
+      phone: cleanPhone || phone,
+      role: role || 'donor',
+      orgName: organization || name,
+      location: location || 'Kathmandu, Nepal',
+      joinedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+      verificationStatus: role === 'ngo' ? 'pending' : 'verified',
+      status: 'Active',
+      avatarText: (name && name[0] ? name[0] : 'U').toUpperCase(),
+      totalDonations: 0,
+      completedDonations: 0,
+      activeDonations: 0,
+      totalRequests: 0,
+      completedPickups: 0,
+      docs: [],
+    };
+    usersState.unshift(newUser);
+    notifyListeners();
+    return newUser;
+  }
 };
 
 export const updateDonationStatus = async (donationId, newStatus) => {

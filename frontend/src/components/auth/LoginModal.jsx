@@ -13,7 +13,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { registerAccount, findAccount } from "../../data/accountsStore";
 import RoleSelector from "./RoleSelector";
-import { isValidEmail } from "../../utils/validation";
+import { isValidEmail, isValidPhone } from "../../utils/validation";
 
 /* Animations */
 const fadeIn = keyframes`
@@ -493,6 +493,7 @@ export const LoginModal = () => {
 
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
@@ -556,6 +557,18 @@ export const LoginModal = () => {
       return;
     }
 
+    if (isSignUp && !phone.trim()) {
+      setErrorMessage("Please enter your phone number.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (isSignUp && !isValidPhone(phone.trim())) {
+      setErrorMessage("Please enter a valid 10-digit mobile number starting with 98 or 97.");
+      setIsLoading(false);
+      return;
+    }
+
     if (!password.trim()) {
       setErrorMessage("Please enter your password.");
       setIsLoading(false);
@@ -575,6 +588,7 @@ export const LoginModal = () => {
           organization: name.trim(),
           orgName: name.trim(),
           email: email.trim(),
+          phone: phone.trim(),
           password: password,
           role: selectedRole,
         });
@@ -584,12 +598,13 @@ export const LoginModal = () => {
             name: name.trim(),
             organization: name.trim(),
             identifier: email.trim(),
+            phone: phone.trim(),
             password: password,
             role: selectedRole,
           });
           login(account);
         } catch (localErr) {
-          setErrorMessage(backendErr.message || "An account with this email already exists.");
+          setErrorMessage(backendErr.message || localErr.message || "An account with this email or phone number already exists.");
         }
       } finally {
         setIsLoading(false);
@@ -754,6 +769,23 @@ export const LoginModal = () => {
               />
             </div>
           </FormGroup>
+
+          {isSignUp && (
+            <FormGroup $hasError={Boolean(errorMessage && errorMessage.toLowerCase().includes("phone"))}>
+              <label htmlFor="auth-phone">Phone Number (Mobile)</label>
+              <div className="input-wrap">
+                <input
+                  id="auth-phone"
+                  type="tel"
+                  placeholder="e.g. 98XXXXXXXX or 97XXXXXXXX"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  autoComplete="tel"
+                  required
+                />
+              </div>
+            </FormGroup>
+          )}
 
           <FormGroup
             $hasToggle
