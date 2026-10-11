@@ -30,6 +30,7 @@ import {
   updateRequestStatus,
   subscribeToAdminService,
   syncAllFromBackend,
+  syncRequestsFromBackend,
   formatToNepaliTime
 } from '../../services/adminService';
 
@@ -188,6 +189,7 @@ const RequestManagement = () => {
   const [requests, setRequests] = useState(getRequests());
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [isLoading, setIsLoading] = useState(getRequests().length === 0);
 
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [viewingRequest, setViewingRequest] = useState(null);
@@ -196,21 +198,39 @@ const RequestManagement = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
-    syncAllFromBackend();
+    let isMounted = true;
+    if (getRequests().length === 0) {
+      setIsLoading(true);
+    }
+
+    syncRequestsFromBackend().finally(() => {
+      if (isMounted) setIsLoading(false);
+    });
+
     const unsub = subscribeToAdminService(() => {
+      if (!isMounted) return;
       const updated = getRequests();
       setRequests(updated);
-      if (viewingRequest) {
-        const current = updated.find(r => r.id === viewingRequest.id || (r._id && r._id === (viewingRequest._id || viewingRequest.id)));
-        if (current) setViewingRequest(current);
-      }
+      setIsLoading(false);
     });
-    return unsub;
-  }, [viewingRequest]);
+
+    return () => {
+      isMounted = false;
+      unsub();
+    };
+  }, []);
+
+  // Keep viewingRequest updated when requests change
+  useEffect(() => {
+    if (viewingRequest) {
+      const current = requests.find(r => r.id === viewingRequest.id || (r._id && r._id === (viewingRequest._id || viewingRequest.id)));
+      if (current) setViewingRequest(current);
+    }
+  }, [requests]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await syncAllFromBackend();
+    await syncRequestsFromBackend();
     setIsRefreshing(false);
   };
 
@@ -301,7 +321,9 @@ const RequestManagement = () => {
             <div>
               <h2 style={{ fontWeight: 700, color: '#12201B', margin: 0, fontSize: '1.4rem' }} className="d-flex align-items-center gap-2">
                 Food Request Details
-                <span style={{ fontSize: '0.86rem', color: '#66736D', fontWeight: 500 }}>#{req.id}</span>
+                <span style={{ fontSize: '0.86rem', color: '#66736D', fontWeight: 500 }}>
+                  #{(req.id || req._id || '').length > 8 ? `REQ-${(req.id || req._id).slice(-5).toUpperCase()}` : (req.id || 'REQ-000')}
+                </span>
               </h2>
             </div>
           </div>
@@ -747,15 +769,23 @@ const RequestManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredRequests.length > 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-4 text-muted">
+                    <div className="spinner-border spinner-border-sm text-success me-2" role="status" />
+                    Loading food requests from server...
+                  </td>
+                </tr>
+              ) : filteredRequests.length > 0 ? (
                 filteredRequests.map(req => {
                   const sLower = (req.status || '').toLowerCase();
                   const isPending = sLower.includes('pending');
+                  const displayId = (req.id || req._id || '').length > 8 ? `REQ-${(req.id || req._id).slice(-5).toUpperCase()}` : (req.id || 'REQ-000');
 
                   return (
                     <tr key={req.id}>
                       <td>
-                        <strong style={{ color: '#185C4A' }}>#{req.id}</strong>
+                        <strong style={{ color: '#185C4A' }}>#{displayId}</strong>
                       </td>
                       <td>
                         <strong style={{ color: '#12201B' }}>{req.receiverName}</strong>
@@ -819,7 +849,7 @@ const RequestManagement = () => {
         show={showConfirmModal}
         onHide={() => setShowConfirmModal(false)}
         title={`Confirm Request ${targetStatus}`}
-        message={`Are you sure you want to mark Request #${selectedRequest?.id} as ${targetStatus}?`}
+        message={`Are you sure you want to mark Request #${(selectedRequest?.id || selectedRequest?._id || '').length > 8 ? `REQ-${(selectedRequest.id || selectedRequest._id).slice(-5).toUpperCase()}` : (selectedRequest?.id || '')} as ${targetStatus}?`}
         confirmText={`Confirm ${targetStatus}`}
         confirmVariant={targetStatus.includes('Approved') ? 'success' : 'danger'}
         onConfirm={handleConfirmStatusChange}

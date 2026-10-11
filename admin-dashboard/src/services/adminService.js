@@ -112,31 +112,85 @@ export const subscribeToAdminService = (listener) => {
 };
 
 // ==========================================
-// 0. ASYNC INITIAL BACKEND SYNC
+// 0. ASYNC INITIAL BACKEND SYNC (MODULAR & PARALLEL)
 // ==========================================
-export const syncAllFromBackend = async () => {
+
+export const syncProfileFromBackend = async () => {
+  const token = currentAdminSession?.token || (typeof localStorage !== 'undefined' ? localStorage.getItem('annshare_admin_token') : null);
+  if (!token) return;
   try {
-    // 0. Fetch logged-in Admin Profile from DB
-    const token = currentAdminSession?.token || localStorage.getItem('annshare_admin_token');
-    if (token) {
-      const meRes = await fetch(`${API_BASE}/auth/me`, { headers: getAuthHeaders() }).catch(() => null);
-      if (meRes && meRes.ok) {
-        const meData = await meRes.json();
-        if (currentAdminSession) {
-          currentAdminSession.user = {
-            ...currentAdminSession.user,
-            id: meData.id || meData._id || currentAdminSession.user.id,
-            name: meData.name || currentAdminSession.user.name,
-            email: meData.email || currentAdminSession.user.email,
-            phone: meData.phone !== undefined ? meData.phone : (currentAdminSession.user.phone || ''),
-            organization: meData.organization || meData.orgName || currentAdminSession.user.organization,
-          };
-          localStorage.setItem('annshare_admin_session', JSON.stringify(currentAdminSession));
-        }
+    const meRes = await fetch(`${API_BASE}/auth/me`, { headers: getAuthHeaders() }).catch(() => null);
+    if (meRes && meRes.ok) {
+      const meData = await meRes.json();
+      if (currentAdminSession) {
+        currentAdminSession.user = {
+          ...currentAdminSession.user,
+          id: meData.id || meData._id || currentAdminSession.user.id,
+          name: meData.name || currentAdminSession.user.name,
+          email: meData.email || currentAdminSession.user.email,
+          phone: meData.phone !== undefined ? meData.phone : (currentAdminSession.user.phone || ''),
+          organization: meData.organization || meData.orgName || currentAdminSession.user.organization,
+        };
+        localStorage.setItem('annshare_admin_session', JSON.stringify(currentAdminSession));
+        notifyListeners();
       }
     }
+  } catch (e) {}
+};
 
-    // 1. Fetch Users
+export const syncRequestsFromBackend = async () => {
+  try {
+    const reqRes = await fetch(`${API_BASE}/requests`, { headers: getAuthHeaders() }).catch(() => null);
+    if (reqRes && reqRes.ok) {
+      const reqData = await reqRes.json();
+      if (Array.isArray(reqData)) {
+        requestsState = reqData.map((r) => {
+          let cleanedNgoPhone = r.ngoPhone || '';
+          if (!cleanedNgoPhone && r.contact) {
+            const match = r.contact.match(/\+?\d[\d\s-]{8,}/);
+            cleanedNgoPhone = match ? match[0].trim() : r.contact;
+          }
+          if (cleanedNgoPhone === '+977 984-1234567' || cleanedNgoPhone === '+977 9841234567') {
+            cleanedNgoPhone = '';
+          }
+
+          let cleanedDonorPhone = r.donorPhone || '';
+          if (cleanedDonorPhone === '+977 980-1234567' || cleanedDonorPhone === '+977 9801234567') {
+            cleanedDonorPhone = '';
+          }
+
+          return {
+            id: r.id || r._id,
+            _id: r._id,
+            receiverName: r.receiverName || r.ngoName || 'Community Shelter',
+            receiverId: r.receiverId || r.ngoId || '',
+            foodName: r.foodName || r.foodTitle || 'Requested Food',
+            foodTitle: r.foodTitle || r.foodName || 'Requested Food',
+            donationId: r.donationId || r.listingId || '',
+            donorName: r.donorName || 'Food Partner',
+            donorPhone: cleanedDonorPhone,
+            ngoPhone: cleanedNgoPhone,
+            requestedQuantity: r.requestedQuantity || r.portions || '1 batch',
+            requestDate: r.createdAt ? formatToNepaliTime(r.createdAt) : formatToNepaliTime(r.requestDate || r.requestedAt || 'Today'),
+            status: r.status || 'Pending Admin Approval',
+            reason: r.reason || 'Community food distribution',
+            pickupWindow: r.pickupWindow || '',
+            location: r.location || '',
+            image: formatImageUrl(r.image || '/food.png'),
+          };
+        });
+        notifyListeners();
+        return requestsState;
+      }
+    }
+  } catch (err) {
+    console.warn("syncRequestsFromBackend notice:", err.message);
+  }
+  return requestsState;
+};
+
+export const syncUsersFromBackend = async () => {
+  try {
     const usersRes = await fetch(`${API_BASE}/auth/users`, { headers: getAuthHeaders() }).catch(() => null);
     if (usersRes && usersRes.ok) {
       const usersData = await usersRes.json();
@@ -161,10 +215,14 @@ export const syncAllFromBackend = async () => {
           completedPickups: u.completedPickups || 0,
           docs: u.docs || [],
         }));
+        notifyListeners();
       }
     }
+  } catch (e) {}
+};
 
-    // 2. Fetch Donations / Listings
+export const syncListingsFromBackend = async () => {
+  try {
     const listingsRes = await fetch(`${API_BASE}/listings`, { headers: getAuthHeaders() }).catch(() => null);
     if (listingsRes && listingsRes.ok) {
       const listingsData = await listingsRes.json();
@@ -187,33 +245,14 @@ export const syncAllFromBackend = async () => {
           claimedBy: d.claimedBy || null,
           image: formatImageUrl(d.image || (d.images && d.images[0]) || '/food.png'),
         }));
+        notifyListeners();
       }
     }
+  } catch (e) {}
+};
 
-    // 3. Fetch Requests
-    const reqRes = await fetch(`${API_BASE}/requests`, { headers: getAuthHeaders() }).catch(() => null);
-    if (reqRes && reqRes.ok) {
-      const reqData = await reqRes.json();
-      if (Array.isArray(reqData) && reqData.length > 0) {
-        requestsState = reqData.map((r) => ({
-          id: r.id || r._id,
-          _id: r._id,
-          receiverName: r.receiverName || r.ngoName || 'Community Shelter',
-          receiverId: r.receiverId || r.ngoId || '',
-          foodName: r.foodName || r.foodTitle || 'Requested Food',
-          donationId: r.donationId || r.listingId || '',
-          donorName: r.donorName || 'Food Partner',
-          donorPhone: r.donorPhone || '+977 980-1234567',
-          ngoPhone: r.ngoPhone || r.contact || '+977 984-1234567',
-          requestedQuantity: r.requestedQuantity || r.portions || '1 batch',
-          requestDate: r.createdAt ? formatToNepaliTime(r.createdAt) : formatToNepaliTime(r.requestDate || r.requestedAt || 'Today'),
-          status: r.status || 'Pending Admin Approval',
-          reason: r.reason || 'Community food distribution',
-        }));
-      }
-    }
-
-    // 4. Fetch Categories
+export const syncCategoriesFromBackend = async () => {
+  try {
     const catRes = await fetch(`${API_BASE}/categories`, { headers: getAuthHeaders() }).catch(() => null);
     if (catRes && catRes.ok) {
       const catData = await catRes.json();
@@ -229,10 +268,14 @@ export const syncAllFromBackend = async () => {
           itemCount: c.itemCount || 0,
           status: c.status || 'Active',
         }));
+        notifyListeners();
       }
     }
+  } catch (e) {}
+};
 
-    // 5. Fetch Feedback / Complaints
+export const syncFeedbackFromBackend = async () => {
+  try {
     const feedRes = await fetch(`${API_BASE}/feedback`, { headers: getAuthHeaders() }).catch(() => null);
     if (feedRes && feedRes.ok) {
       const feedData = await feedRes.json();
@@ -256,11 +299,18 @@ export const syncAllFromBackend = async () => {
           status: f.status || 'Open',
           response: f.response || '',
         }));
+        notifyListeners();
       }
     }
+  } catch (e) {}
+};
 
-    // 6. Fetch Blogs & FAQs
-    const blogRes = await fetch(`${API_BASE}/blogs`, { headers: getAuthHeaders() }).catch(() => null);
+export const syncBlogsAndFaqsFromBackend = async () => {
+  try {
+    const [blogRes, faqRes] = await Promise.all([
+      fetch(`${API_BASE}/blogs`, { headers: getAuthHeaders() }).catch(() => null),
+      fetch(`${API_BASE}/faqs`, { headers: getAuthHeaders() }).catch(() => null),
+    ]);
     if (blogRes && blogRes.ok) {
       const blogData = await blogRes.json();
       if (Array.isArray(blogData) && blogData.length > 0) {
@@ -283,8 +333,6 @@ export const syncAllFromBackend = async () => {
         }));
       }
     }
-
-    const faqRes = await fetch(`${API_BASE}/faqs`, { headers: getAuthHeaders() }).catch(() => null);
     if (faqRes && faqRes.ok) {
       const faqData = await faqRes.json();
       if (Array.isArray(faqData) && faqData.length > 0) {
@@ -299,15 +347,23 @@ export const syncAllFromBackend = async () => {
         }));
       }
     }
+    notifyListeners();
+  } catch (e) {}
+};
 
-    // 7. Fetch Stats
+export const syncStatsFromBackend = async () => {
+  try {
     const statsRes = await fetch(`${API_BASE}/stats/summary`, { headers: getAuthHeaders() }).catch(() => null);
     if (statsRes && statsRes.ok) {
       const statsData = await statsRes.json();
       dashboardStatsState = { ...dashboardStatsState, ...statsData };
+      notifyListeners();
     }
+  } catch (e) {}
+};
 
-    // 8. Fetch Notifications
+export const syncNotificationsFromBackend = async () => {
+  try {
     const notifRes = await fetch(`${API_BASE}/notifications?role=admin`, { headers: getAuthHeaders() }).catch(() => null);
     if (notifRes && notifRes.ok) {
       const notifData = await notifRes.json();
@@ -321,10 +377,25 @@ export const syncAllFromBackend = async () => {
           read: n.read || false,
           linkTab: n.linkTab || 'Dashboard',
         }));
+        notifyListeners();
       }
     }
+  } catch (e) {}
+};
 
-    notifyListeners();
+export const syncAllFromBackend = async () => {
+  try {
+    await syncProfileFromBackend();
+    await Promise.allSettled([
+      syncRequestsFromBackend(),
+      syncUsersFromBackend(),
+      syncListingsFromBackend(),
+      syncCategoriesFromBackend(),
+      syncFeedbackFromBackend(),
+      syncBlogsAndFaqsFromBackend(),
+      syncStatsFromBackend(),
+      syncNotificationsFromBackend(),
+    ]);
   } catch (err) {
     console.warn("Backend sync notice:", err.message);
   }

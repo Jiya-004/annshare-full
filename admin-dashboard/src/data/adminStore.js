@@ -201,44 +201,7 @@ export const initialListingsStore = [
   }
 ];
 
-export const initialRequestsStore = [
-  {
-    id: "REQ-901",
-    receiverName: "Mercy Community Food Pantry",
-    receiverId: "USR-102",
-    foodName: "50 Hot Prepared Meals Boxes",
-    donationId: "DON-501",
-    donorName: "Green Kitchen Restaurant",
-    requestedQuantity: "50 boxes",
-    requestDate: "Aug 31, 2026 11:00 AM",
-    status: "Pending",
-    reason: "Required for evening hot meal distribution to 60 families."
-  },
-  {
-    id: "REQ-902",
-    receiverName: "St. Jude Youth Shelter",
-    receiverId: "USR-103",
-    foodName: "Fresh Bakery Surplus (Bread & Pastries)",
-    donationId: "DON-502",
-    donorName: "Central Bistro & Bakery",
-    requestedQuantity: "25 bags",
-    requestDate: "Aug 31, 2026 09:30 AM",
-    status: "Confirmed",
-    reason: "Breakfast pastries for youth residents."
-  },
-  {
-    id: "REQ-903",
-    receiverName: "Mercy Community Food Pantry",
-    receiverId: "USR-102",
-    foodName: "Fresh Vegetables & Fruits Crate",
-    donationId: "DON-503",
-    donorName: "Fresh Harvest Market",
-    requestedQuantity: "45 kg",
-    requestDate: "Aug 30, 2026 04:30 PM",
-    status: "Completed",
-    reason: "Weekly pantry hamper program."
-  }
-];
+export const initialRequestsStore = [];
 
 export const initialSchedulesStore = [
   {
