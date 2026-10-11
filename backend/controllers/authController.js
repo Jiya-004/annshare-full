@@ -127,13 +127,6 @@ const loginUser = async (req, res) => {
         }
       }
 
-      if (user.status === 'Suspended') {
-        return res.status(403).json({
-          message: 'Your account has been suspended by the administrator. Please contact support.',
-          isSuspended: true,
-        });
-      }
-
       res.status(200).json({
         _id: user._id,
         id: user._id,
@@ -165,11 +158,7 @@ const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
     if (!user) {
-      return res.status(401).json({ message: 'Your account has been deleted by an administrator. Session terminated.', isDeleted: true });
-    }
-    const userStatus = (user.status || '').toLowerCase();
-    if (userStatus === 'suspended' || userStatus === 'inactive') {
-      return res.status(403).json({ message: 'Your account has been suspended by an administrator. Access is revoked.', isSuspended: true });
+      return res.status(404).json({ message: 'User not found' });
     }
     res.status(200).json(user);
   } catch (err) {

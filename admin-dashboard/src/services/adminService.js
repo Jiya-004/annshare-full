@@ -634,10 +634,6 @@ export const markAllNotificationsRead = () => {
 // ==========================================
 
 export const updateUserStatus = (userId, newStatus, newVerification) => {
-  const targetUser = usersState.find((u) => u.id === userId || u._id === userId);
-  const realId = targetUser?._id || targetUser?.id || userId;
-  const email = targetUser?.email;
-
   usersState = usersState.map((u) => {
     if (u.id === userId || u._id === userId) {
       return {
@@ -649,19 +645,16 @@ export const updateUserStatus = (userId, newStatus, newVerification) => {
     return u;
   });
 
-  fetch(`${API_BASE}/auth/users/${realId}/status`, {
+  fetch(`${API_BASE}/auth/users/${userId}/status`, {
     method: 'PUT',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ status: newStatus, verificationStatus: newVerification, email }),
+    body: JSON.stringify({ status: newStatus, verificationStatus: newVerification }),
   }).catch(() => {});
 
   notifyListeners();
 };
 
 export const verifyNGO = (ngoId) => {
-  const targetUser = usersState.find((u) => u.id === ngoId || u._id === ngoId || u.id === `USR-${ngoId}`);
-  const realId = targetUser?._id || targetUser?.id || ngoId;
-
   usersState = usersState.map((u) => {
     if (u.id === ngoId || u._id === ngoId || u.id === `USR-${ngoId}`) {
       return {
@@ -673,7 +666,7 @@ export const verifyNGO = (ngoId) => {
     return u;
   });
 
-  fetch(`${API_BASE}/auth/users/${realId}/verify`, {
+  fetch(`${API_BASE}/auth/users/${ngoId}/verify`, {
     method: 'PUT',
     headers: getAuthHeaders(),
   }).catch(() => {});
@@ -682,12 +675,8 @@ export const verifyNGO = (ngoId) => {
 };
 
 export const deleteUser = (userId) => {
-  const targetUser = usersState.find((u) => u.id === userId || u._id === userId);
-  const realId = targetUser?._id || targetUser?.id || userId;
-  const email = targetUser?.email;
-
   usersState = usersState.filter((u) => u.id !== userId && u._id !== userId);
-  fetch(`${API_BASE}/auth/users/${realId}${email ? `?email=${encodeURIComponent(email)}` : ''}`, {
+  fetch(`${API_BASE}/auth/users/${userId}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   }).catch(() => {});

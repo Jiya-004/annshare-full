@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Request = require('../models/Request');
 const Listing = require('../models/listing');
 const { sendNotification } = require('./notificationController');
@@ -163,8 +164,6 @@ const createRequest = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
-
-const mongoose = require('mongoose');
 
 // PATCH update request status
 const updateRequestStatus = async (req, res) => {

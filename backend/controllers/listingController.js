@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const mongoose = require('mongoose');
 const Listing = require('../models/listing');
 const { sendNotification } = require('./notificationController');
 
@@ -284,7 +285,24 @@ const updateListingStatus = async (req, res) => {
 // DELETE a listing
 const deleteListing = async (req, res) => {
   try {
-    await Listing.findByIdAndDelete(req.params.id);
+    const { id } = req.params;
+    if (!id || id === 'undefined' || id === '[object Object]') {
+      return res.status(400).json({ message: 'Valid listing ID is required' });
+    }
+
+    let deleted = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      deleted = await Listing.findByIdAndDelete(id);
+    }
+    if (!deleted) {
+      deleted = await Listing.findOneAndDelete({
+        $or: [
+          ...(mongoose.Types.ObjectId.isValid(id) ? [{ _id: id }] : []),
+          { id: id }
+        ]
+      });
+    }
+
     res.status(200).json({ message: 'Listing deleted successfully' });
   } catch (err) {
     res.status(400).json({ message: err.message });
