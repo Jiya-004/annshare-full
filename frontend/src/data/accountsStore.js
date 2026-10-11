@@ -1,3 +1,5 @@
+import { isValidPhone, extractPhoneDigits } from "../utils/validation";
+
 const STORAGE_KEY = "annshare_accounts";
 
 /**
@@ -77,7 +79,6 @@ export function registerAccount({ name, organization, identifier, phone, passwor
   const cleanIdentifier = (identifier || "").trim();
   const cleanIdLower = cleanIdentifier.toLowerCase();
   const rawPhone = (phone || "").trim();
-  const cleanPhone = rawPhone.replace(/\D/g, "").slice(-10);
 
   const existing = accounts.find(
     (acc) => (acc.identifier || "").trim().toLowerCase() === cleanIdLower
@@ -87,9 +88,13 @@ export function registerAccount({ name, organization, identifier, phone, passwor
     throw new Error("An account with this email already exists.");
   }
 
-  if (cleanPhone) {
+  if (rawPhone) {
+    if (!isValidPhone(rawPhone)) {
+      throw new Error("Please enter a valid 10-digit mobile number starting with 98 or 97.");
+    }
+    const cleanPhone = extractPhoneDigits(rawPhone);
     const phoneExisting = accounts.find((acc) => {
-      const existingDigits = (acc.phone || "").replace(/\D/g, "").slice(-10);
+      const existingDigits = extractPhoneDigits(acc.phone || "");
       return existingDigits === cleanPhone;
     });
     if (phoneExisting) {
@@ -99,6 +104,7 @@ export function registerAccount({ name, organization, identifier, phone, passwor
     }
   }
 
+  const cleanPhone = rawPhone ? extractPhoneDigits(rawPhone) : "";
   const normalizedRole = role === "ngos" || role === "ngo" ? "ngo" : "donor";
   const orgName = (organization || name || "").trim();
   const userName = (name || "").trim();

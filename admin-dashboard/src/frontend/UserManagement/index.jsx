@@ -1185,9 +1185,13 @@ const UserManagement = () => {
               </Form.Label>
               <Form.Control
                 type="tel"
+                maxLength={10}
                 placeholder="98XXXXXXXX or 97XXXXXXXX"
                 value={newUserForm.phone}
-                onChange={(e) => setNewUserForm({ ...newUserForm, phone: e.target.value })}
+                onChange={(e) => {
+                  const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  setNewUserForm({ ...newUserForm, phone: cleaned });
+                }}
                 required
               />
               <Form.Text className="text-muted" style={{ fontSize: '0.75rem' }}>

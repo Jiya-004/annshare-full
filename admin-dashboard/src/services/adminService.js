@@ -685,13 +685,24 @@ export const deleteUser = (userId) => {
 
 export const createUser = async (userData) => {
   const { name, email, phone, role, password, organization, location } = userData;
-  const cleanPhone = (phone || '').replace(/\D/g, '').slice(-10);
+  let cleanPhone = (phone || '').replace(/\D/g, '');
+  if (cleanPhone.startsWith('977') && cleanPhone.length >= 13) {
+    cleanPhone = cleanPhone.slice(3);
+  }
+
+  if (!cleanPhone || cleanPhone.length !== 10 || !/^(98|97)/.test(cleanPhone)) {
+    throw new Error('Please enter a valid 10-digit mobile number starting with 98 or 97.');
+  }
 
   // Check email and phone uniqueness in local state
   if (usersState.some((u) => (u.email || '').toLowerCase() === (email || '').toLowerCase())) {
     throw new Error('User with this email already exists.');
   }
-  if (cleanPhone && usersState.some((u) => (u.phone || '').replace(/\D/g, '').slice(-10) === cleanPhone)) {
+  if (usersState.some((u) => {
+    let uPhone = (u.phone || '').replace(/\D/g, '');
+    if (uPhone.startsWith('977') && uPhone.length >= 13) uPhone = uPhone.slice(3);
+    return uPhone === cleanPhone;
+  })) {
     throw new Error('This phone number is already registered to another account. Each user must have a unique phone number.');
   }
 

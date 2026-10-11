@@ -18,15 +18,15 @@ export const isGmail = (email) => {
 };
 
 /**
- * Strictly extracts digits from phone input, stripping country code 977 and any letters/words
+ * Strictly extracts digits from phone input, stripping country code 977 only when provided with full number
  */
 export const extractPhoneDigits = (raw) => {
   if (!raw) return "";
   let digits = String(raw).replace(/\D/g, "");
-  if (digits.startsWith("977") && digits.length > 3) {
+  if (digits.startsWith("977") && digits.length >= 13) {
     digits = digits.slice(3);
   }
-  return digits.slice(0, 10);
+  return digits;
 };
 
 /**
@@ -37,8 +37,8 @@ export const isValidPhone = (phone) => {
   // Reject any string containing letters or words
   if (/[a-zA-Z]/.test(phone)) return false;
   const digits = extractPhoneDigits(phone);
-  // Must be exactly 10 digits starting with 98 or 97
-  return digits.length === 10 && (digits.startsWith("98") || digits.startsWith("97"));
+  // Must be strictly 10 digits starting with 98 or 97
+  return /^(98|97)\d{8}$/.test(digits);
 };
 
 /**

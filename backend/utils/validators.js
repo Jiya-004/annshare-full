@@ -10,25 +10,25 @@ const isValidEmail = (email) => {
 };
 
 /**
- * Extracts clean 10 phone digits, stripping country code 977 and non-digits
+ * Extracts clean phone digits, stripping country code 977 only when provided with full number
  */
 const extractPhoneDigits = (raw) => {
   if (!raw) return '';
   let digits = String(raw).replace(/\D/g, '');
-  if (digits.startsWith('977') && digits.length > 3) {
+  if (digits.startsWith('977') && digits.length >= 13) {
     digits = digits.slice(3);
   }
-  return digits.slice(0, 10);
+  return digits;
 };
 
 /**
- * Validates phone numbers (must be exactly 10-digit mobile starting with 98 or 97, no letters)
+ * Validates phone numbers (must be strictly 10-digit mobile starting with 98 or 97, no letters)
  */
 const isValidPhone = (phone) => {
   if (!phone || typeof phone !== 'string') return false;
   if (/[a-zA-Z]/.test(phone)) return false;
   const digits = extractPhoneDigits(phone);
-  return digits.length === 10 && (digits.startsWith('98') || digits.startsWith('97'));
+  return /^(98|97)\d{8}$/.test(digits);
 };
 
 const normalizePhone = (phone) => {

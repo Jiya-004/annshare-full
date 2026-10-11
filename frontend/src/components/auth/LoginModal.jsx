@@ -564,7 +564,14 @@ export const LoginModal = () => {
     }
 
     if (isSignUp && !isValidPhone(phone.trim())) {
-      setErrorMessage("Please enter a valid 10-digit mobile number starting with 98 or 97.");
+      const digits = phone.replace(/\D/g, "");
+      if (digits.length > 10) {
+        setErrorMessage("Phone number cannot be more than 10 digits. Please enter exactly 10 digits.");
+      } else if (digits.length < 10) {
+        setErrorMessage("Phone number is too short. Please enter exactly 10 digits starting with 98 or 97.");
+      } else {
+        setErrorMessage("Please enter a valid 10-digit mobile number starting with 98 or 97.");
+      }
       setIsLoading(false);
       return;
     }
@@ -772,18 +779,51 @@ export const LoginModal = () => {
 
           {isSignUp && (
             <FormGroup $hasError={Boolean(errorMessage && errorMessage.toLowerCase().includes("phone"))}>
-              <label htmlFor="auth-phone">Phone Number (Mobile)</label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "6px" }}>
+                <label htmlFor="auth-phone" style={{ margin: 0 }}>Phone Number (Mobile)</label>
+                {phone.length > 0 && (
+                  <span style={{
+                    fontSize: "0.72rem",
+                    fontWeight: 600,
+                    color: isValidPhone(phone) ? "#185C4A" : (phone.length === 10 ? "#b94a48" : "#66736D")
+                  }}>
+                    {phone.length}/10 digits
+                  </span>
+                )}
+              </div>
               <div className="input-wrap">
                 <input
                   id="auth-phone"
                   type="tel"
+                  maxLength={10}
                   placeholder="e.g. 98XXXXXXXX or 97XXXXXXXX"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    const cleaned = e.target.value.replace(/\D/g, "").slice(0, 10);
+                    setPhone(cleaned);
+                    if (errorMessage && errorMessage.toLowerCase().includes("phone")) {
+                      setErrorMessage("");
+                    }
+                  }}
                   autoComplete="tel"
                   required
                 />
               </div>
+              {phone.length > 0 && phone.length < 10 && (
+                <div style={{ fontSize: "0.74rem", color: "#66736D", marginTop: "4px" }}>
+                  Please enter 10 digits starting with 98 or 97
+                </div>
+              )}
+              {phone.length === 10 && !isValidPhone(phone) && (
+                <div style={{ fontSize: "0.74rem", color: "#b94a48", marginTop: "4px" }}>
+                  Must start with 98 or 97.
+                </div>
+              )}
+              {isValidPhone(phone) && (
+                <div style={{ fontSize: "0.74rem", color: "#185C4A", marginTop: "4px", fontWeight: 500 }}>
+                  ✓ Valid Nepali mobile number
+                </div>
+              )}
             </FormGroup>
           )}
 
