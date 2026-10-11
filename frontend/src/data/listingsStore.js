@@ -67,45 +67,70 @@ export function getCurrentPickupWindow() {
   return `${startTime} – ${endTime}`;
 }
 
+// In-memory cache holding full-fidelity live listings and actual images (bypasses localStorage 5MB quota)
+let inMemoryListingsCache = null;
+
+const PRESET_FALLBACK_IMAGES = [
+  "/food/food1.jpg",
+  "/food/food2.jpg",
+  "/food/food3.jpg",
+  "/food/food4.jpg",
+  "/food/food5.jpg",
+  "/food/food6.jpg",
+  "/food/food7.jpg",
+  "/food/food8.jpg",
+];
+
 /**
- * Retrieve all listings from localStorage / local state.
- * Seeds with LISTINGS_DATA if localStorage is empty.
+ * Retrieve all listings from in-memory cache or localStorage / local state.
+ * Seeds with LISTINGS_DATA if empty.
  */
 export function getListings() {
+  if (Array.isArray(inMemoryListingsCache) && inMemoryListingsCache.length > 0) {
+    return inMemoryListingsCache;
+  }
+
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     let list = [];
     if (!raw) {
       list = [...LISTINGS_DATA];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
       syncListingsFromBackend();
     } else {
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed) || parsed.length === 0) {
         list = [...LISTINGS_DATA];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
         syncListingsFromBackend();
       } else {
         list = parsed;
       }
     }
 
-    // Normalize each listing so category and time always display cleanly
-    return list.map((item) => {
+    // Normalize each listing so category, time, and images always display cleanly
+    const normalized = list.map((item, idx) => {
       const normalizedCat = normalizeCategory(item.category);
       const area = item.area || (item.location ? item.location.split(",")[0].trim() : "Kathmandu");
       const postedTime =
         item.postedTime ||
         (item.createdAt ? formatCurrentTime(item.createdAt) : "2:30 PM");
 
+      const defaultImg = PRESET_FALLBACK_IMAGES[idx % PRESET_FALLBACK_IMAGES.length];
+      const finalImg = item.image || defaultImg;
+      const finalImages = Array.isArray(item.images) && item.images.length > 0 ? item.images : [finalImg];
+
       return {
         ...item,
         category: normalizedCat,
         area,
         postedTime,
+        image: finalImg,
+        images: finalImages,
         pickupTime: item.pickupTime || `Today, ${postedTime}`,
       };
     });
+
+    inMemoryListingsCache = normalized;
+    return normalized;
   } catch (err) {
     console.error("Failed to read listings from localStorage:", err);
     return [...LISTINGS_DATA];
@@ -113,21 +138,26 @@ export function getListings() {
 }
 
 /**
- * Save listings array to localStorage and notify UI components.
+ * Save listings array to in-memory state and localStorage, notifying UI components.
+ * Guarantees in-memory fidelity so real images are NEVER replaced with food1.jpg.
  */
 function saveListings(listings) {
+  // Always update in-memory cache with pristine records and real images
+  inMemoryListingsCache = listings;
+  window.dispatchEvent(new Event("annshare_listings_updated"));
+
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(listings));
-    window.dispatchEvent(new Event("annshare_listings_updated"));
   } catch (err) {
-    console.warn("Storage quota exceeded or error occurred, attempting pruned save:", err);
+    console.warn("Storage quota exceeded for localStorage cache. In-memory cache preserved with real images.", err);
     try {
-      // Fallback: prune heavy base64 strings and keep only safe URLs/placeholders
-      const pruned = listings.map((item) => {
+      // Offline localStorage fallback ONLY: use diverse preset placeholders without mutating inMemoryListingsCache
+      const pruned = listings.map((item, idx) => {
         const isBase64 = (str) => typeof str === "string" && str.startsWith("data:image/");
-        const safeImage = isBase64(item.image) ? "/food/food1.jpg" : item.image;
+        const fallbackImg = PRESET_FALLBACK_IMAGES[idx % PRESET_FALLBACK_IMAGES.length];
+        const safeImage = isBase64(item.image) ? fallbackImg : item.image || fallbackImg;
         const safeImages = Array.isArray(item.images)
-          ? item.images.map((img) => (isBase64(img) ? "/food/food1.jpg" : img))
+          ? item.images.map((img, i) => (isBase64(img) ? PRESET_FALLBACK_IMAGES[(idx + i) % PRESET_FALLBACK_IMAGES.length] : img))
           : [safeImage];
         return {
           ...item,
@@ -136,9 +166,8 @@ function saveListings(listings) {
         };
       });
       localStorage.setItem(STORAGE_KEY, JSON.stringify(pruned));
-      window.dispatchEvent(new Event("annshare_listings_updated"));
     } catch (fallbackErr) {
-      console.error("Critical: Failed to save listings even after image pruning:", fallbackErr);
+      console.warn("Could not save to localStorage even with distinct placeholders:", fallbackErr);
     }
   }
 }
@@ -150,9 +179,13 @@ export async function syncListingsFromBackend() {
   try {
     const backendListings = await api.listings.getAll();
     if (Array.isArray(backendListings) && backendListings.length > 0) {
-      const normalized = backendListings.map((b) => {
+      const normalized = backendListings.map((b, idx) => {
         const cat = normalizeCategory(b.category);
         const postedTime = b.postedDate || (b.createdAt ? formatCurrentTime(b.createdAt) : formatCurrentTime());
+        const defaultImg = PRESET_FALLBACK_IMAGES[idx % PRESET_FALLBACK_IMAGES.length];
+        const itemImage = b.image || (Array.isArray(b.images) && b.images[0]) || defaultImg;
+        const itemImages = Array.isArray(b.images) && b.images.length > 0 ? b.images : [itemImage];
+
         return {
           id: b._id || b.id,
           _id: b._id,
@@ -173,8 +206,8 @@ export async function syncListingsFromBackend() {
           pickupDate: "Today",
           pickupTime: b.pickupWindow || `Today · ${postedTime}`,
           postedTime,
-          image: b.image || "/food/food1.jpg",
-          images: b.images && b.images.length > 0 ? b.images : [b.image || "/food/food1.jpg"],
+          image: itemImage,
+          images: itemImages,
           rating: 5.0,
           reviewsCount: 12,
           status: (b.status || "available").toLowerCase(),
@@ -202,16 +235,19 @@ export async function syncListingsFromBackend() {
         mergedMap.set(String(item.id || item._id), item);
       });
 
-      saveListings(Array.from(mergedMap.values()));
+      const finalMerged = Array.from(mergedMap.values());
+      saveListings(finalMerged);
+      return finalMerged;
     }
   } catch (err) {
     console.warn("Could not sync listings from live backend, using local store:", err.message);
   }
+  return getListings();
 }
 
-// Initial trigger
+// Initial background sync trigger on module load
 if (typeof window !== "undefined") {
-  setTimeout(() => syncListingsFromBackend(), 300);
+  syncListingsFromBackend();
 }
 
 /**

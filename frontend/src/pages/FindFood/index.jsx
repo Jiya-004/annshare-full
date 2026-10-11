@@ -61,7 +61,14 @@ export default function FindFoodPage() {
   const [allListings, setAllListings] = useState(getListings);
 
   useEffect(() => {
-    syncListingsFromBackend();
+    syncListingsFromBackend()
+      .then((synced) => {
+        if (Array.isArray(synced) && synced.length > 0) {
+          setAllListings(synced);
+        }
+      })
+      .catch(() => {});
+
     const handleUpdate = () => {
       setAllListings(getListings());
     };
