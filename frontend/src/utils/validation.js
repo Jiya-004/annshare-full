@@ -30,28 +30,28 @@ export const extractPhoneDigits = (raw) => {
 };
 
 /**
- * Validates phone numbers (strictly 10 digits for Nepali mobile, no letters allowed)
+ * Validates phone numbers (strictly 10 digits for Nepali mobile starting with 98 or 97, no letters/words)
  */
 export const isValidPhone = (phone) => {
   if (!phone || typeof phone !== "string") return false;
   // Reject any string containing letters or words
   if (/[a-zA-Z]/.test(phone)) return false;
-  const cleaned = phone.replace(/[\s\-\(\)]/g, "");
-  const phoneRegex = /^(?:\+?977|0)?(98\d{8}|97\d{8}|01\d{7})$|^\+?[1-9]\d{7,14}$/;
-  return phoneRegex.test(cleaned);
+  const digits = extractPhoneDigits(phone);
+  // Must be exactly 10 digits starting with 98 or 97
+  return digits.length === 10 && (digits.startsWith("98") || digits.startsWith("97"));
 };
 
 /**
- * Formats Nepal phone number for clean consistent display
+ * Formats Nepal phone number for clean consistent display (+977 98XXX-XXXXX)
  */
 export const formatPhoneNumber = (phone) => {
   if (!phone) return "";
-  const cleaned = String(phone).replace(/[\s\-\(\)]/g, "");
-  if (cleaned.startsWith("+977")) return phone;
-  if (/^(98\d{8}|97\d{8})$/.test(cleaned)) {
-    return `+977 ${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+  const digits = extractPhoneDigits(phone);
+  if (digits.length === 10) {
+    return `+977 ${digits.slice(0, 5)}-${digits.slice(5)}`;
   }
-  return phone;
+  const cleaned = String(phone).replace(/[^\d+]/g, "").trim();
+  return cleaned;
 };
 
 /**

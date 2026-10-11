@@ -146,7 +146,7 @@ export const syncAllFromBackend = async () => {
           _id: u._id,
           name: u.name,
           email: u.email,
-          phone: u.phone || '+977 9841234567',
+          phone: (u.phone && u.phone !== '+977 9841234567') ? u.phone : (u.phone || ''),
           role: u.role,
           orgName: u.orgName || u.organization || u.name,
           location: u.location || 'Kathmandu',

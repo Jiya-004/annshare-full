@@ -283,7 +283,7 @@ export default function ReviewSummary({ formData }) {
             Contact Person
           </span>
           <div className="val">{contactName || "Kitchen Manager"}</div>
-          <div className="sub-val">{contactPhone || "+977 980-0000000"}</div>
+          {contactPhone && <div className="sub-val">{contactPhone}</div>}
         </div>
       </div>
 

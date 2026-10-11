@@ -497,7 +497,7 @@ export default function AccountSettings({ role = "donor" }) {
   const [name, setName] = useState(user?.name || (role === "ngo" ? "NGO Partner" : "Donor"));
   const [organization, setOrganization] = useState(user?.organization || "Your Organization");
   const [email, setEmail] = useState(user?.email || "");
-  const [phone, setPhone] = useState(user?.phone || "+977 980-0000000");
+  const [phone, setPhone] = useState(user?.phone || "");
   const [location, setLocation] = useState(user?.location || "Kathmandu, Nepal");
   const [extraDetail, setExtraDetail] = useState(
     role === "ngo" ? "NGO-KTM-2078/5541 (250 meal capacity)" : "FSSAI Food Hygiene Audit Grade A"
@@ -593,7 +593,7 @@ export default function AccountSettings({ role = "donor" }) {
     }
 
     if (phone.trim() && !isValidPhone(phone.trim())) {
-      setProfileAlert({ type: "error", message: "Please enter a valid phone number (e.g. +977 980-1234567 or 9841234567)." });
+      setProfileAlert({ type: "error", message: "Please enter a valid 10-digit mobile number starting with 98 or 97 (e.g. 9841234567, no letters/words allowed)." });
       return;
     }
 
@@ -809,7 +809,7 @@ export default function AccountSettings({ role = "donor" }) {
                       const cleaned = e.target.value.replace(/[^\d+ -]/g, "");
                       setPhone(cleaned);
                     }}
-                    placeholder="+977 980-0000000"
+                    placeholder="+977 98XXX-XXXXX"
                   />
                 </div>
               </FormGroup>

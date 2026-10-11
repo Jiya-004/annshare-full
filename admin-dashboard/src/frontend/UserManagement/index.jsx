@@ -755,7 +755,7 @@ const UserManagement = () => {
                   <FiPhone style={{ color: '#185C4A', flexShrink: 0 }} />
                   <div>
                     <div style={{ fontSize: '0.74rem', color: '#66736D' }}>Phone Number (Nepal)</div>
-                    <strong>{user.phone}</strong>
+                    <strong>{(user.phone && user.phone !== '+977 9841234567') ? user.phone : 'Not provided'}</strong>
                   </div>
                 </div>
 
@@ -972,7 +972,9 @@ const UserManagement = () => {
                     </td>
                     <td>
                       <div style={{ color: '#12201B' }}>{user.email}</div>
-                      <div style={{ fontSize: '0.74rem', color: '#66736D' }}>{user.phone}</div>
+                      {user.phone && user.phone !== '+977 9841234567' && (
+                        <div style={{ fontSize: '0.74rem', color: '#66736D' }}>{user.phone}</div>
+                      )}
                     </td>
                     <td style={{ color: '#66736D' }}>{user.location}</td>
                     <td>
