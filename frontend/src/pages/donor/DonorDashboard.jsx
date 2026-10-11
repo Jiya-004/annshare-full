@@ -1061,8 +1061,16 @@ export const DonorDashboard = () => {
   }, [loadDonorDonations, loadDonorRequests]);
 
   const handleAcceptRequest = async (req) => {
-    const donorPhone = user?.phone || "+977 980-1234567";
-    const donorLocation = user?.location || "Kathmandu";
+    const linkedListing = getListings().find(
+      (l) => String(l.id || l._id) === String(req.listingId || req.donationId)
+    );
+    const donorPhone =
+      (req.donorPhone && req.donorPhone !== "+977 980-1234567")
+        ? req.donorPhone
+        : (linkedListing?.contactPhone && linkedListing.contactPhone !== "+977 980-1234567")
+        ? linkedListing.contactPhone
+        : (user?.phone || req.donorPhone || linkedListing?.contactPhone || "");
+    const donorLocation = user?.location || req.donorLocation || linkedListing?.location || "Kathmandu";
     const targetStatus = "Confirmed";
 
     updateRequestStatus(req.id || req._id, targetStatus, {
@@ -1173,7 +1181,7 @@ export const DonorDashboard = () => {
     const chosenImage = newFood.images && newFood.images.length > 0 ? newFood.images[0] : fallbackImg;
     const chosenImages = newFood.images && newFood.images.length > 0 ? newFood.images : [fallbackImg];
     const pickupWindow = newFood.pickupTime || `Today, ${currentFormattedTime} – ${formatCurrentTime(new Date(now.getTime() + 2.5 * 60 * 60 * 1000))}`;
-    const donorPhone = user?.phone ? formatPhoneNumber(user.phone) : "+977 980-1234567";
+    const donorPhone = user?.phone ? formatPhoneNumber(user.phone) : "";
 
     const newListing = {
       title: newFood.title.trim(),

@@ -236,11 +236,11 @@ export default function DonationPreview({ formData }) {
   } = formData;
 
   const displayImage = images && images.length > 0 ? images[0] : "/food.png";
-  const displayTitle = foodName || "Fresh Cooked Meals";
-  const displayQuantity = `${quantity || 48} ${unit || "portions"}`;
-  const displayBusiness = businessName || "Green Leaf Café";
-  const displayLocation = location || "Thamel, Kathmandu";
-  const displayTime = `Pickup ${pickupDate || "Today"} · ${pickupFromTime || "5:00 PM"} – ${pickupToTime || "7:30 PM"}`;
+  const displayTitle = foodName || "Fresh Food Package";
+  const displayQuantity = quantity ? `${quantity} ${unit || "portions"}` : `e.g. 48 ${unit || "portions"}`;
+  const displayBusiness = businessName || "Your Kitchen / Organization";
+  const displayLocation = location || "Pickup Address";
+  const displayTime = `Pickup ${pickupDate || "Today"} · ${pickupFromTime || "Flexible"} – ${pickupToTime || "Flexible"}`;
 
   return (
     <PreviewContainer>

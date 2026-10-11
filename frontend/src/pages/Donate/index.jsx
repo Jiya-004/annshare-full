@@ -63,22 +63,21 @@ export default function DonatePage() {
 
   // Controlled Form State
   const [formData, setFormData] = useState({
-    foodName: "Fresh Vegetable Rice Meals",
+    foodName: "",
     category: "Prepared Meals",
-    quantity: 48,
+    quantity: "",
     unit: "portions",
-    description:
-      "Freshly prepared vegetable meals packed in hygienic meal containers, ready for immediate redistribution.",
+    description: "",
     condition: "Freshly Prepared",
     images: [],
-    businessName: user?.organization || user?.orgName || user?.name || "Utsha Cafe",
-    location: user?.location || "Thamel, Kathmandu",
+    businessName: user?.organization || user?.orgName || user?.name || "",
+    location: user?.location || "",
     pickupDate: "Today",
     pickupFromTime: initialTimes.from,
     pickupToTime: initialTimes.to,
-    contactName: user?.name || "Utsha",
-    contactPhone: user?.phone || "+977 980-1234567",
-    instructions: "Please collect directly from the back kitchen service entrance.",
+    contactName: user?.name || "",
+    contactPhone: user?.phone || "",
+    instructions: "",
   });
 
   // Keep form synced with user if user updates
@@ -86,10 +85,10 @@ export default function DonatePage() {
     if (user) {
       setFormData((prev) => ({
         ...prev,
-        businessName: user.organization || user.orgName || user.name || prev.businessName,
-        contactName: user.name || prev.contactName,
-        contactPhone: user.phone || prev.contactPhone,
-        location: user.location || prev.location,
+        businessName: prev.businessName || user.organization || user.orgName || user.name || "",
+        contactName: prev.contactName || user.name || "",
+        contactPhone: prev.contactPhone || user.phone || "",
+        location: prev.location || user.location || "",
       }));
     }
   }, [user]);
@@ -143,7 +142,9 @@ export default function DonatePage() {
           const now = new Date();
           const currentFormattedTime = formatCurrentTime(now);
           const fallbackImg = `/food/food${Math.floor(Math.random() * 8) + 1}.jpg`;
-          const formattedPhone = formData.contactPhone ? formatPhoneNumber(formData.contactPhone) : (user?.phone || "+977 980-1234567");
+          const formattedPhone = formData.contactPhone
+            ? formatPhoneNumber(formData.contactPhone)
+            : (user?.phone ? formatPhoneNumber(user.phone) : "");
           const donorOrg = user?.organization || user?.orgName || formData.businessName || user?.name || "Utsha Cafe";
           const donorContact = user?.name || formData.contactName || "Utsha";
           const donorIdentifier = user?.id || user?._id || user?.email || "donor-user";
@@ -191,22 +192,21 @@ export default function DonatePage() {
     setCurrentStep(1);
     const freshTimes = getCurrentTimes();
     setFormData({
-      foodName: "Fresh Vegetable Rice Meals",
+      foodName: "",
       category: "Prepared Meals",
-      quantity: 48,
+      quantity: "",
       unit: "portions",
-      description:
-        "Freshly prepared vegetable meals packed in hygienic meal containers, ready for immediate redistribution.",
+      description: "",
       condition: "Freshly Prepared",
       images: [],
-      businessName: user?.organization || user?.name || "Green Leaf Café",
-      location: user?.location || "Thamel, Kathmandu",
+      businessName: user?.organization || user?.name || "",
+      location: user?.location || "",
       pickupDate: "Today",
       pickupFromTime: freshTimes.from,
       pickupToTime: freshTimes.to,
-      contactName: user?.name || "Ramesh Shrestha",
-      contactPhone: "+977 980-1234567",
-      instructions: "Please collect directly from the back kitchen service entrance.",
+      contactName: user?.name || "",
+      contactPhone: user?.phone || "",
+      instructions: "",
     });
   };
 
@@ -574,10 +574,11 @@ export default function DonatePage() {
                         <input
                           type="tel"
                           value={formData.contactPhone}
-                          onChange={(e) =>
-                            updateField("contactPhone", e.target.value)
-                          }
-                          placeholder="+977 980-1234567"
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^\d+ -]/g, "");
+                            updateField("contactPhone", val);
+                          }}
+                          placeholder="+977 98XXXXXXXX"
                         />
                       </FormGroup>
                     </TwoColInputs>

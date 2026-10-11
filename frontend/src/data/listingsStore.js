@@ -291,7 +291,7 @@ export function addListing(listing) {
     safetyInfo: listing.safetyInfo || `Prepared fresh today at ${currentTimeStr}. Maintained according to food hygiene safety standards.`,
     expiresIn: listing.expiresIn || "4 hours",
     contactName: listing.contactName || "Utsha",
-    contactPhone: listing.contactPhone || "+977 980-1234567",
+    contactPhone: listing.contactPhone || "",
     donorId: listing.donorId || "donor-user",
     donorEmail: listing.donorEmail || "",
     isCustomDonation: true,

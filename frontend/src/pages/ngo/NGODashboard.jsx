@@ -688,16 +688,31 @@ export const NGODashboard = () => {
 
   const loadNgoRequests = React.useCallback(() => {
     const all = getRequests();
+    const listings = getListings();
     const currentName = user?.name;
     const currentOrg = user?.organization;
     const currentId = user?.id;
 
-    const filtered = all.filter((r) => {
-      if (currentId && r.ngoId === currentId) return true;
-      if (currentName && r.ngoName && r.ngoName.toLowerCase() === currentName.toLowerCase()) return true;
-      if (currentOrg && r.ngoOrg && r.ngoOrg.toLowerCase() === currentOrg.toLowerCase()) return true;
-      return false;
-    });
+    const filtered = all
+      .filter((r) => {
+        if (currentId && r.ngoId === currentId) return true;
+        if (currentName && r.ngoName && r.ngoName.toLowerCase() === currentName.toLowerCase()) return true;
+        if (currentOrg && r.ngoOrg && r.ngoOrg.toLowerCase() === currentOrg.toLowerCase()) return true;
+        return false;
+      })
+      .map((r) => {
+        const linked = listings.find((l) => String(l.id || l._id) === String(r.listingId || r.donationId));
+        const resolvedPhone =
+          (r.donorPhone && r.donorPhone !== "+977 980-1234567")
+            ? r.donorPhone
+            : (linked?.contactPhone && linked.contactPhone !== "+977 980-1234567")
+            ? linked.contactPhone
+            : (r.donorPhone || linked?.contactPhone || "");
+        return {
+          ...r,
+          donorPhone: resolvedPhone,
+        };
+      });
 
     return filtered;
   }, [user]);
@@ -746,7 +761,7 @@ export const NGODashboard = () => {
       foodTitle: listing.title,
       donorName: listing.partner,
       donorId: listing.donorId,
-      donorPhone: listing.contactPhone || "+977 980-1234567",
+      donorPhone: listing.contactPhone || "",
       donorLocation: listing.location,
       ngoPhone: user?.phone || "+977 984-1234567",
       ngoEmail: user?.email || "",
@@ -757,7 +772,7 @@ export const NGODashboard = () => {
       status: "Pending Admin Approval",
       requestedAt: "Just now",
       image: listing.image || "/food.png",
-      contact: listing.contactName ? `${listing.contactName} (${listing.contactPhone || ""})` : "Contact donor via platform",
+      contact: listing.contactName ? `${listing.contactName}${listing.contactPhone ? ` (${listing.contactPhone})` : ""}` : (listing.contactPhone || "Contact donor via platform"),
       ngoId: currentNgoId,
       ngoName: currentNgoName,
       ngoOrg: currentNgoOrg,
@@ -1194,8 +1209,8 @@ export const NGODashboard = () => {
                               : req.status}
                           </span>
                           {isConfirmed ? (
-                            <ContactButton onClick={() => alert(`Donor Contact:\nName: ${req.donorName}\nPhone: ${req.donorPhone || req.contact || "+977 980-1234567"}\nPickup Location: ${req.location}`)}>
-                              <IoCallOutline /> Call Donor ({req.donorPhone || "+977 980-1234567"})
+                            <ContactButton onClick={() => alert(`Donor Contact:\nName: ${req.donorName}\nPhone: ${req.donorPhone || req.contact || "Not provided"}\nPickup Location: ${req.location}`)}>
+                              <IoCallOutline /> Call Donor {req.donorPhone ? `(${req.donorPhone})` : ""}
                             </ContactButton>
                           ) : (
                             <span style={{ fontSize: "0.8rem", color: "#66736D", fontStyle: "italic" }}>
@@ -1393,14 +1408,14 @@ export const NGODashboard = () => {
                           >
                             <div>
                               <div style={{ fontWeight: 700, color: "#166534", fontSize: "0.9rem" }}>
-                                📞 Direct Donor Contact: {req.donorPhone || req.contact || "+977 980-1234567"}
+                                📞 Direct Donor Contact: {req.donorPhone || req.contact || "Provided upon pickup"}
                               </div>
                               <div style={{ fontSize: "0.82rem", color: "#4B5563", marginTop: "2px" }}>
                                 Pickup Location: {req.donorLocation || req.location} · Window: {req.pickupWindow}
                               </div>
                             </div>
                             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                              <ContactButton onClick={() => alert(`Calling Donor at: ${req.donorPhone || req.contact || "+977 980-1234567"}`)}>
+                              <ContactButton onClick={() => alert(`Calling Donor at: ${req.donorPhone || req.contact || "No phone number available"}`)}>
                                 <IoCallOutline /> Call Donor
                               </ContactButton>
                               <ClaimButton
