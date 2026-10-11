@@ -527,11 +527,11 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSaveFaqForm = (e) => {
+  const handleSaveFaqForm = async (e) => {
     e.preventDefault();
     if (!faqQuestion.trim()) return;
 
-    saveFaq({
+    await saveFaq({
       ...(editingFaq ? { id: editingFaq.id, _id: editingFaq._id } : {}),
       question: faqQuestion,
       answer: faqAnswer,
@@ -540,8 +540,13 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
       status: faqStatus
     });
 
+    const isEdit = !!editingFaq;
     setEditingFaq(null);
     setIsAddingFaq(false);
+    setToastMessage({
+      type: 'success',
+      text: isEdit ? 'FAQ updated successfully!' : 'New FAQ created successfully!'
+    });
   };
 
   // Category Editor Standalone Page Handlers
@@ -768,6 +773,14 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
             >
               <FiEdit2 size={14} className="me-1" /> Edit FAQ
             </Button>
+            <Button
+              variant="outline-danger"
+              size="sm"
+              style={{ borderRadius: '20px', height: '36px', padding: '0 16px', fontWeight: 600, fontSize: '0.82rem' }}
+              onClick={() => promptDelete('faq', viewingFaq)}
+            >
+              <FiTrash2 size={14} className="me-1" /> Delete
+            </Button>
           </div>
         </div>
 
@@ -779,7 +792,7 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
             <span style={{ fontSize: '0.82rem', color: '#66736D', fontWeight: 600 }}>Display Order Rank #{viewingFaq.displayOrder || 1}</span>
           </div>
 
-          <h3 style={{ fontWeight: 700, color: '#12201B', fontSize: '1.4rem', lineHeight: '1.4', marginBottom: '20px' }}>
+          <h3 style={{ fontWeight: 600, color: '#12201B', fontSize: '1.4rem', lineHeight: '1.4', marginBottom: '20px' }}>
             Q: {viewingFaq.question}
           </h3>
 
@@ -1136,8 +1149,8 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
               <FiArrowLeft size={16} /> Back to FAQ List
             </BackButton>
             <div>
-              <h2 style={{ fontWeight: 700, color: '#12201B', margin: 0, fontSize: '1.4rem' }}>
-                {isAddingFaq ? 'Create New FAQ' : `Edit FAQ — #${editingFaq?.id}`}
+              <h2 style={{ fontWeight: 600, color: '#12201B', margin: 0, fontSize: '1.4rem' }}>
+                {isAddingFaq ? 'Create New FAQ' : `Edit FAQ — #${editingFaq?.id || editingFaq?._id}`}
               </h2>
             </div>
           </div>
@@ -1761,7 +1774,7 @@ const ContentManagement = ({ mode, initialTab = 'Blog Posts' }) => {
                         {idx + 1}
                       </td>
                       <td>
-                        <div style={{ fontWeight: 700, color: '#111827', fontSize: '0.88rem' }}>
+                        <div style={{ fontWeight: 600, color: '#111827', fontSize: '0.88rem' }}>
                           {f.question}
                         </div>
                         <div style={{ fontSize: '0.76rem', color: '#6B7280', maxWidth: '420px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', marginTop: '2px' }}>

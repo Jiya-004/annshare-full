@@ -1077,55 +1077,103 @@ export const toggleBlogStatus = async (blogId) => {
   }
 };
 
-export const saveFaq = (faqData) => {
-  if (faqData.id || faqData._id) {
-    const targetId = faqData.id || faqData._id;
-    faqsState = faqsState.map((f) => (f.id === targetId || f._id === targetId ? { ...f, ...faqData } : f));
-    fetch(`${API_BASE}/faqs/${targetId}`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(faqData),
-    }).catch(() => {});
+export const saveFaq = async (faqData) => {
+  const targetId = faqData._id || faqData.id;
+  if (targetId) {
+    // 1. Optimistic update
+    faqsState = faqsState.map((f) =>
+      f.id === targetId || f._id === targetId ? { ...f, ...faqData } : f
+    );
+    notifyListeners();
+
+    // 2. Persist to backend
+    try {
+      const res = await fetch(`${API_BASE}/faqs/${targetId}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(faqData),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        const realId = updated.id || updated._id || targetId;
+        faqsState = faqsState.map((f) =>
+          f.id === targetId || f._id === targetId
+            ? { ...f, ...updated, id: realId, _id: updated._id }
+            : f
+        );
+        notifyListeners();
+        return updated;
+      }
+    } catch (e) {
+      console.warn("Failed to update FAQ on backend:", e);
+    }
   } else {
+    // 1. Create with temp ID
+    const tempId = `FAQ-${Date.now()}`;
     const newFaq = {
       ...faqData,
-      id: `FAQ-${200 + faqsState.length + 1}`,
+      id: tempId,
       displayOrder: faqData.displayOrder || faqsState.length + 1,
       status: faqData.status || 'Active',
     };
     faqsState.push(newFaq);
-    fetch(`${API_BASE}/faqs`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(newFaq),
-    }).catch(() => {});
+    notifyListeners();
+
+    // 2. Persist to backend and swap temp ID with real DB ID
+    try {
+      const res = await fetch(`${API_BASE}/faqs`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(newFaq),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        const realId = created.id || created._id;
+        faqsState = faqsState.map((f) =>
+          f.id === tempId
+            ? { ...f, ...created, id: realId, _id: created._id }
+            : f
+        );
+        notifyListeners();
+        return created;
+      }
+    } catch (e) {
+      console.warn("Failed to create FAQ on backend:", e);
+    }
   }
-  notifyListeners();
 };
 
-export const deleteFaq = (faqId) => {
+export const deleteFaq = async (faqId) => {
   faqsState = faqsState.filter((f) => f.id !== faqId && f._id !== faqId);
-  fetch(`${API_BASE}/faqs/${faqId}`, {
-    method: 'DELETE',
-    headers: getAuthHeaders(),
-  }).catch(() => {});
   notifyListeners();
+
+  try {
+    await fetch(`${API_BASE}/faqs/${faqId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+  } catch (e) {
+    console.warn("Failed to delete FAQ on backend:", e);
+  }
 };
 
-export const toggleFaqStatus = (faqId) => {
+export const toggleFaqStatus = async (faqId) => {
   faqsState = faqsState.map((f) => {
     if (f.id === faqId || f._id === faqId) {
       return { ...f, status: f.status === 'Active' ? 'Inactive' : 'Active' };
     }
     return f;
   });
-
-  fetch(`${API_BASE}/faqs/${faqId}/toggle`, {
-    method: 'PATCH',
-    headers: getAuthHeaders(),
-  }).catch(() => {});
-
   notifyListeners();
+
+  try {
+    await fetch(`${API_BASE}/faqs/${faqId}/toggle`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+    });
+  } catch (e) {
+    console.warn("Failed to toggle FAQ status on backend:", e);
+  }
 };
 
 export const saveBlogCategory = (catData) => {
