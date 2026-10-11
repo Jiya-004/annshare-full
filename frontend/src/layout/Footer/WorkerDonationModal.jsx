@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
 import {
   IoClose,
@@ -475,7 +475,7 @@ export default function WorkerDonationModal({
   initialAmount = "500",
   onSuccess,
 }) {
-  const [amount] = useState(initialAmount);
+  const [amount, setAmount] = useState(initialAmount || "500");
   const [selectedMethod, setSelectedMethod] = useState("esewa");
   const [donorName, setDonorName] = useState("");
   const [donorPhone, setDonorPhone] = useState("");
@@ -483,6 +483,12 @@ export default function WorkerDonationModal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [txnId, setTxnId] = useState("");
+
+  useEffect(() => {
+    if (initialAmount) {
+      setAmount(initialAmount);
+    }
+  }, [initialAmount, isOpen]);
 
   if (!isOpen) return null;
 
