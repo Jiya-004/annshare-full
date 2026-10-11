@@ -498,17 +498,24 @@ const NavItem = styled.button`
   cursor: pointer;
   transition: all 0.18s ease;
   text-align: left;
+  white-space: nowrap;
 
   .left-cluster {
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 0;
 
     .icon {
       font-size: 1.15rem;
       display: flex;
       align-items: center;
+      flex-shrink: 0;
       color: ${(props) => (props.$isActive ? "#A7F3D0" : "#71827B")};
+    }
+
+    span {
+      white-space: nowrap;
     }
   }
 
@@ -522,12 +529,21 @@ const NavItem = styled.button`
   }
 
   .badge-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: ${(props) => (props.$isActive ? "rgba(255, 255, 255, 0.22)" : "#ECEEEA")};
     color: ${(props) => (props.$isActive ? "#FFFFFF" : "#174A3A")};
-    padding: 2px 7px;
+    padding: 0 6px;
+    min-width: 22px;
+    height: 22px;
     border-radius: 999px;
     font-size: 0.74rem;
     font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    flex-shrink: 0;
+    text-align: center;
   }
 `;
 
@@ -1497,7 +1513,7 @@ export const DonorDashboard = () => {
                     fontWeight: 700,
                   }}
                 >
-                  {adminApprovedRequests.length > 0 ? `${adminApprovedRequests.length} new` : requests.length}
+                  {adminApprovedRequests.length > 0 ? adminApprovedRequests.length : requests.length}
                 </span>
               </NavItem>
 
