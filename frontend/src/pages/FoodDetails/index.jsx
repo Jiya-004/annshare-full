@@ -184,6 +184,18 @@ export default function FoodDetailsPage() {
                 </div>
               </div>
 
+              {item.bestBefore && (
+                <div className="log-item">
+                  <IoTimeOutline style={{ color: "#E65100" }} />
+                  <div className="log-content">
+                    <div className="log-label" style={{ color: "#E65100", fontWeight: 700 }}>
+                      Best Before: {item.bestBefore}
+                    </div>
+                    <div className="log-sub">Consume before this time for best quality</div>
+                  </div>
+                </div>
+              )}
+
               <div className="log-item">
                 <IoPersonOutline />
                 <div className="log-content">

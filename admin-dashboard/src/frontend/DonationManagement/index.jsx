@@ -532,6 +532,11 @@ const DonationManagement = () => {
                     <div style={{ fontSize: '0.78rem', color: '#66736D', marginTop: '2px' }}>
                       Posted: <strong>{formatToNepaliTime(don.postedDate || don.createdAt)}</strong>
                     </div>
+                    {don.bestBefore && (
+                      <div style={{ fontSize: '0.82rem', color: '#E65100', fontWeight: 600, marginTop: '6px' }} className="d-flex align-items-center gap-1">
+                        <FiClock style={{ color: '#E65100' }} /> Best Before: {don.bestBefore}
+                      </div>
+                    )}
                   </div>
                 </Col>
               </Row>
@@ -917,8 +922,15 @@ const DonationManagement = () => {
                       <td style={{ fontWeight: 600, color: '#12201B' }}>{cleanQuantity}</td>
                       <td style={{ color: '#66736D' }}>{don.location}</td>
                       <td style={{ fontSize: '0.8rem', color: '#66736D' }}>
-                        <FiClock className="me-1 text-secondary" />
-                        {don.expiryTime || don.expiresIn}
+                        <div>
+                          <FiClock className="me-1 text-secondary" />
+                          {don.expiryTime || don.expiresIn}
+                        </div>
+                        {don.bestBefore && (
+                          <div style={{ fontSize: '0.74rem', color: '#E65100', fontWeight: 600, marginTop: '2px' }}>
+                            Best Before: {don.bestBefore}
+                          </div>
+                        )}
                       </td>
                       <td>
                         <StatusBadge status={don.status} />

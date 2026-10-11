@@ -48,6 +48,12 @@ const DonationDetailModal = ({ show, onHide, donation, onDelete }) => {
               <div><FiMapPin className="me-2 text-secondary" /> <strong>Location:</strong> {donation.location}</div>
               <div><FiCalendar className="me-2 text-secondary" /> <strong>Posted:</strong> {donation.postedDate}</div>
               <div><FiClock className="me-2 text-secondary" /> <strong>Expiry / Best Before:</strong> {donation.expiryTime}</div>
+              {donation.bestBefore && (
+                <div style={{ color: "#E65100" }}>
+                  <FiClock className="me-2" style={{ color: "#E65100" }} />
+                  <strong>Best Before:</strong> {donation.bestBefore} from listing time
+                </div>
+              )}
             </div>
           </Col>
         </Row>

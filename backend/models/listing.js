@@ -18,6 +18,7 @@ const listingSchema = new mongoose.Schema(
     foodName: { type: String },
     foodType: { type: String },
     category: { type: String, default: 'Prepared Meals' },
+    condition: { type: String, default: 'Freshly Prepared' },
     quantity: { type: String, required: true },
     portions: { type: String, default: '' },
     weight_kg: { type: Number, default: 5 },

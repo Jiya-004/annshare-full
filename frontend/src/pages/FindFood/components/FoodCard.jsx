@@ -596,6 +596,14 @@ export default function FoodCard({
               <span className="condition-tag">{item.condition}</span>
             </>
           )}
+          {item.bestBefore && (
+            <>
+              <span className="dot-sep">·</span>
+              <span className="condition-tag" style={{ background: "#FFF3E0", color: "#E65100", borderColor: "#FFCC80" }}>
+                Best Before: {item.bestBefore}
+              </span>
+            </>
+          )}
         </div>
 
         {/* ROW 3: LOCATION & TIME */}

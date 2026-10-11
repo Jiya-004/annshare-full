@@ -339,6 +339,8 @@ export const syncListingsFromBackend = async () => {
           postedDate: d.createdAt ? formatToNepaliTime(d.createdAt) : formatToNepaliTime(d.postedDate || 'Today'),
           expiryTime: d.expiryTime || 'Today at 8:00 PM',
           expires_at: d.expires_at || '',
+          bestBefore: d.bestBefore || '',
+          condition: d.condition || '',
           status: d.status || 'Available',
           claimedBy: d.claimedBy || null,
           image: formatImageUrl(d.image || (d.images && d.images[0]), d.category, idx),
