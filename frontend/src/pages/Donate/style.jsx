@@ -659,17 +659,28 @@ export const PreviewCardWrapper = styled.div`
 export const SuccessStateWrapper = styled.div`
   background: #FFFFFF;
   border-radius: 24px;
-  padding: 42px 32px;
+  padding: 44px 36px;
   border: 1px solid rgba(23, 74, 58, 0.08);
   box-shadow: 0 12px 36px rgba(23, 74, 58, 0.06);
   text-align: center;
-  max-width: 580px;
-  margin: 40px auto 30px;
+  max-width: 600px;
+  margin: 110px auto 50px;
+
+  @media (max-width: 992px) {
+    margin: 120px auto 40px;
+    padding: 36px 28px;
+  }
 
   @media (max-width: 768px) {
+    padding: 28px 20px;
+    border-radius: 20px;
+    margin: 115px auto 30px;
+  }
+
+  @media (max-width: 480px) {
     padding: 24px 16px;
     border-radius: 18px;
-    margin: 20px auto 16px;
+    margin: 105px auto 24px;
   }
 
   .check-circle {

@@ -7,16 +7,19 @@ const isLocal = typeof window !== 'undefined' && (window.location.hostname === '
 const API_BASE = import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:8000/api' : 'https://annshare-backend.onrender.com/api');
 const BACKEND_HOST = API_BASE.replace(/\/api\/?$/, '');
 
+// Uploaded images are stored on the live Render backend — always point there
+const RENDER_BACKEND = 'https://annshare-backend.onrender.com';
+
 export const formatImageUrl = (url) => {
   if (!url) return '/food.png';
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+  if (url.startsWith('data:')) return url;
+  if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
-  if (url.startsWith('/uploads/')) {
-    return `${BACKEND_HOST}${url}`;
-  }
-  if (url.startsWith('uploads/')) {
-    return `${BACKEND_HOST}/${url}`;
+  if (url.startsWith('/uploads/') || url.startsWith('uploads/')) {
+    // Always resolve uploads to the Render backend where files are actually stored
+    const cleanPath = url.startsWith('/') ? url : `/${url}`;
+    return `${RENDER_BACKEND}${cleanPath}`;
   }
   return url;
 };

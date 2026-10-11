@@ -106,16 +106,22 @@ export const getListingFallbackImage = (itemOrCategory, index = 0) => {
   return DEFAULT_FOOD_IMAGES[absSeed % DEFAULT_FOOD_IMAGES.length];
 };
 
+// Uploaded images are stored on the live Render backend — always resolve /uploads/ there
+const RENDER_BACKEND = 'https://annshare-backend.onrender.com';
+
 export const formatImageUrl = (url, fallbackCategory = '', index = 0) => {
-  if (!url) return getListingFallbackImage(fallbackCategory, index);
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+  if (!url || url === '/food.png') return getListingFallbackImage(fallbackCategory, index);
+  if (url.startsWith('data:')) {
+    // base64 image — render inline
     return url;
   }
-  if (url.startsWith('/uploads/')) {
-    return `${BACKEND_HOST}${url}`;
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
   }
-  if (url.startsWith('uploads/')) {
-    return `${BACKEND_HOST}/${url}`;
+  if (url.startsWith('/uploads/') || url.startsWith('uploads/')) {
+    // Uploads are persisted on Render — always point there even in local dev
+    const cleanPath = url.startsWith('/') ? url : `/${url}`;
+    return `${RENDER_BACKEND}${cleanPath}`;
   }
   if (url.startsWith('/food/') || url.startsWith('food/')) {
     return url.startsWith('/') ? url : `/${url}`;
