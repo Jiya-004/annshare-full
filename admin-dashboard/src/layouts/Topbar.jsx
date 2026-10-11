@@ -37,7 +37,7 @@ const TopbarContainer = styled.header`
   box-sizing: border-box;
   z-index: 1000;
 
-  @media (max-width: 576px) {
+  @media (max-width: 768px) {
     padding: 0 12px;
   }
 
@@ -50,6 +50,7 @@ const FarLeftGroup = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 
   @media (max-width: 576px) {
     gap: 8px;
@@ -57,37 +58,39 @@ const FarLeftGroup = styled.div`
 `;
 
 const CollapseBtn = styled.button`
-  background: transparent;
-  border: none;
-  color: #5f6368;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  background: #F7F8F6;
+  border: 1px solid #E6ECE8;
+  color: #185C4A;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
 
   @media (max-width: 576px) {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
   }
 
   &:hover {
-    background: #F1F3F4;
-    color: #202124;
+    background: #EEF8F4;
+    border-color: #185C4A;
+    color: #185C4A;
   }
 `;
 
 const BrandLogo = styled.img`
-  height: 34px;
+  height: 32px;
   width: auto;
   object-fit: contain;
   cursor: pointer;
 
   @media (max-width: 576px) {
-    height: 27px;
+    height: 25px;
   }
 `;
 
@@ -142,7 +145,8 @@ const StyledSearchInput = styled(Form.Control)`
 const FarRightGroup = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-shrink: 0;
 
   @media (max-width: 576px) {
     gap: 6px;
@@ -150,53 +154,57 @@ const FarRightGroup = styled.div`
 `;
 
 const HeaderIconButton = styled.div`
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: transparent;
+  background: #F7F8F6;
+  border: 1px solid #E6ECE8;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #5f6368;
   cursor: pointer;
   position: relative;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
 
   &:hover {
-    background: #F1F3F4;
-    color: #202124;
+    background: #EEF8F4;
+    color: #185C4A;
+    border-color: #185C4A;
   }
 
   .badge-dot {
     position: absolute;
-    top: 8px;
-    right: 8px;
+    top: 6px;
+    right: 6px;
     width: 8px;
     height: 8px;
     border-radius: 50%;
     background: #185C4A;
+    border: 2px solid #ffffff;
   }
 
   &.help-btn {
-    @media (max-width: 576px) {
-      display: none;
+    @media (max-width: 992px) {
+      display: none !important;
     }
   }
 
   @media (max-width: 576px) {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
   }
 `;
 
 const HeaderDivider = styled.div`
   width: 1px;
   height: 24px;
-  background: #E0E0E0;
+  background: #E6ECE8;
   margin: 0 4px;
 
-  @media (max-width: 768px) {
-    display: none;
+  @media (max-width: 992px) {
+    display: none !important;
   }
 `;
 
@@ -241,13 +249,14 @@ const UserProfilePill = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 4px 14px 4px 4px;
+  padding: 4px 12px 4px 4px;
   border-radius: 24px;
   background: #F7F8F6;
   border: 1px solid #E6ECE8;
   cursor: pointer;
   transition: all 0.15s ease;
-  margin-left: 4px;
+  margin-left: 2px;
+  flex-shrink: 0;
 
   &::after {
     display: none !important;
@@ -281,28 +290,37 @@ const UserProfilePill = styled.div`
       font-weight: 600;
       color: #12201B;
       line-height: 1.1;
+      white-space: nowrap;
     }
 
     .role {
       font-size: 0.68rem;
       color: #66736D;
+      white-space: nowrap;
     }
   }
 
-  @media (max-width: 576px) {
-    padding: 2px;
+  .chevron-icon {
+    flex-shrink: 0;
+    color: #66736D;
+  }
+
+  @media (max-width: 992px) {
+    padding: 0;
     background: transparent;
     border: none;
     margin-left: 0;
 
-    .user-info, svg {
+    .user-info, .chevron-icon {
       display: none !important;
     }
 
     .user-avatar {
-      width: 32px;
-      height: 32px;
-      font-size: 0.82rem;
+      width: 34px;
+      height: 34px;
+      font-size: 0.8rem;
+      border: 1.5px solid #185C4A;
+      box-shadow: 0 1px 4px rgba(24, 92, 74, 0.2);
     }
   }
 `;
@@ -467,7 +485,7 @@ const Topbar = ({ toggleSidebar, searchTerm, setSearchTerm, setActiveNav }) => {
           </Dropdown.Menu>
         </Dropdown>
 
-        {/* Full Admin User Profile Pill (Replaces Simple Circle Avatar) */}
+        {/* Full Admin User Profile Pill (Responsive) */}
         {(() => {
           const adminUser = getAdminProfile();
           return (
@@ -479,11 +497,15 @@ const Topbar = ({ toggleSidebar, searchTerm, setSearchTerm, setActiveNav }) => {
                     <span className="name">{adminUser.name || 'Admin User'}</span>
                     <span className="role">{adminUser.badge || 'System Admin'}</span>
                   </div>
-                  <FiChevronDown size={14} color="#66736D" />
+                  <FiChevronDown size={14} className="chevron-icon" />
                 </UserProfilePill>
               </Dropdown.Toggle>
 
-              <Dropdown.Menu style={{ padding: '8px', borderRadius: '12px', border: '1px solid #E6ECE8' }}>
+              <Dropdown.Menu style={{ padding: '8px', borderRadius: '12px', border: '1px solid #E6ECE8', minWidth: '190px' }}>
+                <div className="d-lg-none px-3 py-2 border-bottom mb-2 bg-light rounded">
+                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#12201B' }}>{adminUser.name || 'Admin User'}</div>
+                  <div style={{ fontSize: '0.72rem', color: '#185C4A', fontWeight: 600 }}>{adminUser.badge || 'System Admin'}</div>
+                </div>
                 <Dropdown.Item onClick={() => setActiveNav('Settings')} style={{ fontSize: '0.82rem' }}>
                   <FiUser className="me-2" /> Admin Profile
                 </Dropdown.Item>

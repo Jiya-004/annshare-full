@@ -64,6 +64,7 @@ const TabButton = styled(Nav.Link)`
   font-size: 0.82rem !important;
   font-weight: 600 !important;
   padding: 6px 16px !important;
+  white-space: nowrap !important;
   color: ${props => (props.$active ? '#ffffff !important' : '#66736D !important')};
   background: ${props => (props.$active ? '#185C4A !important' : 'transparent !important')};
   transition: all 0.15s ease !important;
