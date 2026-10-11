@@ -36,8 +36,6 @@ import {
   WorkerBadge,
   NewsletterText,
   DonationRightContainer,
-  PresetRow,
-  PresetChip,
   AmountInputWrapper,
   CurrencyPrefix,
   NewsletterForm,
@@ -51,11 +49,13 @@ import {
 } from "./style";
 
 import ANNShareLogo from "../Header/ANNShareLogo";
+import WorkerDonationModal from "./WorkerDonationModal";
 
 const Footer = () => {
   const navigate = useNavigate();
   // Worker donation state
-  const [donationAmount, setDonationAmount] = useState("500");
+  const [donationAmount, setDonationAmount] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDonated, setIsDonated] = useState(false);
   const [donatedAmount, setDonatedAmount] = useState("");
 
@@ -77,8 +77,7 @@ const Footer = () => {
   const handleDonate = (e) => {
     e.preventDefault();
     if (donationAmount && Number(donationAmount) > 0) {
-      setDonatedAmount(donationAmount);
-      setIsDonated(true);
+      setIsModalOpen(true);
     }
   };
 
@@ -525,39 +524,24 @@ const Footer = () => {
 
             <DonationRightContainer>
               {!isDonated ? (
-                <>
-                  <PresetRow>
-                    {["100", "250", "500", "1000"].map((val) => (
-                      <PresetChip
-                        key={val}
-                        type="button"
-                        $active={donationAmount === val}
-                        onClick={() => setDonationAmount(val)}
-                      >
-                        Rs. {val}
-                      </PresetChip>
-                    ))}
-                  </PresetRow>
-
-                  <NewsletterForm onSubmit={handleDonate}>
-                    <AmountInputWrapper>
-                      <CurrencyPrefix>Rs.</CurrencyPrefix>
-                      <NewsletterInput
-                        type="number"
-                        min="10"
-                        step="10"
-                        placeholder="Enter amount"
-                        value={donationAmount}
-                        onChange={(e) => setDonationAmount(e.target.value)}
-                        required
-                        aria-label="Donation amount in Rupees"
-                      />
-                    </AmountInputWrapper>
-                    <SubscribeButton type="submit">
-                      <IoHeart style={{ color: "#FF7B7B" }} /> Donate
-                    </SubscribeButton>
-                  </NewsletterForm>
-                </>
+                <NewsletterForm onSubmit={handleDonate}>
+                  <AmountInputWrapper>
+                    <CurrencyPrefix>Rs.</CurrencyPrefix>
+                    <NewsletterInput
+                      type="number"
+                      min="10"
+                      step="10"
+                      placeholder="Enter amount (e.g. 500)"
+                      value={donationAmount}
+                      onChange={(e) => setDonationAmount(e.target.value)}
+                      required
+                      aria-label="Donation amount in Rupees"
+                    />
+                  </AmountInputWrapper>
+                  <SubscribeButton type="submit">
+                    <IoHeart style={{ color: "#FF7B7B" }} /> Donate
+                  </SubscribeButton>
+                </NewsletterForm>
               ) : (
                 <SubscribedFeedback>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
@@ -577,7 +561,7 @@ const Footer = () => {
                     type="button"
                     onClick={() => {
                       setIsDonated(false);
-                      setDonationAmount("500");
+                      setDonationAmount("");
                     }}
                     style={{
                       background: "none",
@@ -634,6 +618,17 @@ const Footer = () => {
           </BottomBar>
         </FooterContainer>
       </FooterRoot>
+
+      {/* Worker Donation Payment Methods Modal */}
+      <WorkerDonationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        initialAmount={donationAmount || "500"}
+        onSuccess={(amt) => {
+          setDonatedAmount(amt);
+          setIsDonated(true);
+        }}
+      />
     </>
   );
 };
