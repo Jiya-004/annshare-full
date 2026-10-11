@@ -977,26 +977,37 @@ export const DonorDashboard = () => {
 
   const loadDonorDonations = React.useCallback(() => {
     const all = getListings();
+    if (!user) return [];
+
     const donorOrg = user?.organization ? user.organization.trim().toLowerCase() : "";
     const donorOrgName = user?.orgName ? user.orgName.trim().toLowerCase() : "";
     const donorId = user?.id || user?._id;
-    const currentName = user?.name ? user.name.trim().toLowerCase() : "";
     const currentEmail = user?.email ? user.email.trim().toLowerCase() : "";
 
+    const isDemoSeedDonor = currentEmail === "ramesh@himalayankitchen.com" || String(donorId) === "donor-101";
+
     const filtered = all.filter((l) => {
-      // Direct ID match
+      // 1. Direct user ID match
       if (donorId && l.donorId && String(l.donorId) === String(donorId)) return true;
-      if (l.donorId === "donor-user" || l.donorId === "current-donor") return true;
-      // Direct Email match
-      if (currentEmail && l.donorEmail && l.donorEmail.toLowerCase() === currentEmail) return true;
-      // Organization / Partner name match
-      if (donorOrg && l.partner && (l.partner.toLowerCase() === donorOrg || l.partner.toLowerCase().includes(donorOrg) || donorOrg.includes(l.partner.toLowerCase()))) return true;
-      if (donorOrgName && l.partner && (l.partner.toLowerCase() === donorOrgName || l.partner.toLowerCase().includes(donorOrgName) || donorOrgName.includes(l.partner.toLowerCase()))) return true;
-      // Name match with contactName or partner
-      if (currentName && l.contactName && (l.contactName.toLowerCase() === currentName || l.contactName.toLowerCase().includes(currentName) || currentName.includes(l.contactName.toLowerCase()))) return true;
-      if (currentName && l.partner && (l.partner.toLowerCase().includes(currentName) || currentName.includes(l.partner.toLowerCase()))) return true;
-      // Any custom donation created in this session that is not seeded
-      if (l.isCustomDonation || (l.id && String(l.id).startsWith("listing-"))) return true;
+
+      // 2. Direct Email match
+      if (currentEmail && l.donorEmail && l.donorEmail.trim().toLowerCase() === currentEmail) return true;
+
+      // 3. For demo seed donor only (Ramesh / Himalayan Kitchen), match seed listings
+      if (isDemoSeedDonor) {
+        if (l.donorId === "donor-101" || l.donorId === "donor-user") return true;
+        if (l.partner && l.partner.toLowerCase().includes("himalayan kitchen")) return true;
+      }
+
+      // 4. Exact Organization match (only if non-empty and non-generic)
+      const genericNames = ["donor", "food donor", "restaurant", "cafe", "kitchen", "user", "your organization"];
+      if (donorOrg && !genericNames.includes(donorOrg)) {
+        if (l.partner && l.partner.trim().toLowerCase() === donorOrg) return true;
+      }
+      if (donorOrgName && !genericNames.includes(donorOrgName)) {
+        if (l.partner && l.partner.trim().toLowerCase() === donorOrgName) return true;
+      }
+
       return false;
     });
 
@@ -1017,27 +1028,31 @@ export const DonorDashboard = () => {
     const currentName = user?.name ? user.name.trim().toLowerCase() : "";
     const currentEmail = user?.email ? user.email.trim().toLowerCase() : "";
 
+    const isDemoSeedDonor = currentEmail === "ramesh@himalayankitchen.com" || String(donorId) === "donor-101";
+
     const currentListings = getListings().filter((l) => {
       if (donorId && l.donorId && String(l.donorId) === String(donorId)) return true;
-      if (l.donorId === "donor-user" || l.donorId === "current-donor") return true;
-      if (currentEmail && l.donorEmail && l.donorEmail.toLowerCase() === currentEmail) return true;
-      if (donorOrg && l.partner && (l.partner.toLowerCase() === donorOrg || l.partner.toLowerCase().includes(donorOrg) || donorOrg.includes(l.partner.toLowerCase()))) return true;
-      if (donorOrgName && l.partner && (l.partner.toLowerCase() === donorOrgName || l.partner.toLowerCase().includes(donorOrgName) || donorOrgName.includes(l.partner.toLowerCase()))) return true;
-      if (currentName && l.contactName && (l.contactName.toLowerCase() === currentName || l.contactName.toLowerCase().includes(currentName) || currentName.includes(l.contactName.toLowerCase()))) return true;
-      if (currentName && l.partner && (l.partner.toLowerCase().includes(currentName) || currentName.includes(l.partner.toLowerCase()))) return true;
-      if (l.isCustomDonation || (l.id && String(l.id).startsWith("listing-"))) return true;
+      if (currentEmail && l.donorEmail && l.donorEmail.trim().toLowerCase() === currentEmail) return true;
+      if (isDemoSeedDonor) {
+        if (l.donorId === "donor-101" || l.donorId === "donor-user") return true;
+        if (l.partner && l.partner.toLowerCase().includes("himalayan kitchen")) return true;
+      }
+      const genericNames = ["donor", "food donor", "restaurant", "cafe", "kitchen", "user", "your organization"];
+      if (donorOrg && !genericNames.includes(donorOrg)) {
+        if (l.partner && l.partner.trim().toLowerCase() === donorOrg) return true;
+      }
+      if (donorOrgName && !genericNames.includes(donorOrgName)) {
+        if (l.partner && l.partner.trim().toLowerCase() === donorOrgName) return true;
+      }
       return false;
     });
     const donorListingIds = new Set(currentListings.flatMap((l) => [l.id, l._id].filter(Boolean).map(String)));
 
     const filtered = all.filter((r) => {
       if (donorId && r.donorId && String(r.donorId) === String(donorId)) return true;
-      if (r.donorId === "donor-user" || r.donorId === "current-donor") return true;
-      if (donorOrg && r.donorName && (r.donorName.toLowerCase() === donorOrg || r.donorName.toLowerCase().includes(donorOrg) || donorOrg.includes(r.donorName.toLowerCase()))) return true;
-      if (donorOrgName && r.donorName && (r.donorName.toLowerCase() === donorOrgName || r.donorName.toLowerCase().includes(donorOrgName) || donorOrgName.includes(r.donorName.toLowerCase()))) return true;
-      if (currentName && r.donorName && (r.donorName.toLowerCase().includes(currentName) || currentName.includes(r.donorName.toLowerCase()))) return true;
       if (r.listingId && donorListingIds.has(String(r.listingId))) return true;
       if (r.donationId && donorListingIds.has(String(r.donationId))) return true;
+      if (isDemoSeedDonor && (r.donorId === "donor-101" || r.donorId === "donor-user")) return true;
       return false;
     });
 
@@ -1248,7 +1263,8 @@ export const DonorDashboard = () => {
       safetyInfo: `Prepared at ${currentFormattedTime} today under food hygiene safety standards.`,
       contactName: user?.name || "Donor",
       contactPhone: donorPhone,
-      donorId: user?.id || `donor-${Date.now()}`,
+      donorId: user?.id || user?._id || `donor-${Date.now()}`,
+      donorEmail: user?.email ? user.email.trim().toLowerCase() : "",
       matchedWith: null,
     };
 

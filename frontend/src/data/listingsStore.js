@@ -328,7 +328,7 @@ export function addListing(listing) {
     expiresIn: listing.expiresIn || "4 hours",
     contactName: listing.contactName || "Utsha",
     contactPhone: listing.contactPhone || "",
-    donorId: listing.donorId || "donor-user",
+    donorId: listing.donorId || "",
     donorEmail: listing.donorEmail || "",
     isCustomDonation: true,
     matchedWith: listing.matchedWith || null,
