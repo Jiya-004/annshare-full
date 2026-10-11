@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { useAuth } from "../../context/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getRequests, addRequest, updateRequestStatus, syncRequestsFromBackend } from "../../data/requestsStore";
+import { getRequests, addRequest, updateRequestStatus, syncRequestsFromBackend, formatImageUrl } from "../../data/requestsStore";
 import { getListings, updateListingStatus, syncListingsFromBackend } from "../../data/listingsStore";
 import {
   IoPeopleOutline,
@@ -415,7 +415,7 @@ const HeaderBanner = styled.div`
 
 const StatsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 
   @media (max-width: 900px) {
@@ -424,7 +424,7 @@ const StatsGrid = styled.div`
   }
 
   @media (max-width: 480px) {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
     gap: 8px;
   }
 `;
@@ -808,7 +808,8 @@ export const NGODashboard = () => {
   const navigate = useNavigate();
 
   const queryParams = new URLSearchParams(location.search);
-  const initialTab = queryParams.get("tab") || "overview";
+  const rawTab = queryParams.get("tab") || "overview";
+  const initialTab = rawTab === "pickups" ? "claims" : rawTab;
   const [activeTab, setActiveTab] = useState(initialTab);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -816,16 +817,20 @@ export const NGODashboard = () => {
   const requestedItem = incomingState?.payload;
 
   useEffect(() => {
-    const tabParam = queryParams.get("tab");
-    if (tabParam) {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get("tab");
+    if (tabParam === "pickups") {
+      setActiveTab("claims");
+    } else if (tabParam) {
       setActiveTab(tabParam);
     }
   }, [location.search]);
 
   const handleTabChange = (tabId) => {
-    setActiveTab(tabId);
+    const resolvedTab = tabId === "pickups" ? "claims" : tabId;
+    setActiveTab(resolvedTab);
     setMobileMenuOpen(false);
-    navigate(`/ngo/dashboard?tab=${tabId}`, { replace: true });
+    navigate(`/ngo/dashboard?tab=${resolvedTab}`, { replace: true });
   };
 
   const loadNgoRequests = React.useCallback(() => {
@@ -852,6 +857,7 @@ export const NGODashboard = () => {
             : (r.donorPhone || linked?.contactPhone || "");
         return {
           ...r,
+          image: formatImageUrl(r.image || linked?.image || "/food.png"),
           donorPhone: resolvedPhone,
         };
       });
@@ -1015,7 +1021,7 @@ export const NGODashboard = () => {
               desc: `${req.donorName || "Food Donor"} accepted your request for "${req.foodTitle || "food listing"}". Direct contact numbers are now active.`,
               time: "Just now",
               read: false,
-              linkTab: "pickups",
+              linkTab: "claims",
               category: "match",
             });
           });
@@ -1073,7 +1079,7 @@ export const NGODashboard = () => {
     } catch {}
     if (notif.linkTab) {
       const target = notif.linkTab.toLowerCase();
-      if (target.includes("pickup") || target.includes("logistics")) handleTabChange("pickups");
+      if (target.includes("pickup") || target.includes("logistics")) handleTabChange("claims");
       else if (target.includes("find") || target.includes("surplus")) handleTabChange("find-food");
       else if (target.includes("request")) handleTabChange("requests");
       else handleTabChange(target);
@@ -1095,7 +1101,6 @@ export const NGODashboard = () => {
   }, 0);
 
   const familiesSupported = Math.round(mealsReceived * 0.3) || (requests.length > 0 ? requests.length * 2 : 0);
-  const activePickupsCount = confirmedRequests.length;
 
   return (
     <DashboardWrapper>
@@ -1177,17 +1182,6 @@ export const NGODashboard = () => {
                   <span>My Claims</span>
                 </div>
                 <span className="badge-count">{requests.length}</span>
-              </NavItem>
-
-              <NavItem
-                $isActive={activeTab === "pickups"}
-                onClick={() => handleTabChange("pickups")}
-              >
-                <div className="left-cluster">
-                  <span className="icon"><IoCarOutline /></span>
-                  <span>Active Pickups</span>
-                </div>
-                <span className="badge-count">{activePickupsCount}</span>
               </NavItem>
 
               <NavItem
@@ -1311,17 +1305,6 @@ export const NGODashboard = () => {
                     <div className="stat-label">Rescued Meals Distributed</div>
                   </StatCard>
 
-                  <StatCard $bg="#FFF3E0" $color="#E65100">
-                    <div className="icon-row">
-                      <div className="icon-box">
-                        <IoCarOutline />
-                      </div>
-                      <span className="stat-change">{activePickupsCount > 0 ? "Scheduled" : "None active"}</span>
-                    </div>
-                    <div className="stat-value">{activePickupsCount}</div>
-                    <div className="stat-label">Pickup in Progress</div>
-                  </StatCard>
-
                   <StatCard $bg="#F3E5F5" $color="#7B1FA2">
                     <div className="icon-row">
                       <div className="icon-box">
@@ -1355,7 +1338,16 @@ export const NGODashboard = () => {
                     return (
                       <ItemCard key={req.id}>
                         <div className="item-main">
-                          <img src={req.image} alt={req.foodTitle} className="item-img" />
+                          <img
+                            src={formatImageUrl(req.image || "/food.png")}
+                            alt={req.foodTitle}
+                            className="item-img"
+                            onError={(e) => {
+                              if (e.target.src !== `${window.location.origin}/food.png` && !e.target.src.endsWith('/food.png')) {
+                                e.target.src = '/food.png';
+                              }
+                            }}
+                          />
                           <div className="item-info">
                             <h4>{req.foodTitle}</h4>
                             <div className="meta">
@@ -1426,7 +1418,16 @@ export const NGODashboard = () => {
                     availableListings.map((item) => (
                       <ItemCard key={item.id}>
                         <div className="item-main">
-                          <img src={item.image || "/food.png"} alt={item.title} className="item-img" />
+                          <img
+                            src={formatImageUrl(item.image || "/food.png")}
+                            alt={item.title}
+                            className="item-img"
+                            onError={(e) => {
+                              if (e.target.src !== `${window.location.origin}/food.png` && !e.target.src.endsWith('/food.png')) {
+                                e.target.src = '/food.png';
+                              }
+                            }}
+                          />
                           <div className="item-info">
                             <h4>{item.title}</h4>
                             <div className="meta">
@@ -1493,7 +1494,16 @@ export const NGODashboard = () => {
                       >
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                            <img src={req.image} alt={req.foodTitle} style={{ width: "64px", height: "64px", borderRadius: "14px", objectFit: "cover" }} />
+                            <img
+                              src={formatImageUrl(req.image || "/food.png")}
+                              alt={req.foodTitle}
+                              style={{ width: "64px", height: "64px", borderRadius: "14px", objectFit: "cover" }}
+                              onError={(e) => {
+                                if (e.target.src !== `${window.location.origin}/food.png` && !e.target.src.endsWith('/food.png')) {
+                                  e.target.src = '/food.png';
+                                }
+                              }}
+                            />
                             <div className="item-info">
                               <h4 style={{ margin: "0 0 4px", fontSize: "1.05rem", color: "#174A3A" }}>{req.foodTitle}</h4>
                               <div style={{ fontSize: "0.84rem", color: "#71827B", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
@@ -1643,7 +1653,16 @@ export const NGODashboard = () => {
                     requests.map((claim) => (
                       <ItemCard key={claim.id}>
                         <div className="item-main">
-                          <img src={claim.image || "/food.png"} alt={claim.foodTitle} className="item-img" />
+                          <img
+                            src={formatImageUrl(claim.image || "/food.png")}
+                            alt={claim.foodTitle}
+                            className="item-img"
+                            onError={(e) => {
+                              if (e.target.src !== `${window.location.origin}/food.png` && !e.target.src.endsWith('/food.png')) {
+                                e.target.src = '/food.png';
+                              }
+                            }}
+                          />
                           <div className="item-info">
                             <h4>{claim.foodTitle}</h4>
                             <div className="meta">
@@ -1693,82 +1712,6 @@ export const NGODashboard = () => {
                 </ItemsList>
               </div>
             )}
-
-            {/* TAB 5: ACTIVE PICKUPS */}
-            {activeTab === "pickups" && (
-              <div>
-                <SectionTitle>Pickup Logistics & Volunteer Dispatch</SectionTitle>
-                <ItemCard style={{ flexDirection: "column", alignItems: "flex-start", gap: "20px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: "10px" }}>
-                    <div>
-                      <h4 style={{ margin: "0 0 4px", color: "#174A3A", fontSize: "1.15rem" }}>
-                        Pickup Route #PK-492: Green Leaf Café → Hope Shelter
-                      </h4>
-                      <span style={{ fontSize: "0.85rem", color: "#71827B" }}>
-                        Estimated distance: 3.2 km · Scheduled slot: Today, 6:00 PM - 7:00 PM
-                      </span>
-                    </div>
-                    <span className="status-pill confirmed">
-                      Volunteer Driver Assigned
-                    </span>
-                  </div>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(3, 1fr)",
-                      gap: "16px",
-                      width: "100%",
-                      background: "#FAFBF9",
-                      padding: "16px",
-                      borderRadius: "14px",
-                      border: "1px solid #EBECE8",
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontSize: "0.78rem", color: "#71827B", textTransform: "uppercase" }}>Donor Contact</div>
-                      <strong style={{ color: "#174A3A" }}>Chef Ramesh</strong>
-                      <div style={{ fontSize: "0.85rem", color: "#556B64" }}>+977 980-1234567</div>
-                    </div>
-
-                    <div>
-                      <div style={{ fontSize: "0.78rem", color: "#71827B", textTransform: "uppercase" }}>Driver / Courier</div>
-                      <strong style={{ color: "#174A3A" }}>Bikash Thapa (Volunteer)</strong>
-                      <div style={{ fontSize: "0.85rem", color: "#556B64" }}>Van #BA 2 CHA 4412</div>
-                    </div>
-
-                    <div>
-                      <div style={{ fontSize: "0.78rem", color: "#71827B", textTransform: "uppercase" }}>Pickup Instructions</div>
-                      <strong style={{ color: "#174A3A" }}>Back Kitchen Entrance</strong>
-                      <div style={{ fontSize: "0.85rem", color: "#556B64" }}>Insulated thermal boxes required</div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", gap: "10px", alignSelf: "flex-end" }}>
-                    <ContactButton as="a" href="tel:+9779801234567" style={{ textDecoration: "none" }}>
-                      <IoCallOutline /> Call Driver (+977 980-1234567)
-                    </ContactButton>
-                    <ClaimButton
-                      style={{ background: "#2E7D5B" }}
-                      onClick={() => {
-                        const target = requests.find((r) => !(r.status || "").toLowerCase().includes("completed")) || requests[0];
-                        if (target) {
-                          handleMarkReceivedAndSafe(target);
-                        } else {
-                          setReceivedSuccessModal({
-                            isOpen: true,
-                            item: { foodTitle: "Pickup Route #PK-492", portions: "Batch Portions", donorName: "Chef Ramesh" }
-                          });
-                        }
-                      }}
-                    >
-                      <IoShieldCheckmark style={{ marginRight: "4px" }} /> Mark Received & Safe
-                    </ClaimButton>
-                  </div>
-                </ItemCard>
-              </div>
-            )}
-
             {/* TAB 6: COMPLETED REDISTRIBUTIONS */}
             {activeTab === "redistributions" && (
               <div>
@@ -1979,7 +1922,7 @@ export const NGODashboard = () => {
             {receivedSuccessModal.item && (
               <div className="details-box">
                 <img
-                  src={receivedSuccessModal.item.image || "/food.png"}
+                  src={formatImageUrl(receivedSuccessModal.item.image || "/food.png")}
                   alt=""
                   className="item-thumb"
                   onError={(e) => {

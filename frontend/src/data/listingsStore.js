@@ -15,6 +15,9 @@ export const formatImageUrl = (url) => {
   if (url.startsWith('/uploads/')) {
     return `${BACKEND_HOST}${url}`;
   }
+  if (url.startsWith('uploads/')) {
+    return `${BACKEND_HOST}/${url}`;
+  }
   return url;
 };
 

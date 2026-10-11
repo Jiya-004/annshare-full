@@ -1,5 +1,23 @@
 import api from "../services/api";
 
+const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const API_BASE = import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:8000/api' : 'https://annshare-backend.onrender.com/api');
+const BACKEND_HOST = API_BASE.replace(/\/api\/?$/, '');
+
+export const formatImageUrl = (url) => {
+  if (!url) return '/food.png';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+  if (url.startsWith('/uploads/')) {
+    return `${BACKEND_HOST}${url}`;
+  }
+  if (url.startsWith('uploads/')) {
+    return `${BACKEND_HOST}/${url}`;
+  }
+  return url;
+};
+
 export const formatToNepaliTime = (dateInput = new Date()) => {
   try {
     const d = new Date(dateInput);
@@ -72,7 +90,10 @@ export function getRequests() {
       syncRequestsFromBackend();
       return [...INITIAL_REQUESTS];
     }
-    return parsed;
+    return parsed.map((item) => ({
+      ...item,
+      image: formatImageUrl(item.image),
+    }));
   } catch (err) {
     console.error("Failed to read requests from localStorage:", err);
     return [...INITIAL_REQUESTS];
@@ -118,7 +139,7 @@ export async function syncRequestsFromBackend() {
         status: r.status || "Pending Admin Approval",
         requestDate: r.requestDate || (r.createdAt ? formatToNepaliTime(r.createdAt) : formatToNepaliTime()),
         requestedAt: r.requestDate || (r.createdAt ? formatToNepaliTime(r.createdAt) : "Recently"),
-        image: r.image || "/food.png",
+        image: formatImageUrl(r.image || "/food.png"),
         contact: r.contact || "+977 9841234567",
         ngoId: r.ngoId || r.receiverId,
         ngoName: r.ngoName || r.receiverName || "Hope Foundation Nepal",
@@ -163,7 +184,7 @@ export function addRequest(request) {
     status: request.status || "Pending Admin Approval",
     requestDate: request.requestDate || nepaliNow,
     requestedAt: request.requestedAt && request.requestedAt !== "Just now" ? request.requestedAt : nepaliNow,
-    image: request.image || "/food.png",
+    image: formatImageUrl(request.image || "/food.png"),
     contact: request.contact || "Contact through platform",
     ngoId: request.ngoId || null,
     ngoName: request.ngoName || "Verified NGO Partner",
