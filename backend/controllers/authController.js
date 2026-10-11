@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 const { isValidPhone, normalizePhone, isValidEmail } = require('../utils/validators');
+const bcrypt = require('bcryptjs');
 
 // REGISTER a new user
 const registerUser = async (req, res) => {
@@ -315,8 +316,10 @@ const changePassword = async (req, res) => {
       return res.status(400).json({ message: 'Current password is incorrect' });
     }
 
-    user.password = cleanNew;
-    await user.save();
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(cleanNew, salt);
+
+    await User.findByIdAndUpdate(user._id, { $set: { password: hashedPassword } });
 
     const token = generateToken(user._id);
 
@@ -379,8 +382,10 @@ const forgotPassword = async (req, res) => {
       return res.status(404).json({ message: 'No registered account found with this email' });
     }
 
-    user.password = cleanNew;
-    await user.save();
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(cleanNew, salt);
+
+    await User.findByIdAndUpdate(user._id, { $set: { password: hashedPassword } });
 
     res.status(200).json({
       success: true,
