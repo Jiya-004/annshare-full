@@ -33,7 +33,13 @@ const TopbarContainer = styled.header`
   left: 0;
   right: 0;
   width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
   z-index: 1000;
+
+  @media (max-width: 576px) {
+    padding: 0 12px;
+  }
 
   .dropdown-toggle::after {
     display: none !important;
@@ -44,6 +50,10 @@ const FarLeftGroup = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
+
+  @media (max-width: 576px) {
+    gap: 8px;
+  }
 `;
 
 const CollapseBtn = styled.button`
@@ -59,6 +69,11 @@ const CollapseBtn = styled.button`
   cursor: pointer;
   transition: background 0.15s ease;
 
+  @media (max-width: 576px) {
+    width: 36px;
+    height: 36px;
+  }
+
   &:hover {
     background: #F1F3F4;
     color: #202124;
@@ -70,6 +85,10 @@ const BrandLogo = styled.img`
   width: auto;
   object-fit: contain;
   cursor: pointer;
+
+  @media (max-width: 576px) {
+    height: 27px;
+  }
 `;
 
 // Google Merchant Center Style Wide Center Search Bar
@@ -124,6 +143,10 @@ const FarRightGroup = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
+
+  @media (max-width: 576px) {
+    gap: 6px;
+  }
 `;
 
 const HeaderIconButton = styled.div`
@@ -152,6 +175,17 @@ const HeaderIconButton = styled.div`
     height: 8px;
     border-radius: 50%;
     background: #185C4A;
+  }
+
+  &.help-btn {
+    @media (max-width: 576px) {
+      display: none;
+    }
+  }
+
+  @media (max-width: 576px) {
+    width: 36px;
+    height: 36px;
   }
 `;
 
@@ -235,6 +269,7 @@ const UserProfilePill = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
   }
 
   .user-info {
@@ -251,6 +286,23 @@ const UserProfilePill = styled.div`
     .role {
       font-size: 0.68rem;
       color: #66736D;
+    }
+  }
+
+  @media (max-width: 576px) {
+    padding: 2px;
+    background: transparent;
+    border: none;
+    margin-left: 0;
+
+    .user-info, svg {
+      display: none !important;
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      font-size: 0.82rem;
     }
   }
 `;
@@ -349,7 +401,7 @@ const Topbar = ({ toggleSidebar, searchTerm, setSearchTerm, setActiveNav }) => {
       {/* 3. Far Right Group: Google Merchant Layout + Admin User Profile Pill */}
       <FarRightGroup>
         {/* Help Icon Button */}
-        <HeaderIconButton onClick={() => setActiveNav('Settings')} title="Support & Settings">
+        <HeaderIconButton className="help-btn" onClick={() => setActiveNav('Settings')} title="Support & Settings">
           <FiHelpCircle size={20} />
         </HeaderIconButton>
 
@@ -386,7 +438,7 @@ const Topbar = ({ toggleSidebar, searchTerm, setSearchTerm, setActiveNav }) => {
             {unreadCount > 0 && <span className="badge-dot" />}
           </Dropdown.Toggle>
 
-          <Dropdown.Menu style={{ width: '320px', padding: '12px', borderRadius: '12px', border: '1px solid #E6ECE8' }}>
+          <Dropdown.Menu style={{ width: 'min(320px, calc(100vw - 28px))', maxWidth: '320px', padding: '12px', borderRadius: '12px', border: '1px solid #E6ECE8' }}>
             <div className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
               <strong style={{ fontSize: '0.86rem', color: '#12201B' }}>Notifications</strong>
               <button

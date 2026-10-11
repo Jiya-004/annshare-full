@@ -36,7 +36,7 @@ const Reports = () => {
 
   return (
     <Container fluid className="p-0">
-      <div className="d-flex align-items-center justify-content-between mb-4">
+      <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
         <div>
           <h2 style={{ fontWeight: 700, color: 'var(--evergreen)', margin: 0, fontSize: '1.6rem', fontFamily: 'var(--font-heading)' }}>
             Reports & Analytics Generator

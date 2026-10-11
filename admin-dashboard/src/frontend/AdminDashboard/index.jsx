@@ -136,7 +136,7 @@ const AdminDashboard = ({ setActiveNav }) => {
         <HeaderActions>
           <DatePill>
             <FiCalendar size={13} className="text-secondary" />
-            <span>Monday, Aug 31, 2026</span>
+            <span>{new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
           </DatePill>
 
           <ExportBtn onClick={handleExport}>
@@ -405,7 +405,16 @@ const AdminDashboard = ({ setActiveNav }) => {
               </WidgetHeader>
 
               {/* Filter Tabs */}
-              <div className="d-flex align-items-center gap-1 bg-light p-1 rounded-pill" style={{ border: '1px solid #E6ECE8', fontSize: '0.78rem' }}>
+              <div
+                className="d-flex align-items-center gap-1 bg-light p-1 rounded-pill"
+                style={{
+                  border: '1px solid #E6ECE8',
+                  fontSize: '0.78rem',
+                  overflowX: 'auto',
+                  maxWidth: '100%',
+                  WebkitOverflowScrolling: 'touch'
+                }}
+              >
                 {['All', 'Available', 'Requested', 'Picked Up', 'Completed'].map(tab => (
                   <Button
                     key={tab}
@@ -419,7 +428,8 @@ const AdminDashboard = ({ setActiveNav }) => {
                       fontWeight: 600,
                       background: activeTab === tab ? '#185C4A' : 'transparent',
                       borderColor: 'transparent',
-                      color: activeTab === tab ? '#ffffff' : '#66736D'
+                      color: activeTab === tab ? '#ffffff' : '#66736D',
+                      whiteSpace: 'nowrap'
                     }}
                   >
                     {tab}

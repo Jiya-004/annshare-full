@@ -8,6 +8,9 @@ const LayoutWrapper = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
   background-color: #F7F8F6;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   color: #12201B;
@@ -21,27 +24,35 @@ const MainWrapper = styled.div`
   margin-left: ${props => (props.$sidebarCollapsed ? '80px' : '260px')};
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   min-width: 0;
+  width: ${props => (props.$sidebarCollapsed ? 'calc(100% - 80px)' : 'calc(100% - 260px)')};
+  max-width: 100%;
+  overflow-x: hidden;
 
   @media (max-width: 992px) {
     margin-left: 0;
+    width: 100%;
   }
 `;
 
 const ContentBody = styled.main`
   padding: 32px 32px 48px 32px;
   flex-grow: 1;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 
   @media (max-width: 768px) {
-    padding: 20px 16px 32px 16px;
+    padding: 18px 12px 36px 12px;
   }
 `;
 
 const ScrollTopButton = styled.button`
   position: fixed;
-  bottom: 28px;
-  right: 28px;
-  width: 44px;
-  height: 44px;
+  bottom: 24px;
+  right: 24px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   background: var(--evergreen, #173F35);
   color: #ffffff;
@@ -51,7 +62,7 @@ const ScrollTopButton = styled.button`
   justify-content: center;
   box-shadow: 0 4px 16px rgba(23, 63, 53, 0.3);
   cursor: pointer;
-  z-index: 1050;
+  z-index: 1030;
   opacity: ${props => (props.$show ? '1' : '0')};
   visibility: ${props => (props.$show ? 'visible' : 'hidden')};
   transform: translateY(${props => (props.$show ? '0' : '12px')});
@@ -66,17 +77,46 @@ const ScrollTopButton = styled.button`
   &:active {
     transform: translateY(0);
   }
+
+  @media (max-width: 576px) {
+    bottom: 16px;
+    right: 16px;
+    width: 38px;
+    height: 38px;
+  }
 `;
 
 const DashboardLayout = ({ children, activeNav = 'Dashboard', setActiveNav }) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Mobile check helper: on screens <= 992px, start sidebar CLOSED
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth <= 992;
+    }
+    return false;
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  // Scroll to top automatically when switching navigation tabs
+  // Close sidebar on mobile whenever user navigates to a new tab & scroll to top
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof window !== 'undefined' && window.innerWidth <= 992) {
+      setSidebarCollapsed(true);
+    }
   }, [activeNav]);
+
+  // Handle window resizing cleanly
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 992) {
+        setSidebarCollapsed(true);
+      } else {
+        setSidebarCollapsed(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Track window scroll position to toggle floating scroll-to-top button
   useEffect(() => {

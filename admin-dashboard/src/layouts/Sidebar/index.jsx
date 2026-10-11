@@ -9,11 +9,13 @@ import {
   FiMessageSquare,
   FiSettings,
   FiBookOpen,
-  FiHelpCircle
+  FiHelpCircle,
+  FiX
 } from 'react-icons/fi';
 import {
   SidebarOverlay,
   SidebarContainer,
+  MobileSidebarHeader,
   NavBody,
   SectionHeader,
   NavItem
@@ -55,6 +57,21 @@ const Sidebar = ({ collapsed, toggleSidebar, activeNav = 'Dashboard', setActiveN
     <>
       <SidebarOverlay $collapsed={collapsed} onClick={toggleSidebar} />
       <SidebarContainer $collapsed={collapsed}>
+        <MobileSidebarHeader>
+          <div className="mobile-brand">
+            <img src="/logo/logo.png" alt="ANNShare" />
+            <span>ANNShare Admin</span>
+          </div>
+          <button
+            type="button"
+            className="close-btn"
+            onClick={toggleSidebar}
+            title="Close Sidebar"
+            aria-label="Close Sidebar"
+          >
+            <FiX size={18} />
+          </button>
+        </MobileSidebarHeader>
         <NavBody>
           <SectionHeader $collapsed={collapsed}>MAIN MENU</SectionHeader>
           {mainMenu.map(item => {

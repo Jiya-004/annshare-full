@@ -370,7 +370,7 @@ const RequestManagement = () => {
             </div>
           </div>
 
-          <div className="d-flex align-items-center gap-2 flex-shrink-0">
+          <div className="d-flex flex-wrap align-items-center gap-2">
             <Button
               variant="light"
               size="sm"

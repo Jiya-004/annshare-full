@@ -8,6 +8,11 @@ export const PageHeader = styled.div`
   margin-bottom: 22px;
   flex-wrap: wrap;
   gap: 12px;
+
+  @media (max-width: 576px) {
+    margin-bottom: 16px;
+    gap: 10px;
+  }
 `;
 
 export const WelcomeText = styled.div`
@@ -17,12 +22,20 @@ export const WelcomeText = styled.div`
     color: #12201B;
     font-size: 1.55rem;
     letter-spacing: -0.5px;
+
+    @media (max-width: 768px) {
+      font-size: 1.25rem;
+    }
   }
 
   p {
     margin: 3px 0 0 0;
     color: #66736D;
     font-size: 0.86rem;
+
+    @media (max-width: 768px) {
+      font-size: 0.78rem;
+    }
   }
 `;
 
@@ -30,6 +43,13 @@ export const HeaderActions = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+
+  @media (max-width: 576px) {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
 `;
 
 export const DatePill = styled.div`
@@ -43,6 +63,12 @@ export const DatePill = styled.div`
   font-weight: 500;
   color: #12201B;
   border: 1px solid #E6ECE8;
+  white-space: nowrap;
+
+  @media (max-width: 576px) {
+    font-size: 0.72rem;
+    padding: 4px 10px;
+  }
 `;
 
 export const ExportBtn = styled(Button)`
@@ -57,11 +83,17 @@ export const ExportBtn = styled(Button)`
   align-items: center;
   gap: 6px;
   transition: all 0.15s ease;
+  white-space: nowrap;
 
   &:hover, &:focus {
     background: #12201B;
     border-color: #12201B;
     color: #ffffff;
+  }
+
+  @media (max-width: 576px) {
+    font-size: 0.76rem;
+    padding: 5px 12px;
   }
 `;
 
@@ -76,6 +108,10 @@ export const HeroCard = styled(Card)`
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(24, 92, 74, 0.04);
 
+  @media (max-width: 576px) {
+    padding: 16px;
+  }
+
   .hero-icon {
     width: 42px;
     height: 42px;
@@ -87,6 +123,13 @@ export const HeroCard = styled(Card)`
     justify-content: center;
     font-size: 1.25rem;
     margin-bottom: 14px;
+
+    @media (max-width: 576px) {
+      width: 36px;
+      height: 36px;
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+    }
   }
 
   .hero-label {
@@ -104,6 +147,10 @@ export const HeroCard = styled(Card)`
     margin: 6px 0 6px 0;
     letter-spacing: -1px;
     line-height: 1;
+
+    @media (max-width: 768px) {
+      font-size: 1.8rem;
+    }
   }
 
   .hero-pill {
@@ -126,6 +173,10 @@ export const OperationalCard = styled(Card)`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.015);
   padding: 20px;
   height: 100%;
+
+  @media (max-width: 576px) {
+    padding: 14px;
+  }
 `;
 
 export const WidgetHeader = styled.div`
@@ -139,6 +190,10 @@ export const WidgetHeader = styled.div`
     font-weight: 600;
     color: #12201B;
     font-size: 1.02rem;
+
+    @media (max-width: 576px) {
+      font-size: 0.92rem;
+    }
   }
 `;
 
@@ -152,6 +207,11 @@ export const OperationalItem = styled.div`
   border: 1px solid #E6ECE8;
   margin-bottom: 8px;
   transition: all 0.15s ease;
+  gap: 8px;
+
+  @media (max-width: 576px) {
+    padding: 10px 12px;
+  }
 
   &:hover {
     background: #ffffff;
@@ -183,6 +243,18 @@ export const ExpiringUrgentItem = styled.div`
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
+  gap: 10px;
+
+  @media (max-width: 576px) {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px;
+
+    button {
+      width: 100%;
+      margin-top: 4px;
+    }
+  }
 
   .title {
     font-size: 0.86rem;
@@ -206,6 +278,18 @@ export const AuditUrgentItem = styled.div`
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
+  gap: 10px;
+
+  @media (max-width: 576px) {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px;
+
+    button {
+      width: 100%;
+      margin-top: 4px;
+    }
+  }
 
   .title {
     font-size: 0.84rem;
@@ -229,6 +313,18 @@ export const RequestUrgentItem = styled.div`
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
+  gap: 10px;
+
+  @media (max-width: 576px) {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px;
+
+    button {
+      width: 100%;
+      margin-top: 4px;
+    }
+  }
 
   .title {
     font-size: 0.84rem;
@@ -258,8 +354,10 @@ export const CalendarDayPicker = styled.div`
   background: #F7F8F6;
   border: 1px solid #E6ECE8;
   border-radius: 12px;
-  padding: 8px 12px;
+  padding: 8px 10px;
   margin-bottom: 14px;
+  overflow-x: auto;
+  gap: 4px;
 
   .day-col {
     display: flex;
@@ -270,6 +368,7 @@ export const CalendarDayPicker = styled.div`
     color: #66736D;
     gap: 4px;
     cursor: pointer;
+    flex-shrink: 0;
 
     .num {
       width: 24px;
@@ -325,4 +424,9 @@ export const TransactionTableCard = styled(Card)`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.015);
   padding: 20px;
   height: 100%;
+  overflow: hidden;
+
+  @media (max-width: 576px) {
+    padding: 14px;
+  }
 `;

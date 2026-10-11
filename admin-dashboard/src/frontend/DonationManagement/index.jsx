@@ -389,7 +389,7 @@ const DonationManagement = () => {
             </div>
           </div>
 
-          <div className="d-flex align-items-center gap-2 flex-shrink-0">
+          <div className="d-flex flex-wrap align-items-center gap-2">
             {don.status?.toLowerCase().includes('pending') && (
               <>
                 <Button

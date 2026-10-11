@@ -5,13 +5,13 @@ export const SidebarOverlay = styled.div`
   @media (max-width: 992px) {
     display: ${props => (props.$collapsed ? 'none' : 'block')};
     position: fixed;
-    top: 64px;
+    top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(18, 32, 27, 0.45);
+    background: rgba(18, 32, 27, 0.5);
     backdrop-filter: blur(3px);
-    z-index: 998;
+    z-index: 1040;
     transition: opacity 0.25s ease;
   }
 `;
@@ -33,14 +33,64 @@ export const SidebarContainer = styled.aside`
   z-index: 999;
 
   @media (max-width: 992px) {
-    width: 260px;
+    top: 0;
+    bottom: 0;
+    height: 100vh;
+    width: 280px;
+    max-width: 85vw;
+    z-index: 1050;
     transform: ${props => (props.$collapsed ? 'translateX(-100%)' : 'translateX(0)')};
-    box-shadow: ${props => (props.$collapsed ? 'none' : '4px 0 20px rgba(0, 0, 0, 0.12)')};
+    box-shadow: ${props => (props.$collapsed ? 'none' : '4px 0 28px rgba(18, 32, 27, 0.22)')};
   }
 `;
 
-export const SidebarHeader = styled.div`
+export const MobileSidebarHeader = styled.div`
   display: none;
+  @media (max-width: 992px) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 18px;
+    border-bottom: 1px solid #E6ECE8;
+    background: #ffffff;
+
+    .mobile-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      img {
+        height: 28px;
+        width: auto;
+        object-fit: contain;
+      }
+
+      span {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: #185C4A;
+      }
+    }
+
+    .close-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #F7F8F6;
+      border: 1px solid #E6ECE8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #66736D;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover {
+        background: #EEF8F4;
+        color: #185C4A;
+      }
+    }
+  }
 `;
 
 export const LogoWrapper = styled.div`
