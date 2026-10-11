@@ -1389,7 +1389,7 @@ export const NGODashboard = () => {
                               : req.status}
                           </span>
                           {isConfirmed ? (
-                            <ContactButton onClick={() => alert(`Donor Contact:\nName: ${req.donorName}\nPhone: ${req.donorPhone || req.contact || "Not provided"}\nPickup Location: ${req.location}`)}>
+                            <ContactButton as="a" href={req.donorPhone ? `tel:${req.donorPhone}` : "#"} onClick={(e) => { if (!req.donorPhone) e.preventDefault(); }} style={{ textDecoration: "none" }}>
                               <IoCallOutline /> Call Donor {req.donorPhone ? `(${req.donorPhone})` : ""}
                             </ContactButton>
                           ) : (
@@ -1595,7 +1595,7 @@ export const NGODashboard = () => {
                               </div>
                             </div>
                             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                              <ContactButton onClick={() => alert(`Calling Donor at: ${req.donorPhone || req.contact || "No phone number available"}`)}>
+                              <ContactButton as="a" href={req.donorPhone ? `tel:${req.donorPhone}` : "#"} onClick={(e) => { if (!req.donorPhone) e.preventDefault(); }} style={{ textDecoration: "none" }}>
                                 <IoCallOutline /> Call Donor
                               </ContactButton>
                               <ClaimButton
@@ -1745,8 +1745,8 @@ export const NGODashboard = () => {
                   </div>
 
                   <div style={{ display: "flex", gap: "10px", alignSelf: "flex-end" }}>
-                    <ContactButton onClick={() => alert("Calling driver Bikash...")}>
-                      <IoCallOutline /> Call Driver
+                    <ContactButton as="a" href="tel:+9779801234567" style={{ textDecoration: "none" }}>
+                      <IoCallOutline /> Call Driver (+977 980-1234567)
                     </ContactButton>
                     <ClaimButton
                       style={{ background: "#2E7D5B" }}
