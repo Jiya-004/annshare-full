@@ -49,6 +49,7 @@ app.use('/api/category-extra', require('./routes/categoryExtraRoutes'));
 app.use('/api/stats', require('./routes/statsRoutes'));
 app.use('/api/reports', require('./routes/statsRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/worker-donations', require('./routes/workerDonationRoutes'));
 app.use('/api/seed', require('./routes/seedRoutes'));
 
 // 404 Route handler

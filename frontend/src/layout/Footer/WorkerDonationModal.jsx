@@ -541,19 +541,73 @@ export default function WorkerDonationModal({
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  const handleCompleteDonation = (e) => {
+  const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const API_BASE_URL = import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:8000/api' : 'https://annshare-backend.onrender.com/api');
+
+  const handleCompleteDonation = async (e) => {
     e.preventDefault();
     setIsProcessing(true);
 
-    setTimeout(() => {
-      const generatedTxn = "TXN-ANN-" + Math.floor(100000 + Math.random() * 900000);
-      setTxnId(generatedTxn);
-      setIsProcessing(false);
-      setIsSuccess(true);
-      if (onSuccess) {
-        onSuccess(amount);
+    const generatedTxn = "TXN-ANN-" + Math.floor(100000 + Math.random() * 900000);
+    setTxnId(generatedTxn);
+
+    // 1. Post to backend API
+    try {
+      const response = await fetch(`${API_BASE_URL}/worker-donations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          amount: Number(amount),
+          paymentMethod: selectedMethod,
+          donorName: donorName?.trim() || "Anonymous Donor",
+          donorPhone: donorPhone?.trim() || "",
+          transactionId: generatedTxn,
+          fundType: "Worker Welfare Fund",
+        }),
+      });
+      const resJson = await response.json();
+      if (resJson?.data?.transactionId) {
+        setTxnId(resJson.data.transactionId);
       }
-    }, 1200);
+    } catch (err) {
+      console.warn("Backend unavailable, proceeding with local receipt:", err.message);
+    }
+
+    // 2. Synchronize to localStorage for instant Admin Dashboard visibility
+    try {
+      const existing = JSON.parse(localStorage.getItem('annshare_worker_donations') || '[]');
+      existing.unshift({
+        id: generatedTxn,
+        transactionId: generatedTxn,
+        donorName: donorName?.trim() || "Anonymous Donor",
+        donorPhone: donorPhone?.trim() || "",
+        amount: Number(amount),
+        currency: "NPR",
+        paymentMethod: selectedMethod,
+        status: "Completed",
+        fundType: "Worker Welfare Fund",
+        date: new Date().toLocaleDateString('en-US', {
+          month: 'short',
+          day: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        createdAt: new Date().toISOString(),
+      });
+      localStorage.setItem('annshare_worker_donations', JSON.stringify(existing));
+      window.dispatchEvent(new Event('annshare_storage_update'));
+    } catch (e) {
+      // ignore
+    }
+
+    setIsProcessing(false);
+    setIsSuccess(true);
+    if (onSuccess) {
+      onSuccess(amount);
+    }
   };
 
   return (

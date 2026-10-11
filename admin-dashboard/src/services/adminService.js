@@ -14,6 +14,7 @@ import {
   initialBlogCategoriesStore,
   initialFaqCategoriesStore,
   mockSummaryReport,
+  initialWorkerDonationsStore,
 } from '../data/adminStore';
 
 const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -1265,3 +1266,124 @@ export const exportReportCSV = () => {
   link.click();
   document.body.removeChild(link);
 };
+
+// ==========================================
+// 6. WORKER WELFARE FUND DONATIONS SERVICE
+// ==========================================
+
+const readStoredWorkerDonations = () => {
+  try {
+    const saved = localStorage.getItem('annshare_worker_donations');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+  return initialWorkerDonationsStore || [];
+};
+
+let workerDonationsState = readStoredWorkerDonations();
+
+// Save state to localStorage
+const persistWorkerDonations = (list) => {
+  workerDonationsState = list;
+  try {
+    localStorage.setItem('annshare_worker_donations', JSON.stringify(list));
+  } catch (e) {
+    // ignore
+  }
+  notifyListeners();
+};
+
+// Sync worker donations from Backend MongoDB
+export const syncWorkerDonationsFromBackend = async () => {
+  try {
+    const res = await fetch(`${API_BASE}/worker-donations`, {
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json?.success && Array.isArray(json?.data) && json.data.length > 0) {
+        persistWorkerDonations(json.data);
+        return json.data;
+      }
+    }
+  } catch (err) {
+    console.warn('[AdminService] Could not sync worker donations from backend:', err.message);
+  }
+  return workerDonationsState;
+};
+
+// Auto-sync on load
+if (typeof window !== 'undefined') {
+  syncWorkerDonationsFromBackend().catch(() => {});
+  window.addEventListener('annshare_storage_update', () => {
+    workerDonationsState = readStoredWorkerDonations();
+    notifyListeners();
+  });
+}
+
+export const getWorkerDonations = () => {
+  return [...workerDonationsState];
+};
+
+export const getWorkerDonationStats = () => {
+  const list = workerDonationsState;
+  const totalRaised = list.reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+  const totalCount = list.length;
+  const verifiedCount = list.filter((d) => d.status === 'Verified' || d.status === 'Completed').length;
+  const average = totalCount ? Math.round(totalRaised / totalCount) : 0;
+
+  const methodBreakdown = {
+    esewa: list.filter((d) => d.paymentMethod === 'esewa').reduce((s, d) => s + (Number(d.amount) || 0), 0),
+    khalti: list.filter((d) => d.paymentMethod === 'khalti').reduce((s, d) => s + (Number(d.amount) || 0), 0),
+    fonepay: list.filter((d) => d.paymentMethod === 'fonepay').reduce((s, d) => s + (Number(d.amount) || 0), 0),
+    bank: list.filter((d) => d.paymentMethod === 'bank').reduce((s, d) => s + (Number(d.amount) || 0), 0),
+  };
+
+  return {
+    totalRaised,
+    totalCount,
+    verifiedCount,
+    average,
+    methodBreakdown,
+  };
+};
+
+export const updateWorkerDonationStatus = async (id, status, note = '') => {
+  const updated = workerDonationsState.map((d) =>
+    d.id === id || d._id === id || d.transactionId === id ? { ...d, status, ...(note ? { note } : {}) } : d
+  );
+  persistWorkerDonations(updated);
+
+  try {
+    const target = workerDonationsState.find((d) => d.id === id || d._id === id || d.transactionId === id);
+    const targetId = target?._id || target?.id || id;
+    await fetch(`${API_BASE}/worker-donations/${targetId}/status`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ status, note }),
+    });
+  } catch (err) {
+    // ignore
+  }
+};
+
+export const deleteWorkerDonation = async (id) => {
+  const updated = workerDonationsState.filter((d) => d.id !== id && d._id !== id && d.transactionId !== id);
+  persistWorkerDonations(updated);
+
+  try {
+    await fetch(`${API_BASE}/worker-donations/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+  } catch (err) {
+    // ignore
+  }
+};
+

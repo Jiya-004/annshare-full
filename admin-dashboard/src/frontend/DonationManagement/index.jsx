@@ -17,7 +17,8 @@ import {
   FiThermometer,
   FiShield,
   FiAlertCircle,
-  FiRefreshCw
+  FiRefreshCw,
+  FiHeart
 } from 'react-icons/fi';
 
 import StatusBadge from '../../components/StatusBadge';
@@ -785,26 +786,53 @@ const DonationManagement = () => {
           <h2>Food Donation Management</h2>
           <p>Monitor and moderate all surplus food listings across network donors.</p>
         </div>
-        <Button
-          variant="light"
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          style={{
-            borderRadius: '20px',
-            fontSize: '0.84rem',
-            fontWeight: 600,
-            border: '1px solid #E6ECE8',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            color: '#185C4A',
-            background: '#ffffff',
-            padding: '7px 16px'
-          }}
-        >
-          <FiRefreshCw size={14} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
-          {isRefreshing ? 'Refreshing...' : 'Refresh Donations'}
-        </Button>
+        <div className="d-flex align-items-center gap-2">
+          <Button
+            variant="outline-danger"
+            size="sm"
+            onClick={() => {
+              if (window.__annshareSetActiveNav) {
+                window.__annshareSetActiveNav('Worker Donations');
+              } else {
+                window.location.search = '?page=worker-donations';
+              }
+            }}
+            style={{
+              borderRadius: '20px',
+              fontSize: '0.84rem',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 16px',
+              borderColor: '#FCA5A5',
+              color: '#B91C1C',
+              background: '#FEF2F2'
+            }}
+          >
+            <FiHeart size={14} /> Worker Fund Donations
+          </Button>
+          <Button
+            variant="light"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            style={{
+              borderRadius: '20px',
+              fontSize: '0.84rem',
+              fontWeight: 600,
+              border: '1px solid #E6ECE8',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              color: '#185C4A',
+              background: '#ffffff',
+              padding: '7px 16px'
+            }}
+          >
+            <FiRefreshCw size={14} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh Donations'}
+          </Button>
+        </div>
       </PageHeader>
 
       <MainCard>

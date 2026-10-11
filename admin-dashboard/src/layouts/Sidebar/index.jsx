@@ -3,6 +3,7 @@ import {
   FiGrid,
   FiUsers,
   FiPackage,
+  FiHeart,
   FiFileText,
   FiLayers,
   FiBarChart2,
@@ -33,6 +34,7 @@ const Sidebar = ({
     { name: 'Dashboard', icon: FiGrid },
     { name: 'Users', icon: FiUsers },
     { name: 'Donations', icon: FiPackage },
+    { name: 'Worker Donations', icon: FiHeart },
     { name: 'Food Requests', icon: FiFileText },
     { name: 'Categories', icon: FiLayers }
   ];

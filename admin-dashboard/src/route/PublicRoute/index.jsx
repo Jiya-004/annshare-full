@@ -10,6 +10,7 @@ import Reports from '../../frontend/Reports';
 import Feedback from '../../frontend/Feedback';
 import Settings from '../../frontend/Settings';
 import ContentManagement from '../../frontend/ContentManagement';
+import WorkerDonations from '../../frontend/WorkerDonations';
 
 const STORAGE_KEY = 'annshare_admin_active_nav';
 
@@ -17,6 +18,8 @@ const NAV_SLUG_MAP = {
   'dashboard': 'Dashboard',
   'users': 'Users',
   'donations': 'Donations',
+  'worker-donations': 'Worker Donations',
+  'worker-fund': 'Worker Donations',
   'food-requests': 'Food Requests',
   'requests': 'Food Requests',
   'categories': 'Categories',
@@ -97,6 +100,13 @@ const PublicRoute = () => {
     }
   }, []);
 
+  useEffect(() => {
+    window.__annshareSetActiveNav = handleSetActiveNav;
+    return () => {
+      delete window.__annshareSetActiveNav;
+    };
+  }, [handleSetActiveNav]);
+
   // Sync URL on initial mount and when activeNav changes
   useEffect(() => {
     try {
@@ -128,6 +138,9 @@ const PublicRoute = () => {
         return <UserManagement />;
       case 'Donations':
         return <DonationManagement />;
+      case 'Worker Donations':
+      case 'Worker Fund':
+        return <WorkerDonations />;
       case 'Food Requests':
         return <RequestManagement />;
       case 'Categories':
