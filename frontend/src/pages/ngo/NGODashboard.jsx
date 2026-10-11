@@ -9,7 +9,6 @@ import {
   IoSearchOutline,
   IoDocumentTextOutline,
   IoBagCheckOutline,
-  IoCarOutline,
   IoCheckmarkDoneCircleOutline,
   IoNotificationsOutline,
   IoBusinessOutline,
