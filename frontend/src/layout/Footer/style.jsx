@@ -413,7 +413,7 @@ export const FooterLink = styled.a`
 `;
 
 /* ==========================================================================
-   3. NEWSLETTER / COMMUNITY ROW
+   3. WORKER DONATION & WELFARE ROW
    ========================================================================== */
 export const NewsletterSection = styled.div`
   background: #FFFFFF;
@@ -432,6 +432,26 @@ export const NewsletterSection = styled.div`
     align-items: flex-start;
     padding: 28px 24px;
     gap: 20px;
+  }
+`;
+
+export const WorkerBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #C53030;
+  background: #FFF5F5;
+  border: 1px solid rgba(229, 62, 62, 0.2);
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+
+  svg {
+    font-size: 0.85rem;
   }
 `;
 
@@ -454,6 +474,59 @@ export const NewsletterText = styled.div`
   }
 `;
 
+export const DonationRightContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 440px;
+`;
+
+export const PresetRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+`;
+
+export const PresetChip = styled.button`
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: ${({ $active }) => ($active ? '#174A3A' : '#F8F5ED')};
+  color: ${({ $active }) => ($active ? '#FFFFFF' : '#174A3A')};
+  border: 1px solid ${({ $active }) => ($active ? '#174A3A' : 'rgba(23, 74, 58, 0.14)')};
+  transition: all 0.18s ease;
+
+  &:hover {
+    background: ${({ $active }) => ($active ? '#2E7D5B' : '#EFEAE0')};
+    border-color: ${({ $active }) => ($active ? '#2E7D5B' : 'rgba(23, 74, 58, 0.25)')};
+  }
+`;
+
+export const AmountInputWrapper = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  width: 100%;
+`;
+
+export const CurrencyPrefix = styled.span`
+  position: absolute;
+  left: 16px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #174A3A;
+  pointer-events: none;
+  user-select: none;
+`;
+
 export const NewsletterForm = styled.form`
   display: flex;
   align-items: center;
@@ -469,7 +542,8 @@ export const NewsletterForm = styled.form`
 
 export const NewsletterInput = styled.input`
   flex: 1;
-  padding: 12px 18px;
+  width: 100%;
+  padding: 12px 18px 12px 48px;
   border-radius: 999px;
   background-color: #F8F5ED;
   border: 1px solid rgba(23, 74, 58, 0.14);
@@ -521,14 +595,15 @@ export const SubscribeButton = styled.button`
 
 export const SubscribedFeedback = styled.div`
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
   font-size: 0.9rem;
-  font-weight: 600;
-  color: #2E7D5B;
-  background: rgba(46, 125, 91, 0.1);
-  padding: 10px 18px;
-  border-radius: 999px;
+  color: #174A3A;
+  background: rgba(46, 125, 91, 0.08);
+  border: 1px solid rgba(46, 125, 91, 0.2);
+  padding: 14px 18px;
+  border-radius: 16px;
+  width: 100%;
 `;
 
 /* ==========================================================================

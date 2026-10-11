@@ -8,6 +8,7 @@ import {
   IoArrowForward,
   IoChevronDown,
   IoCheckmarkCircle,
+  IoHeart,
 } from "react-icons/io5";
 
 import {
@@ -32,7 +33,13 @@ import {
   LinkList,
   FooterLink,
   NewsletterSection,
+  WorkerBadge,
   NewsletterText,
+  DonationRightContainer,
+  PresetRow,
+  PresetChip,
+  AmountInputWrapper,
+  CurrencyPrefix,
   NewsletterForm,
   NewsletterInput,
   SubscribeButton,
@@ -47,9 +54,10 @@ import ANNShareLogo from "../Header/ANNShareLogo";
 
 const Footer = () => {
   const navigate = useNavigate();
-  // Newsletter subscription state
-  const [email, setEmail] = useState("");
-  const [isSubscribed, setIsSubscribed] = useState(false);
+  // Worker donation state
+  const [donationAmount, setDonationAmount] = useState("500");
+  const [isDonated, setIsDonated] = useState(false);
+  const [donatedAmount, setDonatedAmount] = useState("");
 
   // Mobile accordion collapse states
   const [openAccordion, setOpenAccordion] = useState({
@@ -66,10 +74,11 @@ const Footer = () => {
     }));
   };
 
-  const handleSubscribe = (e) => {
+  const handleDonate = (e) => {
     e.preventDefault();
-    if (email.trim()) {
-      setIsSubscribed(true);
+    if (donationAmount && Number(donationAmount) > 0) {
+      setDonatedAmount(donationAmount);
+      setIsDonated(true);
     }
   };
 
@@ -500,35 +509,93 @@ const Footer = () => {
           </MainFooterGrid>
 
           {/* ================================================================
-              3. NEWSLETTER / COMMUNITY ROW
+              3. WORKER WELFARE / DONATE TO WORKERS ROW
               ================================================================ */}
           <NewsletterSection>
             <NewsletterText>
-              <h4>Stay connected to the movement.</h4>
+              <WorkerBadge>
+                <IoHeart /> Worker Welfare Fund
+              </WorkerBadge>
+              <h4>Help our workers. Support the movement.</h4>
               <p>
-                Get updates about food rescue, community impact, and new
-                ANNShare opportunities.
+                Every contribution directly funds fuel, safety gear, and daily
+                stipends for our frontline food rescue heroes delivering meals across Nepal.
               </p>
             </NewsletterText>
 
-            {!isSubscribed ? (
-              <NewsletterForm onSubmit={handleSubscribe}>
-                <NewsletterInput
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  aria-label="Email address for newsletter"
-                />
-                <SubscribeButton type="submit">Subscribe</SubscribeButton>
-              </NewsletterForm>
-            ) : (
-              <SubscribedFeedback>
-                <IoCheckmarkCircle style={{ fontSize: "1.2rem" }} />
-                <span>Thank you for joining the community!</span>
-              </SubscribedFeedback>
-            )}
+            <DonationRightContainer>
+              {!isDonated ? (
+                <>
+                  <PresetRow>
+                    {["100", "250", "500", "1000"].map((val) => (
+                      <PresetChip
+                        key={val}
+                        type="button"
+                        $active={donationAmount === val}
+                        onClick={() => setDonationAmount(val)}
+                      >
+                        Rs. {val}
+                      </PresetChip>
+                    ))}
+                  </PresetRow>
+
+                  <NewsletterForm onSubmit={handleDonate}>
+                    <AmountInputWrapper>
+                      <CurrencyPrefix>Rs.</CurrencyPrefix>
+                      <NewsletterInput
+                        type="number"
+                        min="10"
+                        step="10"
+                        placeholder="Enter amount"
+                        value={donationAmount}
+                        onChange={(e) => setDonationAmount(e.target.value)}
+                        required
+                        aria-label="Donation amount in Rupees"
+                      />
+                    </AmountInputWrapper>
+                    <SubscribeButton type="submit">
+                      <IoHeart style={{ color: "#FF7B7B" }} /> Donate
+                    </SubscribeButton>
+                  </NewsletterForm>
+                </>
+              ) : (
+                <SubscribedFeedback>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                    <IoCheckmarkCircle
+                      style={{ fontSize: "1.35rem", color: "#2E7D5B", flexShrink: 0, marginTop: "2px" }}
+                    />
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span style={{ fontWeight: 700, color: "#174A3A" }}>
+                        Thank you for donating Rs. {donatedAmount}!
+                      </span>
+                      <span style={{ fontSize: "0.82rem", color: "#4A5D56" }}>
+                        Your support directly aids our food rescue workers on the ground.
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDonated(false);
+                      setDonationAmount("500");
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#2E7D5B",
+                      fontSize: "0.82rem",
+                      fontWeight: 600,
+                      textDecoration: "underline",
+                      cursor: "pointer",
+                      padding: "4px 0 0",
+                      alignSelf: "flex-start",
+                    }}
+                  >
+                    Donate again
+                  </button>
+                </SubscribedFeedback>
+              )}
+            </DonationRightContainer>
           </NewsletterSection>
 
           {/* ================================================================

@@ -51,7 +51,8 @@ const DashboardWrapper = styled.div`
 
 const Container = styled.div`
   max-width: 1280px;
-  margin: 0 auto;
+
+   margin-top: 117px;
 `;
 
 const DashboardGrid = styled.div`
@@ -63,7 +64,7 @@ const DashboardGrid = styled.div`
   @media (max-width: 960px) {
     grid-template-columns: 1fr;
     gap: 20px;
-    margin-top: 117px;
+   
   }
 `;
 
