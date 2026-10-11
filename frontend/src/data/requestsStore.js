@@ -247,3 +247,20 @@ export function updateRequestStatus(id, status, extraData = {}) {
 
   return updated;
 }
+
+/**
+ * Delete a request from the store and backend
+ */
+export function deleteRequest(id) {
+  const current = getRequests();
+  const updated = current.filter((r) => String(r.id) !== String(id) && String(r._id) !== String(id));
+  saveRequests(updated);
+
+  if (id) {
+    api.requests.delete(id).catch((err) => {
+      console.warn("Failed to delete request from backend:", err.message);
+    });
+  }
+
+  return updated;
+}

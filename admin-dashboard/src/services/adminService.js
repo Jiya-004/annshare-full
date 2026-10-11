@@ -612,6 +612,18 @@ export const deleteDonation = (donationId) => {
   notifyListeners();
 };
 
+export const deleteRequest = (requestId) => {
+  const targetId = String(requestId);
+  requestsState = requestsState.filter((r) => String(r.id) !== targetId && String(r._id) !== targetId);
+  fetch(`${API_BASE}/requests/${targetId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  }).catch((err) => {
+    console.warn("deleteRequest network error:", err.message);
+  });
+  notifyListeners();
+};
+
 export const updateRequestStatus = (requestId, newStatus) => {
   requestsState = requestsState.map((r) => {
     if (r.id === requestId || r._id === requestId) {

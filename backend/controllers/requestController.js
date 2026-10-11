@@ -308,8 +308,21 @@ const updateRequestStatus = async (req, res) => {
 // DELETE request
 const deleteRequest = async (req, res) => {
   try {
-    await Request.findByIdAndDelete(req.params.id);
-    res.status(200).json({ message: 'Request deleted successfully' });
+    const { id } = req.params;
+    let deleted = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      deleted = await Request.findByIdAndDelete(id);
+    }
+    if (!deleted) {
+      deleted = await Request.findOneAndDelete({
+        $or: [
+          { id: id },
+          { listingId: id },
+          { donationId: id }
+        ]
+      });
+    }
+    res.status(200).json({ message: 'Request deleted successfully', deletedId: id });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }

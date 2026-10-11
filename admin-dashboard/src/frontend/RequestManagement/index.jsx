@@ -9,6 +9,7 @@ import {
   FiCheck,
   FiX,
   FiSlash,
+  FiTrash2,
   FiArrowLeft,
   FiUser,
   FiPackage,
@@ -28,6 +29,7 @@ import ConfirmModal from '../../components/modals/ConfirmModal';
 import {
   getRequests,
   updateRequestStatus,
+  deleteRequest,
   subscribeToAdminService,
   syncAllFromBackend,
   syncRequestsFromBackend,
@@ -195,6 +197,8 @@ const RequestManagement = () => {
   const [viewingRequest, setViewingRequest] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [targetStatus, setTargetStatus] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [requestToDelete, setRequestToDelete] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
@@ -293,6 +297,23 @@ const RequestManagement = () => {
         setViewingRequest(prev => prev ? { ...prev, status: targetStatus } : null);
       }
       setSelectedRequest(null);
+    }
+  };
+
+  const handleDeleteClick = (req) => {
+    setRequestToDelete(req);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (requestToDelete) {
+      const targetId = requestToDelete.id || requestToDelete._id;
+      deleteRequest(targetId);
+      if (viewingRequest && (viewingRequest.id === targetId || viewingRequest._id === targetId)) {
+        setViewingRequest(null);
+      }
+      setRequestToDelete(null);
+      setShowDeleteModal(false);
     }
   };
 
@@ -425,6 +446,25 @@ const RequestManagement = () => {
                 </Button>
               </>
             )}
+
+            <Button
+              variant="outline-danger"
+              size="sm"
+              style={{
+                borderRadius: '20px',
+                height: '38px',
+                padding: '0 16px',
+                fontWeight: 600,
+                fontSize: '0.82rem',
+                whiteSpace: 'nowrap',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+              onClick={() => handleDeleteClick(req)}
+            >
+              <FiTrash2 size={14} /> Delete
+            </Button>
           </div>
         </div>
 
@@ -845,6 +885,11 @@ const RequestManagement = () => {
                                 </StyledDropdownItem>
                               </>
                             )}
+
+                            <Dropdown.Divider />
+                            <StyledDropdownItem onClick={() => handleDeleteClick(req)} $variant="danger">
+                              <FiTrash2 className="me-2" size={15} /> Delete Request
+                            </StyledDropdownItem>
                           </StyledDropdownMenu>
                         </Dropdown>
                       </td>
@@ -871,6 +916,16 @@ const RequestManagement = () => {
         confirmText={`Confirm ${targetStatus}`}
         confirmVariant={targetStatus.includes('Approved') ? 'success' : 'danger'}
         onConfirm={handleConfirmStatusChange}
+      />
+
+      <ConfirmModal
+        show={showDeleteModal}
+        onHide={() => { setShowDeleteModal(false); setRequestToDelete(null); }}
+        title="Delete Food Request"
+        message={`Are you sure you want to permanently delete Request #${(requestToDelete?.id || requestToDelete?._id || '').length > 8 ? `REQ-${(requestToDelete.id || requestToDelete._id).slice(-5).toUpperCase()}` : (requestToDelete?.id || '')} for "${requestToDelete?.foodName || requestToDelete?.foodTitle || 'Food item'}"? This will permanently delete it from the dashboard.`}
+        confirmText="Delete Request"
+        confirmVariant="danger"
+        onConfirm={handleConfirmDelete}
       />
     </Container>
   );
