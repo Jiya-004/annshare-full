@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { useAuth } from "../../context/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getRequests, addRequest, updateRequestStatus } from "../../data/requestsStore";
-import { getListings, updateListingStatus } from "../../data/listingsStore";
+import { getRequests, addRequest, updateRequestStatus, syncRequestsFromBackend } from "../../data/requestsStore";
+import { getListings, updateListingStatus, syncListingsFromBackend } from "../../data/listingsStore";
 import {
   IoPeopleOutline,
   IoSearchOutline,
@@ -726,6 +726,39 @@ export const NGODashboard = () => {
   const [availableListings, setAvailableListings] = useState(loadAvailableListings);
 
   useEffect(() => {
+    // Initial sync from live backend
+    syncRequestsFromBackend()
+      .then(() => setRequests(loadNgoRequests()))
+      .catch(() => {});
+    syncListingsFromBackend()
+      .then(() => setAvailableListings(loadAvailableListings()))
+      .catch(() => {});
+
+    // Live auto-polling every 4 seconds
+    const pollTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        syncListingsFromBackend()
+          .then(() => setAvailableListings(loadAvailableListings()))
+          .catch(() => {});
+        syncRequestsFromBackend()
+          .then(() => setRequests(loadNgoRequests()))
+          .catch(() => {});
+      }
+    }, 4000);
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        syncListingsFromBackend()
+          .then(() => setAvailableListings(loadAvailableListings()))
+          .catch(() => {});
+        syncRequestsFromBackend()
+          .then(() => setRequests(loadNgoRequests()))
+          .catch(() => {});
+      }
+    };
+    window.addEventListener("focus", onVisibility);
+    document.addEventListener("visibilitychange", onVisibility);
+
     const handleListingsUpdate = () => {
       setAvailableListings(loadAvailableListings());
     };
@@ -741,6 +774,9 @@ export const NGODashboard = () => {
     });
 
     return () => {
+      clearInterval(pollTimer);
+      window.removeEventListener("focus", onVisibility);
+      document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("annshare_listings_updated", handleListingsUpdate);
       window.removeEventListener("annshare_requests_updated", handleRequestsUpdate);
       window.removeEventListener("storage", handleListingsUpdate);

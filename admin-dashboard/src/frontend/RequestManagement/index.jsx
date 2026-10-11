@@ -207,6 +207,21 @@ const RequestManagement = () => {
       if (isMounted) setIsLoading(false);
     });
 
+    // Real-time live polling every 4 seconds
+    const pollTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        syncRequestsFromBackend();
+      }
+    }, 4000);
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        syncRequestsFromBackend();
+      }
+    };
+    window.addEventListener('focus', onVisibility);
+    document.addEventListener('visibilitychange', onVisibility);
+
     const unsub = subscribeToAdminService(() => {
       if (!isMounted) return;
       const updated = getRequests();
@@ -216,6 +231,9 @@ const RequestManagement = () => {
 
     return () => {
       isMounted = false;
+      clearInterval(pollTimer);
+      window.removeEventListener('focus', onVisibility);
+      document.removeEventListener('visibilitychange', onVisibility);
       unsub();
     };
   }, []);

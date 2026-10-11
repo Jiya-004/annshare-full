@@ -69,12 +69,38 @@ export default function FindFoodPage() {
       })
       .catch(() => {});
 
+    // Live auto-polling every 4 seconds so newly approved listings appear immediately!
+    const pollTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        syncListingsFromBackend()
+          .then((synced) => {
+            if (Array.isArray(synced)) setAllListings(synced);
+          })
+          .catch(() => {});
+      }
+    }, 4000);
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        syncListingsFromBackend()
+          .then((synced) => {
+            if (Array.isArray(synced)) setAllListings(synced);
+          })
+          .catch(() => {});
+      }
+    };
+    window.addEventListener("focus", onVisibility);
+    document.addEventListener("visibilitychange", onVisibility);
+
     const handleUpdate = () => {
       setAllListings(getListings());
     };
     window.addEventListener("annshare_listings_updated", handleUpdate);
     window.addEventListener("storage", handleUpdate);
     return () => {
+      clearInterval(pollTimer);
+      window.removeEventListener("focus", onVisibility);
+      document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("annshare_listings_updated", handleUpdate);
       window.removeEventListener("storage", handleUpdate);
     };

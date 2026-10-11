@@ -226,7 +226,7 @@ export const syncListingsFromBackend = async () => {
     const listingsRes = await fetch(`${API_BASE}/listings`, { headers: getAuthHeaders() }).catch(() => null);
     if (listingsRes && listingsRes.ok) {
       const listingsData = await listingsRes.json();
-      if (Array.isArray(listingsData) && listingsData.length > 0) {
+      if (Array.isArray(listingsData)) {
         listingsState = listingsData.map((d) => ({
           id: d.id || d._id,
           _id: d._id,
@@ -246,9 +246,13 @@ export const syncListingsFromBackend = async () => {
           image: formatImageUrl(d.image || (d.images && d.images[0]) || '/food.png'),
         }));
         notifyListeners();
+        return listingsState;
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn("syncListingsFromBackend error:", e.message);
+  }
+  return listingsState;
 };
 
 export const syncCategoriesFromBackend = async () => {
@@ -578,21 +582,25 @@ export const deleteUser = (userId) => {
   notifyListeners();
 };
 
-export const updateDonationStatus = (donationId, newStatus) => {
+export const updateDonationStatus = async (donationId, newStatus) => {
   listingsState = listingsState.map((d) => {
     if (d.id === donationId || d._id === donationId) {
       return { ...d, status: newStatus };
     }
     return d;
   });
-
-  fetch(`${API_BASE}/listings/${donationId}/status`, {
-    method: 'PATCH',
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ status: newStatus }),
-  }).catch(() => {});
-
   notifyListeners();
+
+  try {
+    await fetch(`${API_BASE}/listings/${donationId}/status`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ status: newStatus }),
+    });
+    await syncListingsFromBackend();
+  } catch (e) {
+    console.warn("updateDonationStatus error:", e);
+  }
 };
 
 export const deleteDonation = (donationId) => {

@@ -1042,6 +1042,31 @@ export const DonorDashboard = () => {
     setDonations(loadDonorDonations());
     setRequests(loadDonorRequests());
 
+    // Live auto-polling every 4 seconds so donor sees approval status changes immediately
+    const pollTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        syncListingsFromBackend()
+          .then(() => setDonations(loadDonorDonations()))
+          .catch(() => {});
+        syncRequestsFromBackend()
+          .then(() => setRequests(loadDonorRequests()))
+          .catch(() => {});
+      }
+    }, 4000);
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        syncListingsFromBackend()
+          .then(() => setDonations(loadDonorDonations()))
+          .catch(() => {});
+        syncRequestsFromBackend()
+          .then(() => setRequests(loadDonorRequests()))
+          .catch(() => {});
+      }
+    };
+    window.addEventListener("focus", onVisibility);
+    document.addEventListener("visibilitychange", onVisibility);
+
     const handleListingsUpdate = () => {
       setDonations(loadDonorDonations());
       setRequests(loadDonorRequests());
@@ -1054,6 +1079,9 @@ export const DonorDashboard = () => {
     window.addEventListener("annshare_requests_updated", handleRequestsUpdate);
     window.addEventListener("storage", handleListingsUpdate);
     return () => {
+      clearInterval(pollTimer);
+      window.removeEventListener("focus", onVisibility);
+      document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("annshare_listings_updated", handleListingsUpdate);
       window.removeEventListener("annshare_requests_updated", handleRequestsUpdate);
       window.removeEventListener("storage", handleListingsUpdate);

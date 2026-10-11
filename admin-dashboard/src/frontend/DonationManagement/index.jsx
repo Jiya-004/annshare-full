@@ -16,7 +16,8 @@ import {
   FiTruck,
   FiThermometer,
   FiShield,
-  FiAlertCircle
+  FiAlertCircle,
+  FiRefreshCw
 } from 'react-icons/fi';
 
 import StatusBadge from '../../components/StatusBadge';
@@ -30,6 +31,7 @@ import {
   updateDonationStatus,
   updateRequestStatus,
   subscribeToAdminService,
+  syncListingsFromBackend,
   formatToNepaliTime
 } from '../../services/adminService';
 
@@ -202,25 +204,70 @@ const DonationManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [isLoading, setIsLoading] = useState(getDonations().length === 0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [selectedDonation, setSelectedDonation] = useState(null);
   const [viewingDonation, setViewingDonation] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+    if (getDonations().length === 0) {
+      setIsLoading(true);
+    }
+
+    // Direct initial sync
+    syncListingsFromBackend().finally(() => {
+      if (isMounted) setIsLoading(false);
+    });
+
+    // Real-time live polling every 4 seconds
+    const pollTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        syncListingsFromBackend();
+      }
+    }, 4000);
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        syncListingsFromBackend();
+      }
+    };
+    window.addEventListener('focus', onVisibility);
+    document.addEventListener('visibilitychange', onVisibility);
+
     const unsub = subscribeToAdminService(() => {
+      if (!isMounted) return;
       const updated = getDonations();
       setDonations(updated);
       setCategories(getCategories());
       setRequests(getRequests());
-      // Sync active viewing object if modified
-      if (viewingDonation) {
-        const current = updated.find(d => d.id === viewingDonation.id);
-        if (current) setViewingDonation(current);
-      }
+      setIsLoading(false);
     });
-    return unsub;
-  }, [viewingDonation]);
+
+    return () => {
+      isMounted = false;
+      clearInterval(pollTimer);
+      window.removeEventListener('focus', onVisibility);
+      document.removeEventListener('visibilitychange', onVisibility);
+      unsub();
+    };
+  }, []);
+
+  // Keep viewingDonation updated
+  useEffect(() => {
+    if (viewingDonation) {
+      const current = donations.find(d => d.id === viewingDonation.id || (d._id && d._id === (viewingDonation._id || viewingDonation.id)));
+      if (current) setViewingDonation(current);
+    }
+  }, [donations]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await syncListingsFromBackend();
+    setIsRefreshing(false);
+  };
 
   const filteredDonations = donations.filter(item => {
     const itemName = item.title || item.foodName || '';
@@ -726,9 +773,31 @@ const DonationManagement = () => {
   // -------------------------------------------------------------
   return (
     <Container fluid className="p-0">
-      <PageHeader>
-        <h2>Food Donation Management</h2>
-        <p>Monitor and moderate all surplus food listings across network donors.</p>
+      <PageHeader className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+          <h2>Food Donation Management</h2>
+          <p>Monitor and moderate all surplus food listings across network donors.</p>
+        </div>
+        <Button
+          variant="light"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          style={{
+            borderRadius: '20px',
+            fontSize: '0.84rem',
+            fontWeight: 600,
+            border: '1px solid #E6ECE8',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#185C4A',
+            background: '#ffffff',
+            padding: '7px 16px'
+          }}
+        >
+          <FiRefreshCw size={14} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
+          {isRefreshing ? 'Refreshing...' : 'Refresh Donations'}
+        </Button>
       </PageHeader>
 
       <MainCard>
@@ -805,10 +874,18 @@ const DonationManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredDonations.length > 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-4 text-muted">
+                    <div className="spinner-border spinner-border-sm text-success me-2" role="status" />
+                    Loading food donations from server...
+                  </td>
+                </tr>
+              ) : filteredDonations.length > 0 ? (
                 filteredDonations.map(don => {
                   const cleanQuantity = don.quantity ? don.quantity.replace(/\s*\([^)]*\)/g, '') : '';
                   const isPending = (don.status || '').toLowerCase().includes('pending');
+                  const displayId = (don.id || don._id || '').length > 8 ? `DON-${(don.id || don._id).slice(-5).toUpperCase()}` : (don.id || 'DON-000');
 
                   return (
                     <tr key={don.id}>
@@ -825,7 +902,7 @@ const DonationManagement = () => {
                           />
                           <div>
                             <strong style={{ color: '#12201B' }}>{don.title || don.foodName}</strong>
-                            <div style={{ fontSize: '0.74rem', color: '#66736D' }}>#{don.id}</div>
+                            <div style={{ fontSize: '0.74rem', color: '#66736D' }}>#{displayId}</div>
                           </div>
                         </div>
                       </td>

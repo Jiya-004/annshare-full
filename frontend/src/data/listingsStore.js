@@ -226,9 +226,19 @@ export async function syncListingsFromBackend() {
       // Preserve local custom donations that have not yet synced to the backend
       const currentListings = getListings();
       const normalizedIds = new Set(normalized.map((b) => String(b.id || b._id)));
-      const localOnly = currentListings.filter(
-        (l) => !normalizedIds.has(String(l.id || l._id)) && (l.isCustomDonation || (l.id && String(l.id).startsWith("listing-")))
-      );
+      const localOnly = currentListings.filter((l) => {
+        const idStr = String(l.id || l._id);
+        if (normalizedIds.has(idStr)) return false;
+        const matchingBackend = normalized.find(
+          (b) =>
+            b.title?.toLowerCase() === l.title?.toLowerCase() &&
+            b.partner?.toLowerCase() === l.partner?.toLowerCase()
+        );
+        if (matchingBackend) {
+          return false;
+        }
+        return l.isCustomDonation || idStr.startsWith("listing-");
+      });
 
       const mergedMap = new Map();
       [...localOnly, ...normalized].forEach((item) => {
@@ -284,7 +294,7 @@ export function addListing(listing) {
     images: listing.images && listing.images.length > 0 ? listing.images : [listing.image || `/food/food${(current.length % 8) + 1}.jpg`],
     rating: listing.rating || 5.0,
     reviewsCount: listing.reviewsCount || 1,
-    status: (listing.status || "available").toLowerCase(),
+    status: (listing.status || "pending approval").toLowerCase(),
     badgeColor: listing.badgeColor || "#2E7D5B",
     mapCoords: listing.mapCoords || { x: 45, y: 35 },
     description: listing.description || "",
@@ -301,7 +311,7 @@ export function addListing(listing) {
   const updated = [formattedListing, ...current];
   saveListings(updated);
 
-  // Send to backend in background
+  // Send to backend in background and update local record with returned MongoDB _id
   api.listings
     .create({
       title: formattedListing.title,
@@ -323,6 +333,24 @@ export function addListing(listing) {
       images: formattedListing.images,
       description: formattedListing.description,
       handlingInstructions: formattedListing.safetyInfo,
+    })
+    .then((created) => {
+      if (created && (created._id || created.id)) {
+        const cur = getListings();
+        const realId = String(created._id || created.id);
+        const replaced = cur.map((item) => {
+          if (String(item.id) === String(newId)) {
+            return {
+              ...item,
+              id: realId,
+              _id: realId,
+              status: (created.status || item.status || "Pending Approval").toLowerCase(),
+            };
+          }
+          return item;
+        });
+        saveListings(replaced);
+      }
     })
     .catch((e) => console.warn("Backend listing post error (fallback active):", e.message));
 
