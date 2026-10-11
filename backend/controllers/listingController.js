@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const Listing = require('../models/listing');
 const { sendNotification } = require('./notificationController');
 
@@ -17,6 +19,31 @@ const formatNepaliDate = (date = new Date()) => {
   } catch (e) {
     return date;
   }
+};
+
+// Helper: If string is base64 data URL, persist as a static uploaded file or return placeholder
+const sanitizeBase64Image = (imgStr) => {
+  if (!imgStr || typeof imgStr !== 'string') return imgStr || '/food.png';
+  if (!imgStr.startsWith('data:image/')) return imgStr;
+
+  try {
+    const matches = imgStr.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (matches && matches.length === 3) {
+      const ext = matches[1].split('/')[1] === 'jpeg' ? 'jpg' : (matches[1].split('/')[1] || 'jpg');
+      const buffer = Buffer.from(matches[2], 'base64');
+      const uploadsDir = path.join(__dirname, '../uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      const fileName = `img_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+      const filePath = path.join(uploadsDir, fileName);
+      fs.writeFileSync(filePath, buffer);
+      return `/uploads/${fileName}`;
+    }
+  } catch (e) {
+    console.warn('Could not persist base64 image to file, falling back:', e.message);
+  }
+  return '/food.png';
 };
 
 // GET all listings (with search, category, status, and donor filtering)
@@ -76,8 +103,8 @@ const getListings = async (req, res) => {
       status: l.status,
       claimedBy: l.claimedBy,
       claimedById: l.claimedById,
-      image: l.image || '/food.png',
-      images: l.images && l.images.length > 0 ? l.images : [l.image || '/food.png'],
+      image: sanitizeBase64Image(l.image || '/food.png'),
+      images: l.images && l.images.length > 0 ? l.images.map(img => sanitizeBase64Image(img)) : [sanitizeBase64Image(l.image || '/food.png')],
       dietaryTags: l.dietaryTags || [],
       dietary: l.dietary,
       description: l.description,
@@ -147,6 +174,13 @@ const createListing = async (req, res) => {
     }
     if (!data.postedDate) {
       data.postedDate = formatNepaliDate();
+    }
+
+    if (data.image) {
+      data.image = sanitizeBase64Image(data.image);
+    }
+    if (Array.isArray(data.images) && data.images.length > 0) {
+      data.images = data.images.map(img => sanitizeBase64Image(img));
     }
 
     const listing = await Listing.create(data);

@@ -69,7 +69,7 @@ export default function FindFoodPage() {
       })
       .catch(() => {});
 
-    // Live auto-polling every 4 seconds so newly approved listings appear immediately!
+    // Live auto-polling every 2 seconds so newly approved listings appear immediately without page refresh!
     const pollTimer = setInterval(() => {
       if (document.visibilityState === 'visible') {
         syncListingsFromBackend()
@@ -78,7 +78,7 @@ export default function FindFoodPage() {
           })
           .catch(() => {});
       }
-    }, 4000);
+    }, 2000);
 
     const onVisibility = () => {
       if (document.visibilityState === 'visible') {
@@ -145,7 +145,7 @@ export default function FindFoodPage() {
     return allListings
       .filter((item) => {
         const s = (item.status || "available").toLowerCase();
-        return s === "available" || s === "pickup_soon";
+        return s === "available" || s === "approved" || s === "pickup_soon";
       })
       .filter((item) => {
         // 1. Text search

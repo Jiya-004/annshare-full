@@ -33,21 +33,36 @@ export default function FoodDetailsPage() {
   const { isInWishlist, toggleWishlistItem } = useWishlist();
   const [isRequested, setIsRequested] = useState(false);
 
-  // Find item by ID or fallback
-  const item =
-    getListingById(id) || getListingById(1) || {
-      id: id || "1",
-      title: "Food Donation",
-      partner: "Local Partner",
-      category: "General",
-      quantity: 1,
-      unit: "package",
-      location: "Kathmandu",
-      pickupDate: "Today",
-      pickupTime: "Flexible",
-      image: "/food.png",
-      status: "available",
+  // Find item by ID or fallback with reactive state
+  const [item, setItem] = useState(() => getListingById(id) || getListingById(1) || {
+    id: id || "1",
+    title: "Food Donation",
+    partner: "Local Partner",
+    category: "General",
+    quantity: 1,
+    unit: "package",
+    location: "Kathmandu",
+    pickupDate: "Today",
+    pickupTime: "Flexible",
+    image: "/food.png",
+    status: "available",
+  });
+
+  React.useEffect(() => {
+    const found = getListingById(id);
+    if (found) setItem(found);
+
+    const onUpdate = () => {
+      const updated = getListingById(id);
+      if (updated) setItem(updated);
     };
+    window.addEventListener("annshare_listings_updated", onUpdate);
+    window.addEventListener("storage", onUpdate);
+    return () => {
+      window.removeEventListener("annshare_listings_updated", onUpdate);
+      window.removeEventListener("storage", onUpdate);
+    };
+  }, [id]);
 
   const handleRequest = () => {
     requireAuth({

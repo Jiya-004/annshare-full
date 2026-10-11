@@ -1042,7 +1042,7 @@ export const DonorDashboard = () => {
     setDonations(loadDonorDonations());
     setRequests(loadDonorRequests());
 
-    // Live auto-polling every 4 seconds so donor sees approval status changes immediately
+    // Live auto-polling every 2 seconds so donor sees approval status changes immediately
     const pollTimer = setInterval(() => {
       if (document.visibilityState === 'visible') {
         syncListingsFromBackend()
@@ -1052,7 +1052,7 @@ export const DonorDashboard = () => {
           .then(() => setRequests(loadDonorRequests()))
           .catch(() => {});
       }
-    }, 4000);
+    }, 2000);
 
     const onVisibility = () => {
       if (document.visibilityState === 'visible') {

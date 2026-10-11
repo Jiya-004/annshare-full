@@ -656,6 +656,148 @@ const IntentHighlight = styled.div`
   }
 `;
 
+const ModalOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 32, 27, 0.65);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  animation: fadeInModal 0.2s ease-out;
+
+  @keyframes fadeInModal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+`;
+
+const ModalContent = styled.div`
+  background: #FFFFFF;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 480px;
+  padding: 34px 28px 28px;
+  box-shadow: 0 24px 60px rgba(18, 32, 27, 0.28);
+  border: 1px solid rgba(23, 74, 58, 0.08);
+  text-align: center;
+  position: relative;
+  animation: slideUpModal 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+
+  @keyframes slideUpModal {
+    from { transform: translateY(24px) scale(0.96); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+  }
+
+  .close-icon-btn {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    background: #F4F6F4;
+    border: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #556B64;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #E8ECE8;
+      color: #174A3A;
+      transform: scale(1.05);
+    }
+  }
+
+  .icon-badge {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #E8F5E9;
+    border: 3px solid #BBF7D0;
+    color: #2E7D5B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 18px;
+    box-shadow: 0 8px 20px rgba(46, 125, 91, 0.16);
+  }
+
+  h3 {
+    margin: 0 0 8px;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #174A3A;
+  }
+
+  .modal-desc {
+    margin: 0 0 22px;
+    font-size: 0.92rem;
+    color: #556B64;
+    line-height: 1.5;
+  }
+
+  .details-box {
+    background: #FAFBF9;
+    border: 1px solid #EBECE8;
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+
+    .item-thumb {
+      width: 50px;
+      height: 50px;
+      border-radius: 10px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .item-meta {
+      flex: 1;
+      min-width: 0;
+
+      h5 {
+        margin: 0 0 2px;
+        font-size: 0.96rem;
+        font-weight: 700;
+        color: #174A3A;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.8rem;
+        color: #71827B;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    .status-tag {
+      background: #E8F5E9;
+      color: #2E7D5B;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+  }
+`;
+
 /* ==========================================================================
    NGO DASHBOARD COMPONENT
    ========================================================================== */

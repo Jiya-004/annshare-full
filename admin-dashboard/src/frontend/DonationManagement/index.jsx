@@ -222,12 +222,12 @@ const DonationManagement = () => {
       if (isMounted) setIsLoading(false);
     });
 
-    // Real-time live polling every 4 seconds
+    // Real-time live polling every 2 seconds for instant new listings appearance
     const pollTimer = setInterval(() => {
       if (document.visibilityState === 'visible') {
         syncListingsFromBackend();
       }
-    }, 4000);
+    }, 2000);
 
     const onVisibility = () => {
       if (document.visibilityState === 'visible') {
