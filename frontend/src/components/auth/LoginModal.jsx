@@ -625,28 +625,42 @@ export const LoginModal = () => {
       });
 
       // Also sync local storage accounts store if present
-      updateAccountPassword(email.trim(), newPassword.trim());
+      try {
+        updateAccountPassword(email.trim(), newPassword.trim(), selectedRole);
+      } catch {
+        // Ignored if local account doesn't exist
+      }
 
       setSuccessMessage("Password reset successfully! You can now sign in with your new password.");
+      const savedPass = newPassword.trim();
       setNewPassword("");
       setConfirmPassword("");
       setTimeout(() => {
         setIsForgotPassword(false);
-        setPassword(newPassword.trim());
+        setPassword(savedPass);
       }, 1400);
     } catch (err) {
+      if (err.message && (err.message.includes("registered as") || err.message.includes("not found") || err.message.includes("No registered account"))) {
+        setErrorMessage(err.message);
+        return;
+      }
       // 2. Fallback to local accountsStore for offline/local demo users
-      const localUpdated = updateAccountPassword(email.trim(), newPassword.trim());
-      if (localUpdated) {
-        setSuccessMessage("Password reset successfully! You can now sign in with your new password.");
-        setNewPassword("");
-        setConfirmPassword("");
-        setTimeout(() => {
-          setIsForgotPassword(false);
-          setPassword(newPassword.trim());
-        }, 1400);
-      } else {
-        setErrorMessage(err.message || "Failed to reset password. Please check your email or contact support.");
+      try {
+        const localUpdated = updateAccountPassword(email.trim(), newPassword.trim(), selectedRole);
+        if (localUpdated) {
+          setSuccessMessage("Password reset successfully! You can now sign in with your new password.");
+          const savedPass = newPassword.trim();
+          setNewPassword("");
+          setConfirmPassword("");
+          setTimeout(() => {
+            setIsForgotPassword(false);
+            setPassword(savedPass);
+          }, 1400);
+        } else {
+          setErrorMessage(err.message || "Failed to reset password. Please check your email or contact support.");
+        }
+      } catch (localErr) {
+        setErrorMessage(localErr.message);
       }
     } finally {
       setIsLoading(false);
@@ -670,7 +684,7 @@ export const LoginModal = () => {
       return;
     }
 
-    if (isSignUp && !isValidEmail(email.trim())) {
+    if (!isValidEmail(email.trim())) {
       setErrorMessage("Please enter a valid email address (e.g. name@gmail.com).");
       setIsLoading(false);
       return;
@@ -701,7 +715,7 @@ export const LoginModal = () => {
       return;
     }
 
-    if (isSignUp && password.length < 6) {
+    if (password.length < 6) {
       setErrorMessage("Password must be at least 6 characters.");
       setIsLoading(false);
       return;
@@ -737,13 +751,28 @@ export const LoginModal = () => {
       }
     } else {
       try {
-        await loginWithCredentials(email.trim(), password);
+        await loginWithCredentials(email.trim(), password, selectedRole);
       } catch (backendErr) {
+        if (backendErr.message && (backendErr.message.includes("registered as") || backendErr.message.includes("cannot sign in"))) {
+          setErrorMessage(backendErr.message);
+          setIsLoading(false);
+          return;
+        }
+
         const account = findAccount(email.trim(), password);
         if (account) {
+          const userRole = account.role === "ngos" || account.role === "ngo" ? "ngo" : "donor";
+          const reqRole = selectedRole === "ngos" || selectedRole === "ngo" ? "ngo" : "donor";
+          if (userRole !== reqRole && userRole !== "admin") {
+            setErrorMessage(
+              `This account is registered as a ${userRole === "donor" ? "Food Donor" : "NGO Partner"}. You cannot sign in as ${reqRole === "donor" ? "Donor" : "NGO"}. Please switch to the ${userRole === "donor" ? "Donor" : "NGO"} tab.`
+            );
+            setIsLoading(false);
+            return;
+          }
           login(account);
         } else {
-          setErrorMessage(backendErr.message || "Invalid email/username or password.");
+          setErrorMessage(backendErr.message || "Invalid email or password.");
         }
       } finally {
         setIsLoading(false);
@@ -886,7 +915,10 @@ export const LoginModal = () => {
                       : "partner@organization.org"
                   }
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errorMessage) setErrorMessage("");
+                  }}
                   autoComplete="email"
                 />
               </div>
@@ -900,7 +932,10 @@ export const LoginModal = () => {
                   type={showPassword ? "text" : "password"}
                   placeholder="At least 6 characters"
                   value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
+                  onChange={(e) => {
+                    setNewPassword(e.target.value);
+                    if (errorMessage) setErrorMessage("");
+                  }}
                   autoComplete="new-password"
                 />
                 <button
@@ -922,7 +957,10 @@ export const LoginModal = () => {
                   type={showPassword ? "text" : "password"}
                   placeholder="Repeat new password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (errorMessage) setErrorMessage("");
+                  }}
                   autoComplete="new-password"
                 />
               </div>
@@ -1034,7 +1072,10 @@ export const LoginModal = () => {
                         : "partner@organization.org"
                     }
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (errorMessage) setErrorMessage("");
+                    }}
                     autoComplete="email"
                   />
                 </div>
@@ -1051,7 +1092,10 @@ export const LoginModal = () => {
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (errorMessage) setErrorMessage("");
+                    }}
                     autoComplete={isSignUp ? "new-password" : "current-password"}
                   />
                   <button

@@ -15,9 +15,7 @@ const userSchema = new mongoose.Schema(
     organization: { type: String, default: '' },
     phone: {
       type: String,
-      required: [true, 'Phone number is required'],
-      unique: true,
-      sparse: true,
+      default: '',
       trim: true,
     },
     location: { type: String, default: 'Kathmandu, Nepal' },

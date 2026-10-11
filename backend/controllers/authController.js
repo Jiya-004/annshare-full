@@ -93,13 +93,40 @@ const registerUser = async (req, res) => {
 // LOGIN existing user
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
     const cleanEmail = (email || '').trim().toLowerCase();
     const cleanPassword = (password || '').trim();
 
+    if (!cleanEmail) {
+      return res.status(400).json({ message: 'Please provide an email address' });
+    }
+    if (!isValidEmail(cleanEmail)) {
+      return res.status(400).json({ message: 'Please provide a valid email address' });
+    }
+    if (!cleanPassword) {
+      return res.status(400).json({ message: 'Please provide a password' });
+    }
+
     const user = await User.findOne({ email: cleanEmail });
 
-    if (user && (await user.matchPassword(cleanPassword))) {
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    if (await user.matchPassword(cleanPassword)) {
+      // Enforce role separation if role is provided
+      if (role) {
+        const normalizedReqRole = role === 'ngos' || role === 'ngo' ? 'ngo' : role === 'donor' ? 'donor' : role;
+        const normalizedUserRole = user.role === 'ngos' || user.role === 'ngo' ? 'ngo' : user.role === 'donor' ? 'donor' : user.role;
+
+        if (normalizedReqRole !== normalizedUserRole && normalizedUserRole !== 'admin') {
+          return res.status(403).json({
+            message: `This account is registered as a ${normalizedUserRole === 'donor' ? 'Food Donor' : 'NGO Partner'}. You cannot sign in as ${normalizedReqRole === 'donor' ? 'Donor' : 'NGO'}. Please switch to the ${normalizedUserRole === 'donor' ? 'Donor' : 'NGO'} tab.`,
+            accountRole: normalizedUserRole,
+          });
+        }
+      }
+
       res.status(200).json({
         _id: user._id,
         id: user._id,
@@ -359,6 +386,9 @@ const forgotPassword = async (req, res) => {
     if (!cleanEmail) {
       return res.status(400).json({ message: 'Email address is required' });
     }
+    if (!isValidEmail(cleanEmail)) {
+      return res.status(400).json({ message: 'Please provide a valid email address' });
+    }
     if (!cleanNew) {
       return res.status(400).json({ message: 'New password is required' });
     }
@@ -366,14 +396,26 @@ const forgotPassword = async (req, res) => {
       return res.status(400).json({ message: 'New password must be at least 6 characters long' });
     }
 
+    const normalizedReqRole = role === 'ngos' || role === 'ngo' ? 'ngo' : role === 'donor' ? 'donor' : role;
     const query = { email: cleanEmail };
-    if (role && (role === 'donor' || role === 'ngo')) {
-      query.role = role;
+    if (normalizedReqRole && (normalizedReqRole === 'donor' || normalizedReqRole === 'ngo')) {
+      query.role = normalizedReqRole;
     }
 
     let user = await User.findOne(query);
 
-    // If role specific search didn't match, search by email alone
+    // If role-specific search didn't match, check if account exists under other role
+    if (!user && normalizedReqRole) {
+      const anyUser = await User.findOne({ email: cleanEmail });
+      if (anyUser) {
+        const actualRoleName = anyUser.role === 'ngo' ? 'NGO Partner' : 'Food Donor';
+        const reqRoleName = normalizedReqRole === 'ngo' ? 'NGO' : 'Donor';
+        return res.status(400).json({
+          message: `This email is registered as a ${actualRoleName} account, not ${reqRoleName}. Please switch to the ${actualRoleName} tab to reset your password.`,
+        });
+      }
+    }
+
     if (!user) {
       user = await User.findOne({ email: cleanEmail });
     }
@@ -385,7 +427,7 @@ const forgotPassword = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(cleanNew, salt);
 
-    await User.findByIdAndUpdate(user._id, { $set: { password: hashedPassword } });
+    await User.findByIdAndUpdate(user._id, { $set: { password: hashedPassword } }, { runValidators: false });
 
     res.status(200).json({
       success: true,

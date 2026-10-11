@@ -133,7 +133,7 @@ export function registerAccount({ name, organization, identifier, phone, passwor
  * Find an account with matching identifier and password.
  * Returns the matching account object or null if no match is found.
  */
-export function findAccount(identifier, password) {
+export function findAccount(identifier, password, requiredRole) {
   const accounts = getAccounts();
   const cleanIdLower = (identifier || "").trim().toLowerCase();
   const cleanPassword = password || "";
@@ -150,7 +150,7 @@ export function findAccount(identifier, password) {
 /**
  * Reset/Update account password in localStorage accounts store
  */
-export function updateAccountPassword(identifier, newPassword) {
+export function updateAccountPassword(identifier, newPassword, requiredRole) {
   const accounts = getAccounts();
   const cleanIdLower = (identifier || "").trim().toLowerCase();
   const idx = accounts.findIndex(
@@ -158,6 +158,15 @@ export function updateAccountPassword(identifier, newPassword) {
   );
 
   if (idx !== -1) {
+    if (requiredRole) {
+      const userRole = accounts[idx].role === "ngos" || accounts[idx].role === "ngo" ? "ngo" : "donor";
+      const targetRole = requiredRole === "ngos" || requiredRole === "ngo" ? "ngo" : "donor";
+      if (userRole !== targetRole && userRole !== "admin") {
+        throw new Error(
+          `This email is registered as a ${userRole === "donor" ? "Food Donor" : "NGO Partner"} account. Please switch to the ${userRole === "donor" ? "Donor" : "NGO"} tab to reset your password.`
+        );
+      }
+    }
     accounts[idx].password = newPassword;
     saveAccounts(accounts);
     return accounts[idx];

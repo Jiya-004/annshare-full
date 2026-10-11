@@ -43,10 +43,10 @@ async function request(endpoint, options = {}) {
 export const api = {
   // Authentication & Users
   auth: {
-    login: async (email, password) => {
+    login: async (email, password, role) => {
       const data = await request('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, role }),
       });
       if (data.token) {
         localStorage.setItem('annshare_token', data.token);

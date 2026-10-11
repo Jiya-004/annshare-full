@@ -183,9 +183,18 @@ export const AuthProvider = ({ children }) => {
   /**
    * Real Async Login via Backend API
    */
-  const loginWithCredentials = async (email, password) => {
+  const loginWithCredentials = async (email, password, requestedRole) => {
     try {
-      const data = await api.auth.login(email, password);
+      const data = await api.auth.login(email, password, requestedRole);
+      const userRole = data.role === "ngos" || data.role === "ngo" ? "ngo" : "donor";
+      const targetRole = requestedRole === "ngos" || requestedRole === "ngo" ? "ngo" : requestedRole === "donor" ? "donor" : null;
+
+      if (targetRole && userRole !== targetRole && userRole !== "admin") {
+        throw new Error(
+          `This account is registered as a ${userRole === "donor" ? "Food Donor" : "NGO Partner"}. You cannot sign in as ${targetRole === "donor" ? "Donor" : "NGO"}. Please switch to the ${userRole === "donor" ? "Donor" : "NGO"} tab.`
+        );
+      }
+
       login(data);
       return data;
     } catch (err) {
