@@ -30,7 +30,36 @@ async function request(endpoint, options = {}) {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      throw new Error(data.message || `Request failed with status ${response.status}`);
+      if (
+        (response.status === 401 || response.status === 403) &&
+        !endpoint.includes('/auth/login') &&
+        !endpoint.includes('/auth/register')
+      ) {
+        localStorage.removeItem('annshare_token');
+        localStorage.removeItem('annshare_user');
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('annshare:session-revoked', {
+              detail: {
+                status: response.status,
+                message:
+                  data.message ||
+                  (data.isSuspended
+                    ? 'Your account has been suspended by an administrator.'
+                    : 'Your account was deleted or session has expired.'),
+                isSuspended: Boolean(data.isSuspended),
+                isDeleted: Boolean(data.isDeleted),
+              },
+            })
+          );
+        }
+      }
+
+      const err = new Error(data.message || `Request failed with status ${response.status}`);
+      err.status = response.status;
+      err.isDeleted = data.isDeleted;
+      err.isSuspended = data.isSuspended;
+      throw err;
     }
 
     return data;
