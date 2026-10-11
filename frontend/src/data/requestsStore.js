@@ -251,15 +251,18 @@ export function updateRequestStatus(id, status, extraData = {}) {
 /**
  * Delete a request from the store and backend
  */
-export function deleteRequest(id) {
+export async function deleteRequest(id, reqObj = null) {
   const current = getRequests();
-  const updated = current.filter((r) => String(r.id) !== String(id) && String(r._id) !== String(id));
+  const targetId = String(reqObj?._id || (typeof id === 'object' && id !== null ? (id._id || id.id) : id) || reqObj?.id || '').trim();
+  const updated = current.filter((r) => String(r.id) !== targetId && String(r._id) !== targetId);
   saveRequests(updated);
 
-  if (id) {
-    api.requests.delete(id).catch((err) => {
+  if (targetId && targetId !== 'undefined' && targetId !== '[object Object]') {
+    try {
+      await api.requests.delete(targetId);
+    } catch (err) {
       console.warn("Failed to delete request from backend:", err.message);
-    });
+    }
   }
 
   return updated;

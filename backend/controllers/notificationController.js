@@ -7,10 +7,10 @@ const sendNotification = async ({ title, desc, linkTab = 'Dashboard', userId = '
       title,
       desc,
       linkTab,
-      userId,
+      userId: userId ? String(userId) : '',
       role,
       category,
-      relatedId,
+      relatedId: relatedId ? String(relatedId) : '',
       time: 'Just now',
     });
     return notif;
@@ -20,28 +20,24 @@ const sendNotification = async ({ title, desc, linkTab = 'Dashboard', userId = '
   }
 };
 
-// GET notifications with optional filtering by role or userId
+// GET notifications with strict filtering by role or userId
 const getNotifications = async (req, res) => {
   try {
     const { role, userId } = req.query;
-    let filter = {};
 
-    if (userId && role && role !== 'all') {
-      filter.$or = [
-        { userId: userId },
-        { role: role, $or: [{ userId: '' }, { userId: { $exists: false } }, { userId: null }] },
-        { role: 'all', $or: [{ userId: '' }, { userId: { $exists: false } }, { userId: null }] },
-      ];
+    let filter = null;
+
+    if (role === 'admin') {
+      filter = { role: 'admin' };
     } else if (userId) {
-      filter.$or = [
-        { userId: userId },
-        { role: 'all', $or: [{ userId: '' }, { userId: { $exists: false } }, { userId: null }] },
-      ];
-    } else if (role && role !== 'all') {
-      filter.$or = [
-        { role: role },
-        { role: 'all' },
-      ];
+      // User must strictly only receive notifications addressed directly to their userId
+      filter = {
+        userId: String(userId),
+        role: { $ne: 'admin' },
+      };
+    } else {
+      // If no userId is provided and not admin, visitors should not see any notifications
+      return res.status(200).json([]);
     }
 
     const notifs = await Notification.find(filter).sort({ createdAt: -1 }).limit(50);

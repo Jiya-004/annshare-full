@@ -109,18 +109,26 @@ const Header = () => {
   const visitorRef = useRef(null);
 
   const loadRealNotifications = React.useCallback(async () => {
+    // When no one is logged in, DO NOT load or show any notifications
+    if (!isAuthenticated || !user) {
+      setNotifications([]);
+      return;
+    }
+
+    const currentUserId = user?.id || user?._id || "";
     try {
       const data = await api.notifications.getAll({
-        role: role || (isAuthenticated ? "donor" : "all"),
-        userId: user?.id || "",
+        role: role || "donor",
+        userId: currentUserId,
       });
 
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         const filteredData = data.filter((n) => {
           if (n.role === "admin") return false;
           if (n.title && n.title.includes("Review required")) return false;
           if (n.desc && n.desc.includes("Review required")) return false;
-          if (n.userId && user?.id && n.userId !== user.id) return false;
+          // Notifications MUST strictly belong to this logged-in user
+          if (n.userId && currentUserId && String(n.userId) !== String(currentUserId)) return false;
           return true;
         });
 
@@ -154,7 +162,7 @@ const Header = () => {
       // Fall through to local contextual notifications
     }
 
-    // Dynamic contextual notifications based on local requests & listings
+    // Dynamic contextual notifications strictly for this authenticated user
     const allRequests = getRequests();
     const allListings = getListings();
     const currentName = user?.name;
@@ -165,15 +173,15 @@ const Header = () => {
 
     if (role === "donor" || (!role && isAuthenticated)) {
       const donorListings = allListings.filter((l) => {
-        if (currentId && l.donorId === currentId) return true;
+        if (currentId && (l.donorId === currentId || l._id === currentId)) return true;
         if (currentOrg && l.partner && l.partner.toLowerCase() === currentOrg.toLowerCase()) return true;
         if (currentName && l.contactName && l.contactName.toLowerCase() === currentName.toLowerCase()) return true;
         return false;
       });
-      const donorListingIds = new Set(donorListings.map((l) => String(l.id)));
+      const donorListingIds = new Set(donorListings.map((l) => String(l.id || l._id)));
 
       const donorRequests = allRequests.filter((r) => {
-        if (currentId && r.donorId === currentId) return true;
+        if (currentId && (r.donorId === currentId || r.userId === currentId)) return true;
         if (currentOrg && r.donorName && r.donorName.toLowerCase() === currentOrg.toLowerCase()) return true;
         if (currentName && r.donorName && r.donorName.toLowerCase() === currentName.toLowerCase()) return true;
         if (r.listingId && donorListingIds.has(String(r.listingId))) return true;
@@ -204,37 +212,11 @@ const Header = () => {
             category: "match",
             icon: <IoCheckmarkCircle style={{ color: "#2E7D5B" }} />,
           });
-        } else if (s.includes("pending")) {
-          notifs.push({
-            id: `req-${req.id}`,
-            title: "New Request Submitted",
-            desc: `${req.ngoOrg || req.ngoName || "NGO"} requested "${req.foodName || req.foodTitle || "listing"}". Awaiting admin check.`,
-            time: req.requestedAt || "Recently",
-            unread: true,
-            linkTab: "requests",
-            category: "request",
-            icon: <IoPeopleOutline style={{ color: "#2E7D5B" }} />,
-          });
-        }
-      });
-
-      donorListings.slice(0, 2).forEach((l) => {
-        if (l.status === "available") {
-          notifs.push({
-            id: `list-${l.id}`,
-            title: "Donation Live in Marketplace",
-            desc: `"${l.title}" (${l.quantity}) is visible to verified community shelters.`,
-            time: l.postedTime || "Today",
-            unread: false,
-            linkTab: "my-donations",
-            category: "listing",
-            icon: <IoRestaurantOutline style={{ color: "#1565C0" }} />,
-          });
         }
       });
     } else if (role === "ngo") {
       const ngoRequests = allRequests.filter((r) => {
-        if (currentId && r.ngoId === currentId) return true;
+        if (currentId && (r.ngoId === currentId || r.receiverId === currentId)) return true;
         if (currentName && r.ngoName && r.ngoName.toLowerCase() === currentName.toLowerCase()) return true;
         if (currentOrg && r.ngoOrg && r.ngoOrg.toLowerCase() === currentOrg.toLowerCase()) return true;
         return false;
@@ -249,7 +231,7 @@ const Header = () => {
             desc: `${req.donorName || "Donor"} approved pickup. Direct phone numbers unlocked.`,
             time: "Just now",
             unread: true,
-            linkTab: "pickups",
+            linkTab: "claims",
             category: "match",
             icon: <IoCheckmarkCircle style={{ color: "#2E7D5B" }} />,
           });
@@ -326,7 +308,7 @@ const Header = () => {
     try {
       await api.notifications.markAllRead({
         role: role || (isAuthenticated ? "donor" : "all"),
-        userId: user?.id || "",
+        userId: user?.id || user?._id || "",
       });
     } catch {}
   };
@@ -342,18 +324,28 @@ const Header = () => {
       }
     } catch {}
 
-    if (notif.linkTab) {
-      const tab = notif.linkTab.toLowerCase();
-      if (role === "ngo") {
-        if (tab.includes("pickup")) navigate("/ngo/dashboard?tab=pickups");
-        else if (tab.includes("find")) navigate("/find-food");
-        else navigate("/ngo/dashboard?tab=requests");
+    const tab = (notif.linkTab || "").toLowerCase();
+    const title = (notif.title || "").toLowerCase();
+    const cat = (notif.category || "").toLowerCase();
+
+    if (role === "ngo") {
+      if (tab.includes("claim") || tab.includes("pickup") || cat === "match" || title.includes("confirmed") || title.includes("matched")) {
+        navigate("/ngo/dashboard?tab=claims");
+      } else if (tab.includes("find") || tab.includes("surplus") || cat === "listing") {
+        navigate("/find-food");
+      } else if (tab.includes("redistribut") || tab.includes("impact")) {
+        navigate("/ngo/dashboard?tab=redistributions");
       } else {
-        if (tab.includes("donation") || tab.includes("listing")) navigate("/donor/dashboard?tab=my-donations");
-        else navigate("/donor/dashboard?tab=requests");
+        navigate("/ngo/dashboard?tab=requests");
       }
     } else {
-      navigate(role === "ngo" ? "/ngo/dashboard" : "/donor/dashboard");
+      if (tab.includes("donation") || tab.includes("listing")) {
+        navigate("/donor/dashboard?tab=my-donations");
+      } else if (tab.includes("history")) {
+        navigate("/donor/dashboard?tab=history");
+      } else {
+        navigate("/donor/dashboard?tab=requests");
+      }
     }
   };
 
@@ -461,71 +453,73 @@ const Header = () => {
 
           {/* 3. RIGHT SIDE: NOTIFICATIONS, SAVED, AUTH / PROFILE */}
           <RightActionsZone>
-            {/* Notification Bell */}
-            <ActionButtonWrapper ref={notifRef}>
-              <IconButton
-                type="button"
-                $isOpen={isNotifOpen}
-                onClick={() => {
-                  setIsNotifOpen(!isNotifOpen);
-                  setIsSavedOpen(false);
-                  setIsProfileOpen(false);
-                  setIsVisitorOpen(false);
-                }}
-                aria-label="View notifications"
-              >
-                <IoNotificationsOutline />
-                {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
-              </IconButton>
+            {/* Notification Bell (Only shown when logged in) */}
+            {isAuthenticated && (
+              <ActionButtonWrapper ref={notifRef}>
+                <IconButton
+                  type="button"
+                  $isOpen={isNotifOpen}
+                  onClick={() => {
+                    setIsNotifOpen(!isNotifOpen);
+                    setIsSavedOpen(false);
+                    setIsProfileOpen(false);
+                    setIsVisitorOpen(false);
+                  }}
+                  aria-label="View notifications"
+                >
+                  <IoNotificationsOutline />
+                  {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+                </IconButton>
 
-              {/* Notifications Dropdown */}
-              <NotificationDropdownCard $isOpen={isNotifOpen}>
-                <div className="notif-header">
-                  <h4>
-                    <IoNotificationsOutline /> Notifications
-                  </h4>
-                  {unreadCount > 0 && (
-                    <button
-                      type="button"
-                      className="mark-read-btn"
-                      onClick={markAllAsRead}
-                    >
-                      Mark all read
-                    </button>
-                  )}
-                </div>
-
-                <div className="notif-list">
-                  {notifications.length === 0 ? (
-                    <div style={{ padding: "32px 20px", textAlign: "center", color: "#71827B" }}>
-                      <IoNotificationsOutline size={30} style={{ color: "#9CA3AF", marginBottom: "8px" }} />
-                      <div style={{ fontWeight: 700, color: "#174A3A", fontSize: "0.9rem", marginBottom: "4px" }}>
-                        No new notifications
-                      </div>
-                      <div style={{ fontSize: "0.78rem", lineHeight: "1.4" }}>
-                        New food requests, listing approvals, and pickup updates will appear here in real-time.
-                      </div>
-                    </div>
-                  ) : (
-                    notifications.map((n) => (
-                      <div
-                        key={n.id}
-                        className={`notif-item ${n.unread ? "unread" : ""}`}
-                        onClick={() => handleNotificationClick(n)}
+                {/* Notifications Dropdown */}
+                <NotificationDropdownCard $isOpen={isNotifOpen}>
+                  <div className="notif-header">
+                    <h4>
+                      <IoNotificationsOutline /> Notifications
+                    </h4>
+                    {unreadCount > 0 && (
+                      <button
+                        type="button"
+                        className="mark-read-btn"
+                        onClick={markAllAsRead}
                       >
-                        <div className="notif-icon">{n.icon}</div>
-                        <div className="notif-content">
-                          <span className="title">{n.title}</span>
-                          <span className="desc">{n.desc}</span>
-                          <span className="time">{n.time}</span>
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="notif-list">
+                    {notifications.length === 0 ? (
+                      <div style={{ padding: "32px 20px", textAlign: "center", color: "#71827B" }}>
+                        <IoNotificationsOutline size={30} style={{ color: "#9CA3AF", marginBottom: "8px" }} />
+                        <div style={{ fontWeight: 700, color: "#174A3A", fontSize: "0.9rem", marginBottom: "4px" }}>
+                          No new notifications
                         </div>
-                        {n.unread && <span className="unread-indicator" />}
+                        <div style={{ fontSize: "0.78rem", lineHeight: "1.4" }}>
+                          New food requests, listing approvals, and pickup updates will appear here in real-time.
+                        </div>
                       </div>
-                    ))
-                  )}
-                </div>
-              </NotificationDropdownCard>
-            </ActionButtonWrapper>
+                    ) : (
+                      notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          className={`notif-item ${n.unread ? "unread" : ""}`}
+                          onClick={() => handleNotificationClick(n)}
+                        >
+                          <div className="notif-icon">{n.icon}</div>
+                          <div className="notif-content">
+                            <span className="title">{n.title}</span>
+                            <span className="desc">{n.desc}</span>
+                            <span className="time">{n.time}</span>
+                          </div>
+                          {n.unread && <span className="unread-indicator" />}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </NotificationDropdownCard>
+              </ActionButtonWrapper>
+            )}
 
             {/* Saved Bookmarks */}
             <ActionButtonWrapper ref={savedRef}>

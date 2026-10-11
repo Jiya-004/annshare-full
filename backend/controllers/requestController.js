@@ -211,73 +211,113 @@ const updateRequestStatus = async (req, res) => {
 
     const normalizedStatus = (status || '').toLowerCase();
 
+    // Dynamically resolve target User IDs if missing
+    let resolvedDonorId = request.donorId ? String(request.donorId) : '';
+    if (!resolvedDonorId && request.donorName) {
+      try {
+        const u = await User.findOne({
+          $or: [
+            { name: new RegExp(`^${request.donorName}$`, 'i') },
+            { organization: new RegExp(`^${request.donorName}$`, 'i') },
+          ],
+        });
+        if (u) resolvedDonorId = u._id.toString();
+      } catch {}
+    }
+
+    let resolvedNgoId = (request.ngoId || request.receiverId) ? String(request.ngoId || request.receiverId) : '';
+    if (!resolvedNgoId && (request.ngoName || request.receiverName)) {
+      try {
+        const nameToMatch = request.ngoName || request.receiverName;
+        const u = await User.findOne({
+          $or: [
+            { name: new RegExp(`^${nameToMatch}$`, 'i') },
+            { organization: new RegExp(`^${nameToMatch}$`, 'i') },
+          ],
+        });
+        if (u) resolvedNgoId = u._id.toString();
+      } catch {}
+    }
+
     // 1. Admin Approved -> Notify Donor & NGO
     if (normalizedStatus.includes('approved')) {
-      await sendNotification({
-        title: 'Action Required: NGO Request Verified',
-        desc: `Admin approved ${request.ngoName || request.receiverName}'s request for "${request.foodTitle}". Review and accept to share contact.`,
-        linkTab: 'requests',
-        userId: request.donorId,
-        role: 'donor',
-        category: 'request',
-        relatedId: request._id.toString(),
-      });
+      if (resolvedDonorId) {
+        await sendNotification({
+          title: 'Action Required: NGO Request Verified',
+          desc: `Admin approved ${request.ngoName || request.receiverName}'s request for "${request.foodTitle}". Review and accept to share contact.`,
+          linkTab: 'requests',
+          userId: resolvedDonorId,
+          role: 'donor',
+          category: 'request',
+          relatedId: request._id.toString(),
+        });
+      }
 
-      await sendNotification({
-        title: 'Admin Verified Your Request',
-        desc: `Your claim for "${request.foodTitle}" was approved by moderator. Awaiting donor confirmation.`,
-        linkTab: 'requests',
-        userId: request.ngoId || request.receiverId,
-        role: 'ngo',
-        category: 'request',
-        relatedId: request._id.toString(),
-      });
+      if (resolvedNgoId) {
+        await sendNotification({
+          title: 'Admin Verified Your Request',
+          desc: `Your claim for "${request.foodTitle}" was approved by moderator. Awaiting donor confirmation.`,
+          linkTab: 'requests',
+          userId: resolvedNgoId,
+          role: 'ngo',
+          category: 'request',
+          relatedId: request._id.toString(),
+        });
+      }
     }
 
     // 2. Donor Accepted -> Confirmed / Matched -> Unlocked Contacts
     if (normalizedStatus === 'confirmed' || normalizedStatus === 'matched' || normalizedStatus === 'approved by donor') {
-      await sendNotification({
-        title: 'Match Confirmed! Contact Unlocked',
-        desc: `${request.donorName} accepted your request! Donor contact: ${request.donorPhone || '+977 980-1234567'} (${request.location || 'Kathmandu'}).`,
-        linkTab: 'pickups',
-        userId: request.ngoId || request.receiverId,
-        role: 'ngo',
-        category: 'match',
-        relatedId: request._id.toString(),
-      });
+      if (resolvedNgoId) {
+        await sendNotification({
+          title: 'Match Confirmed! Contact Unlocked',
+          desc: `${request.donorName} accepted your request! Donor contact: ${request.donorPhone || '+977 980-1234567'} (${request.location || 'Kathmandu'}).`,
+          linkTab: 'claims',
+          userId: resolvedNgoId,
+          role: 'ngo',
+          category: 'match',
+          relatedId: request._id.toString(),
+        });
+      }
 
-      await sendNotification({
-        title: 'Match Confirmed & Contact Shared',
-        desc: `Contact details shared with ${request.ngoName || request.receiverName}. Phone: ${request.ngoPhone || '+977 984-1234567'}.`,
-        linkTab: 'requests',
-        userId: request.donorId,
-        role: 'donor',
-        category: 'match',
-        relatedId: request._id.toString(),
-      });
+      if (resolvedDonorId) {
+        await sendNotification({
+          title: 'Match Confirmed & Contact Shared',
+          desc: `Contact details shared with ${request.ngoName || request.receiverName}. Phone: ${request.ngoPhone || '+977 984-1234567'}.`,
+          linkTab: 'requests',
+          userId: resolvedDonorId,
+          role: 'donor',
+          category: 'match',
+          relatedId: request._id.toString(),
+        });
+      }
     }
 
     // 3. Pickup Completed
     if (normalizedStatus === 'completed') {
-      await sendNotification({
-        title: 'Pickup Successfully Completed!',
-        desc: `Donation "${request.foodTitle}" (${request.requestedQuantity || 'portions'}) was successfully transferred.`,
-        linkTab: 'history',
-        userId: request.donorId,
-        role: 'donor',
-        category: 'match',
-        relatedId: request._id.toString(),
-      });
+      if (resolvedDonorId) {
+        await sendNotification({
+          title: 'Pickup Successfully Completed!',
+          desc: `Donation "${request.foodTitle}" (${request.requestedQuantity || 'portions'}) was successfully transferred.`,
+          linkTab: 'history',
+          userId: resolvedDonorId,
+          role: 'donor',
+          category: 'match',
+          relatedId: request._id.toString(),
+        });
+      }
 
-      await sendNotification({
-        title: 'Pickup Completed & Verified!',
-        desc: `"${request.foodTitle}" has been received and added to your redistribution impact log.`,
-        linkTab: 'redistributions',
-        userId: request.ngoId || request.receiverId,
-        role: 'ngo',
-        category: 'match',
-        relatedId: request._id.toString(),
-      });
+      if (resolvedNgoId) {
+        await sendNotification({
+          title: 'Pickup Completed & Verified!',
+          desc: `"${request.foodTitle}" has been received and added to your redistribution impact log.`,
+          linkTab: 'redistributions',
+          userId: resolvedNgoId,
+          role: 'ngo',
+          category: 'match',
+          relatedId: request._id.toString(),
+        });
+      }
     }
 
     // Sync listing status if completed or confirmed
@@ -309,6 +349,10 @@ const updateRequestStatus = async (req, res) => {
 const deleteRequest = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id || id === 'undefined' || id === '[object Object]') {
+      return res.status(400).json({ message: 'Valid request ID is required' });
+    }
+
     let deleted = null;
     if (mongoose.Types.ObjectId.isValid(id)) {
       deleted = await Request.findByIdAndDelete(id);
@@ -316,13 +360,42 @@ const deleteRequest = async (req, res) => {
     if (!deleted) {
       deleted = await Request.findOneAndDelete({
         $or: [
+          ...(mongoose.Types.ObjectId.isValid(id) ? [{ _id: id }] : []),
           { id: id },
           { listingId: id },
           { donationId: id }
         ]
       });
     }
-    res.status(200).json({ message: 'Request deleted successfully', deletedId: id });
+
+    if (!deleted) {
+      return res.status(404).json({ message: `Food request not found with ID: ${id}` });
+    }
+
+    // If request had a linked listing, check if we need to restore listing status to Available
+    if (deleted.listingId) {
+      try {
+        const remainingActive = await Request.countDocuments({
+          listingId: deleted.listingId,
+          _id: { $ne: deleted._id },
+          status: { $nin: ['Rejected', 'Declined', 'Cancelled'] }
+        });
+        if (remainingActive === 0) {
+          await Listing.findByIdAndUpdate(deleted.listingId, {
+            status: 'Available',
+            claimedBy: null,
+            claimedById: null
+          });
+        }
+      } catch (listingErr) {
+        console.warn('Error syncing listing status on request delete:', listingErr.message);
+      }
+    }
+
+    res.status(200).json({
+      message: 'Request deleted successfully',
+      deletedId: deleted._id ? deleted._id.toString() : id
+    });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }

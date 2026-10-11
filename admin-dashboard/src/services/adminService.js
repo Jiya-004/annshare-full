@@ -612,16 +612,39 @@ export const deleteDonation = (donationId) => {
   notifyListeners();
 };
 
-export const deleteRequest = (requestId) => {
-  const targetId = String(requestId);
+export const deleteRequest = async (requestId, requestObj = null) => {
+  const mongoId = requestObj?._id || (typeof requestId === 'object' && requestId !== null ? (requestId._id || requestId.id) : requestId) || requestObj?.id;
+  const targetId = String(mongoId || '').trim();
+
+  if (!targetId || targetId === 'undefined' || targetId === '[object Object]') {
+    console.error("deleteRequest: Invalid requestId provided:", requestId, requestObj);
+    return false;
+  }
+
+  // Optimistically remove from local state
   requestsState = requestsState.filter((r) => String(r.id) !== targetId && String(r._id) !== targetId);
-  fetch(`${API_BASE}/requests/${targetId}`, {
-    method: 'DELETE',
-    headers: getAuthHeaders(),
-  }).catch((err) => {
-    console.warn("deleteRequest network error:", err.message);
-  });
   notifyListeners();
+
+  try {
+    const res = await fetch(`${API_BASE}/requests/${targetId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      console.warn(`DELETE /api/requests/${targetId} failed with status ${res.status}:`, errData.message || res.statusText);
+      await syncRequestsFromBackend();
+      return false;
+    }
+
+    await syncRequestsFromBackend();
+    return true;
+  } catch (err) {
+    console.warn("deleteRequest network error:", err.message);
+    await syncRequestsFromBackend();
+    return false;
+  }
 };
 
 export const updateRequestStatus = (requestId, newStatus) => {

@@ -996,21 +996,26 @@ export const NGODashboard = () => {
   const [notificationsLoading, setNotificationsLoading] = useState(false);
 
   const fetchNgoNotifications = React.useCallback(async () => {
+    if (!user) {
+      setNotificationsList([]);
+      return;
+    }
+    const currentUserId = user?.id || user?._id || "";
     try {
       setNotificationsLoading(true);
-      const data = await api.notifications.getAll({ role: "ngo", userId: user?.id || "" });
+      const data = await api.notifications.getAll({ role: "ngo", userId: currentUserId });
       if (Array.isArray(data) && data.length > 0) {
-        // Defensive filter: Only show notifications relevant to NGO (not admin moderation tasks)
+        // Defensive filter: Only show notifications strictly belonging to this NGO
         const relevant = data.filter((n) => {
           if (n.role === "admin" || n.role === "donor") return false;
           if (n.title && n.title.includes("Review required")) return false;
           if (n.desc && n.desc.includes("Review required")) return false;
-          if (n.userId && user?.id && n.userId !== user.id) return false;
+          if (n.userId && currentUserId && String(n.userId) !== String(currentUserId)) return false;
           return true;
         });
         setNotificationsList(relevant);
       } else {
-        // Build contextual notifications from NGO requests & available surplus
+        // Build contextual notifications ONLY from this specific NGO's requests
         const list = [];
         if (confirmedRequests.length > 0) {
           confirmedRequests.forEach((req, idx) => {
@@ -1041,19 +1046,6 @@ export const NGODashboard = () => {
             }
           });
         }
-        if (availableListings.length > 0) {
-          availableListings.slice(0, 3).forEach((item, idx) => {
-            list.push({
-              id: `notif-surplus-${item.id || idx}`,
-              title: "New Surplus Food Available Nearby",
-              desc: `${item.partner || "Donor"} posted ${item.quantity} portions of "${item.title}" in ${item.area || item.location || "Kathmandu"}.`,
-              time: item.postedTime || "Today",
-              read: true,
-              linkTab: "find-food",
-              category: "listing",
-            });
-          });
-        }
         setNotificationsList(list);
       }
     } catch (err) {
@@ -1061,7 +1053,7 @@ export const NGODashboard = () => {
     } finally {
       setNotificationsLoading(false);
     }
-  }, [user, confirmedRequests, requests, availableListings]);
+  }, [user, confirmedRequests, requests]);
 
   useEffect(() => {
     fetchNgoNotifications();
@@ -1076,19 +1068,26 @@ export const NGODashboard = () => {
         await api.notifications.markRead(notif._id);
       }
     } catch {}
-    if (notif.linkTab) {
-      const target = notif.linkTab.toLowerCase();
-      if (target.includes("pickup") || target.includes("logistics")) handleTabChange("claims");
-      else if (target.includes("find") || target.includes("surplus")) handleTabChange("find-food");
-      else if (target.includes("request")) handleTabChange("requests");
-      else handleTabChange(target);
+
+    const target = (notif.linkTab || "").toLowerCase();
+    const title = (notif.title || "").toLowerCase();
+    const cat = (notif.category || "").toLowerCase();
+
+    if (target.includes("claim") || target.includes("pickup") || target.includes("logistics") || cat === "match" || title.includes("confirmed") || title.includes("matched")) {
+      handleTabChange("claims");
+    } else if (target.includes("request") || cat === "request" || title.includes("request") || title.includes("verified") || title.includes("approved")) {
+      handleTabChange("requests");
+    } else if (target.includes("find") || target.includes("surplus") || cat === "listing") {
+      handleTabChange("find-food");
+    } else if (target.includes("redistribut") || target.includes("impact")) {
+      handleTabChange("redistributions");
     }
   };
 
   const handleMarkAllNotificationsRead = async () => {
     setNotificationsList((prev) => prev.map((n) => ({ ...n, read: true })));
     try {
-      await api.notifications.markAllRead({ role: "ngo", userId: user?.id || "" });
+      await api.notifications.markAllRead({ role: "ngo", userId: user?.id || user?._id || "" });
     } catch {}
   };
 
@@ -1808,8 +1807,17 @@ export const NGODashboard = () => {
                   ) : (
                     notificationsList.map((item) => {
                       const isUnread = !item.read;
-                      const isMatch = item.category === "match" || (item.title && item.title.includes("Matched") || item.title && item.title.includes("Confirmed"));
-                      const isListing = item.category === "listing" || (item.title && item.title.includes("Surplus"));
+                      const tab = (item.linkTab || "").toLowerCase();
+                      const title = (item.title || "").toLowerCase();
+                      const cat = (item.category || "").toLowerCase();
+
+                      const isMatch = cat === "match" || title.includes("confirmed") || title.includes("matched");
+                      const isListing = cat === "listing" || title.includes("surplus");
+                      const isRequest = cat === "request" || title.includes("request") || title.includes("verified") || title.includes("approved");
+                      const isRedist = tab.includes("redistribut") || title.includes("redistribution");
+
+                      const hasAction = isMatch || isListing || isRequest || isRedist;
+                      const buttonLabel = isMatch ? "View Claims →" : isRequest ? "View Request →" : isListing ? "Find Food →" : isRedist ? "View Impact →" : "";
 
                       return (
                         <ItemCard
@@ -1818,7 +1826,7 @@ export const NGODashboard = () => {
                             background: isUnread ? "#FAFDFB" : "#FFFFFF",
                             borderColor: isUnread ? "#86EFAC" : "rgba(23, 74, 58, 0.08)",
                             boxShadow: isUnread ? "0 4px 14px rgba(46, 125, 91, 0.08)" : undefined,
-                            cursor: "pointer",
+                            cursor: hasAction ? "pointer" : "default",
                           }}
                           onClick={() => handleMarkNotificationRead(item)}
                         >
@@ -1867,20 +1875,20 @@ export const NGODashboard = () => {
                             </div>
                           </div>
 
-                          <ClaimButton
-                            type="button"
-                            style={{
-                              background: isMatch ? "#2E7D5B" : "#174A3A",
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleMarkNotificationRead(item);
-                              if (isMatch) handleTabChange("requests");
-                              else if (isListing) handleTabChange("find-food");
-                            }}
-                          >
-                            {isMatch ? "View Request →" : isListing ? "Find Food →" : "View Details →"}
-                          </ClaimButton>
+                          {hasAction && (
+                            <ClaimButton
+                              type="button"
+                              style={{
+                                background: isMatch ? "#2E7D5B" : "#174A3A",
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMarkNotificationRead(item);
+                              }}
+                            >
+                              {buttonLabel}
+                            </ClaimButton>
+                          )}
                         </ItemCard>
                       );
                     })

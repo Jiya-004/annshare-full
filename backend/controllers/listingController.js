@@ -233,27 +233,46 @@ const updateListingStatus = async (req, res) => {
     }
 
     // Trigger status update notifications
+    let resolvedDonorId = listing.donorId ? String(listing.donorId) : '';
+    if (!resolvedDonorId && (listing.partner || listing.donorName)) {
+      try {
+        const pName = listing.partner || listing.donorName;
+        const User = require('../models/User');
+        const u = await User.findOne({
+          $or: [
+            { name: new RegExp(`^${pName}$`, 'i') },
+            { organization: new RegExp(`^${pName}$`, 'i') },
+          ],
+        });
+        if (u) resolvedDonorId = u._id.toString();
+      } catch {}
+    }
+
     const sLower = (status || '').toLowerCase();
     if (sLower === 'available' || sLower === 'approved') {
-      await sendNotification({
-        title: 'Donation Approved & Live!',
-        desc: `Your listing "${listing.title}" was approved by moderators and is now visible on Find Food.`,
-        linkTab: 'my-donations',
-        userId: listing.donorId,
-        role: 'donor',
-        category: 'listing',
-        relatedId: listing._id.toString(),
-      });
+      if (resolvedDonorId) {
+        await sendNotification({
+          title: 'Donation Approved & Live!',
+          desc: `Your listing "${listing.title}" was approved by moderators and is now visible on Find Food.`,
+          linkTab: 'my-donations',
+          userId: resolvedDonorId,
+          role: 'donor',
+          category: 'listing',
+          relatedId: listing._id.toString(),
+        });
+      }
     } else if (sLower.includes('reject')) {
-      await sendNotification({
-        title: 'Donation Not Approved',
-        desc: `Your listing "${listing.title}" could not be approved at this time.`,
-        linkTab: 'my-donations',
-        userId: listing.donorId,
-        role: 'donor',
-        category: 'listing',
-        relatedId: listing._id.toString(),
-      });
+      if (resolvedDonorId) {
+        await sendNotification({
+          title: 'Donation Not Approved',
+          desc: `Your listing "${listing.title}" could not be approved at this time.`,
+          linkTab: 'my-donations',
+          userId: resolvedDonorId,
+          role: 'donor',
+          category: 'listing',
+          relatedId: listing._id.toString(),
+        });
+      }
     }
 
     res.status(200).json(listing);

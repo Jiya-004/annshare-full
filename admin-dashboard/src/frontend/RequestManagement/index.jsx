@@ -305,15 +305,18 @@ const RequestManagement = () => {
     setShowDeleteModal(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (requestToDelete) {
-      const targetId = requestToDelete.id || requestToDelete._id;
-      deleteRequest(targetId);
-      if (viewingRequest && (viewingRequest.id === targetId || viewingRequest._id === targetId)) {
-        setViewingRequest(null);
-      }
+      const target = requestToDelete;
+      const targetId = target._id || target.id;
       setRequestToDelete(null);
       setShowDeleteModal(false);
+
+      if (viewingRequest && (viewingRequest._id === targetId || viewingRequest.id === targetId)) {
+        setViewingRequest(null);
+      }
+
+      await deleteRequest(targetId, target);
     }
   };
 
