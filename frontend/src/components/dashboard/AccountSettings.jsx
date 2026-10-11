@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import styled from "styled-components";
 import { useAuth } from "../../context/AuthContext";
+import api from "../../services/api";
 import {
   IoPersonOutline,
   IoLockClosedOutline,
@@ -615,7 +616,7 @@ export default function AccountSettings({ role = "donor" }) {
   /* --------------------------------------------------------------------------
      PASSWORD UPDATE HANDLER
      -------------------------------------------------------------------------- */
-  const handleUpdatePassword = (e) => {
+  const handleUpdatePassword = async (e) => {
     e.preventDefault();
     setPasswordAlert(null);
 
@@ -639,15 +640,30 @@ export default function AccountSettings({ role = "donor" }) {
 
     setIsUpdatingPassword(true);
 
-    // Simulate backend password change
-    setTimeout(() => {
+    try {
+      const response = await api.auth.changePassword({
+        currentPassword: currentPassword.trim(),
+        newPassword: newPassword.trim(),
+        email: user?.email,
+        userId: user?._id || user?.id,
+      });
+
       setIsUpdatingPassword(false);
-      setPasswordAlert({ type: "success", message: "Password updated successfully!" });
+      setPasswordAlert({
+        type: "success",
+        message: response?.message || "Password updated successfully in database!",
+      });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      setTimeout(() => setPasswordAlert(null), 4000);
-    }, 600);
+      setTimeout(() => setPasswordAlert(null), 5000);
+    } catch (err) {
+      setIsUpdatingPassword(false);
+      setPasswordAlert({
+        type: "error",
+        message: err.message || "Failed to update password. Please check your current password.",
+      });
+    }
   };
 
   return (
